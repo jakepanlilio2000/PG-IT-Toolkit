@@ -101,9 +101,6 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <Border Grid.Row="0" Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderLight}" BorderThickness="0,0,0,1" Padding="30,20">
-                    <TextBlock Text="{Binding SelectedTool.ToolName}" FontSize="24" FontWeight="Light" Foreground="{StaticResource TextPrimary}" VerticalAlignment="Center"/>
-                </Border>
 
                 <Border Grid.Row="1" Padding="15">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">

@@ -7,7 +7,7 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.Interfaces
 {
     public interface IServiceDeskService
     {
-        Task<bool> ExportOtReportAsync(IEnumerable<OtEntryModel> entries, string outputPath, DateTime cutoffStart, DateTime cutoffEnd);
-        Task<bool> DraftOutageEmailAsync(OutageEmailModel data);
+        Task<bool> ExportOtReportAsync(IEnumerable<OtEntryModel> entries, DateTime cutoffStart, DateTime cutoffEnd, string signatureHtml);
+        Task<bool> DraftOutageEmailAsync(OutageEmailModel data, string signatureHtml);
     }
 }

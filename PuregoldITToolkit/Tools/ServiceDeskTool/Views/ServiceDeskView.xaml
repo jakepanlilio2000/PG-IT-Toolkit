@@ -4,210 +4,346 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+
+        <Style x:Key="SegmentedTab" TargetType="RadioButton">
+            <Setter Property="Background" Value="{StaticResource BgApp}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="Padding" Value="25,12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="4" Margin="0,0,8,0" BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource BgHighlight}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrandPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="{StaticResource BrandPrimary}"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource BrandPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FormLabel" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+
+        <Style x:Key="TbHeaderLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#666666"/>
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="Margin" Value="0,2"/>
+        </Style>
+
+        <Style x:Key="TbHeaderValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#000000"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TabControl Grid.Row="1" Background="Transparent" BorderThickness="0">
 
-            <TabItem Header="OT Report Generator" FontWeight="Bold" Width="300">
-                <Border Style="{StaticResource CardStyle}" Margin="0,10,0,0">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="Service Desk Utilities" FontSize="24" FontWeight="Light" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,15"/>
 
-                        <WrapPanel Grid.Row="0" Margin="0,0,0,20">
-                            <StackPanel Margin="0,0,25,0">
-                                <TextBlock Text="Cutoff Start Date" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                <DatePicker SelectedDate="{Binding CutoffStart}" Width="160" Height="34" Padding="5"/>
-                            </StackPanel>
-                            <StackPanel>
-                                <TextBlock Text="Cutoff End Date" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                <DatePicker SelectedDate="{Binding CutoffEnd}" Width="160" Height="34" Padding="5"/>
-                            </StackPanel>
-                        </WrapPanel>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
+            <RadioButton x:Name="RbOtReport" Content="OT Report Generator" IsChecked="True" Style="{StaticResource SegmentedTab}"/>
+            <RadioButton x:Name="RbOutageDrafter" Content="Broadband Outage Drafter" Style="{StaticResource SegmentedTab}"/>
+        </StackPanel>
 
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Overtime Monitoring Data" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" VerticalAlignment="Center" Margin="0,0,20,0" FontSize="14"/>
-                            <Button Command="{Binding AddOtRowCommand}" Content="+ ADD ROW" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,8" BorderThickness="0" Cursor="Hand"/>
-                        </StackPanel>
+        <Grid Grid.Row="2" Visibility="{Binding IsChecked, ElementName=RbOtReport, Converter={StaticResource BoolToVis}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="6.5*"/>
+                <ColumnDefinition Width="3.5*"/>
+            </Grid.ColumnDefinitions>
 
-                        <Border Grid.Row="2" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource BgCard}">
-                            <DataGrid ItemsSource="{Binding OtEntries}" AutoGenerateColumns="False" CanUserAddRows="False" 
-                                      Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}" 
-                                      BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
-                                <DataGrid.Columns>
-                                    <DataGridTextColumn Header="EMPLOYEE" Binding="{Binding Employee, UpdateSourceTrigger=PropertyChanged}" Width="200"/>
-                                    <DataGridTextColumn Header="STORE" Binding="{Binding Store, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
-                                    <DataGridTemplateColumn Header="DATE OF OVERTIME" Width="140">
-                                        <DataGridTemplateColumn.CellTemplate>
-                                            <DataTemplate>
-                                                <DatePicker SelectedDate="{Binding DateOfOvertime, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0"/>
-                                            </DataTemplate>
-                                        </DataGridTemplateColumn.CellTemplate>
-                                    </DataGridTemplateColumn>
-                                    <DataGridTextColumn Header="HOURS" Binding="{Binding Hours, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
-                                    <DataGridTextColumn Header="MINS" Binding="{Binding Minutes, UpdateSourceTrigger=PropertyChanged}" Width="70"/>
-                                    <DataGridTextColumn Header="PURPOSE" Binding="{Binding Purpose, UpdateSourceTrigger=PropertyChanged}" Width="150"/>
-                                    <DataGridTextColumn Header="PRE-APPROVED BY" Binding="{Binding PreApprovedBy, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
-                                </DataGrid.Columns>
-                            </DataGrid>
-                        </Border>
-                    </Grid>
-                </Border>
-            </TabItem>
-
-            <TabItem Header="Broadband Outage Drafter" FontWeight="Bold" Width="300">
+            <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,15,0">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="6*"/>
-                        <ColumnDefinition Width="4*"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,10,15,0">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel HorizontalAlignment="Left">
+                    <WrapPanel Grid.Row="0" Margin="0,0,0,20">
+                        <StackPanel Margin="0,0,25,0">
+                            <TextBlock Text="Cutoff Start Date" Style="{StaticResource FormLabel}"/>
+                            <DatePicker SelectedDate="{Binding CutoffStart}" Width="160" Height="34" Padding="5"/>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Cutoff End Date" Style="{StaticResource FormLabel}"/>
+                            <DatePicker SelectedDate="{Binding CutoffEnd}" Width="160" Height="34" Padding="5"/>
+                        </StackPanel>
+                    </WrapPanel>
 
-                                <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
+                        <TextBlock Text="Overtime Monitoring Data" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" VerticalAlignment="Center" Margin="0,0,20,0" FontSize="14"/>
+                        <Button Command="{Binding AddOtRowCommand}" Content="+ ADD ROW" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,8" BorderThickness="0" Cursor="Hand"/>
+                    </StackPanel>
 
-                                        <StackPanel Grid.Column="0" Margin="0,0,20,0">
-                                            <TextBlock Text="Load Store Profile" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,8" FontSize="14"/>
-                                            <ComboBox ItemsSource="{Binding StoreProfiles}" SelectedItem="{Binding SelectedProfile}" DisplayMemberPath="DisplayName" Height="34" Padding="5"/>
-                                        </StackPanel>
-
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
-                                            <Button Command="{Binding SaveProfileCommand}" Content="SAVE / UPDATE" Style="{StaticResource SuccessButton}" Padding="15,8" Margin="0,0,8,0" ToolTip="Saves the form data below permanently to the active Store Code."/>
-                                            <Button Command="{Binding DeleteProfileCommand}" Content="DELETE" Style="{StaticResource DangerButton}" Padding="15,8" Margin="0,0,8,0"/>
-                                            <Button Command="{Binding ClearOutageFormCommand}" Content="CLEAR" Background="{StaticResource TextSecondary}" Foreground="#FFFFFF" FontWeight="Bold" Padding="15,8" BorderThickness="0" Cursor="Hand"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-
-                                <TextBlock Text="Outage Core Details" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,12" FontSize="14"/>
-                                <WrapPanel Margin="0,0,0,20">
-                                    <StackPanel Margin="0,0,15,12" Width="110">
-                                        <TextBlock Text="ISP *" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <ComboBox SelectedValue="{Binding OutageData.Isp}" SelectedValuePath="Content" Height="34" Padding="5">
-                                            <ComboBoxItem Content="GLOBE" IsSelected="True"/>
-                                            <ComboBoxItem Content="CONVERGE"/>
-                                        </ComboBox>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,15,12" Width="110">
-                                        <TextBlock Text="Store Code *" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding OutageData.StoreCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,15,12" Width="190">
-                                        <TextBlock Text="Store Name *" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding OutageData.StoreName, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,0,12" Width="260">
-                                        <TextBlock Text="Default IT-ZONE CC" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding OutageData.AllItZoneEmail, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
-                                    </StackPanel>
-                                </WrapPanel>
-
-                                <TextBlock Text="Modem &amp; Issue Details" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,12" FontSize="14"/>
-                                <WrapPanel Margin="0,0,0,20">
-                                    <StackPanel Margin="0,0,15,12" Width="210">
-                                        <TextBlock Text="Modem Serial *" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding OutageData.ModemSerial, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,15,12" Width="160">
-                                        <TextBlock Text="CID / SID" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding OutageData.CidSid, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,0,12" Width="160">
-                                        <TextBlock Text="Status *" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <ComboBox SelectedValue="{Binding OutageData.IssueStatus}" SelectedValuePath="Content" Height="34" Padding="5">
-                                            <ComboBoxItem Content="DOWN" IsSelected="True"/>
-                                            <ComboBoxItem Content="INTERMITTENT"/>
-                                        </ComboBox>
-                                    </StackPanel>
-                                </WrapPanel>
-
-                                <StackPanel Margin="0,0,0,20">
-                                    <TextBlock Text="Issue Description (Press Enter for new line)" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                    <TextBox Text="{Binding OutageData.IssueDesc, UpdateSourceTrigger=PropertyChanged}" Height="80" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
-                                </StackPanel>
-
-                                <WrapPanel Margin="0,0,0,25" VerticalAlignment="Center">
-                                    <StackPanel Margin="0,0,20,0">
-                                        <TextBlock Text="Picture of Modem" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <Button Command="{Binding BrowseAttachmentCommand}" Content="Browse Image..." Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" BorderThickness="0" Padding="15,8" Cursor="Hand"/>
-                                    </StackPanel>
-                                    <TextBlock Text="{Binding OutageData.AttachmentPath, StringFormat='Attached: {0}'}" VerticalAlignment="Bottom" Margin="0,0,0,8" FontSize="11" Foreground="{StaticResource BtnSuccess}" FontStyle="Italic" TextTrimming="CharacterEllipsis" MaxWidth="350"/>
-                                </WrapPanel>
-
-                                <TextBlock Text="Site Contact Info" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,12" FontSize="14"/>
-                                <StackPanel Margin="0,0,0,20">
-                                    <TextBlock Text="Exact Address" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                    <TextBox Text="{Binding OutageData.Address, UpdateSourceTrigger=PropertyChanged}"/>
-                                </StackPanel>
-
-                                <WrapPanel Margin="0,0,0,20">
-                                    <StackPanel Margin="0,0,15,12" Width="210">
-                                        <TextBlock Text="Contact Person / Number" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding OutageData.ContactPerson, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,15,12" Width="160">
-                                        <TextBlock Text="Availability" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding OutageData.Availability, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,0,12" Width="210">
-                                        <TextBlock Text="Access Pass Needed?" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding OutageData.AccessPass, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                </WrapPanel>
-
-                                <TextBlock Text="Zone Head Routing" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,12" FontSize="14"/>
-                                <WrapPanel Margin="0,0,0,25">
-                                    <StackPanel Margin="0,0,20,12" Width="260">
-                                        <TextBlock Text="Zone Head Name" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding OutageData.ZoneHeadName, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,0,12" Width="260">
-                                        <TextBlock Text="Zone Head Email" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                        <TextBox Text="{Binding OutageData.ZoneHeadEmail, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                </WrapPanel>
-                            </StackPanel>
-                        </ScrollViewer>
+                    <Border Grid.Row="2" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource BgCard}">
+                        <DataGrid ItemsSource="{Binding OtEntries}" AutoGenerateColumns="False" CanUserAddRows="False" 
+                                  Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}" 
+                                  BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="EMPLOYEE" Binding="{Binding Employee, UpdateSourceTrigger=PropertyChanged}" Width="2*"/>
+                                <DataGridTextColumn Header="STORE" Binding="{Binding Store, UpdateSourceTrigger=PropertyChanged}" Width="1.2*"/>
+                                <DataGridTemplateColumn Header="DATE" Width="1.5*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <DatePicker SelectedDate="{Binding DateOfOvertime, UpdateSourceTrigger=PropertyChanged}" BorderThickness="0"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="HRS" Binding="{Binding Hours, UpdateSourceTrigger=PropertyChanged}" Width="0.8*"/>
+                                <DataGridTextColumn Header="MINS" Binding="{Binding Minutes, UpdateSourceTrigger=PropertyChanged}" Width="0.8*"/>
+                                <DataGridTextColumn Header="PURPOSE" Binding="{Binding Purpose, UpdateSourceTrigger=PropertyChanged}" Width="2.5*"/>
+                                <DataGridTextColumn Header="PRE-APPROVED BY" Binding="{Binding PreApprovedBy, UpdateSourceTrigger=PropertyChanged}" Width="2.5*"/>
+                                <DataGridTemplateColumn Header="" Width="45">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="✕" Command="{Binding DataContext.RemoveOtRowCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Style="{StaticResource DangerButton}" Padding="5,2"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </Border>
 
-                    <Border Grid.Column="1" Style="{StaticResource CardStyle}" Margin="0,10,0,0">
+                    <StackPanel Grid.Row="3" Margin="0,20,0,0">
+                        <TextBlock Text="Raw HTML Signature (Persistent)" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,5"/>
+                        <TextBlock Text="This raw HTML code will be injected at the bottom of all generated OT and Outage emails." FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10"/>
+                        <TextBox Text="{Binding SignatureHtml, UpdateSourceTrigger=PropertyChanged}" Height="80" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" Background="{StaticResource BgApp}"/>
+                        <Button Command="{Binding SaveSignatureCommand}" Content="SAVE SIGNATURE TO CACHE" Style="{StaticResource SuccessButton}" Padding="15,8" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Background="#F3F3F3" BorderBrush="#CCCCCC" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0" Padding="12">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                            <TextBlock Grid.Row="0" Text="Live Email Preview" FontWeight="Bold" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,12"/>
-                            <TextBox Grid.Row="1" Text="{Binding OutageData.GeneratedBody, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Background="#FFFFFF" Foreground="{StaticResource TextPrimary}" FontFamily="Consolas" FontSize="13" Padding="12" BorderBrush="{StaticResource BorderLight}" BorderThickness="1"/>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="To:" Style="{StaticResource TbHeaderLabel}"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding OtPreviewTo}" Style="{StaticResource TbHeaderValue}"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Cc:" Style="{StaticResource TbHeaderLabel}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding OtPreviewCc}" Style="{StaticResource TbHeaderValue}"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Subject:" Style="{StaticResource TbHeaderLabel}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding OtPreviewSubject}" Style="{StaticResource TbHeaderValue}" FontWeight="Bold"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Attach:" Style="{StaticResource TbHeaderLabel}" Margin="0,8,0,2"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="📎 OT_Report_AutoGenerated.xlsx" Foreground="#00529B" Margin="0,8,0,2" FontWeight="SemiBold"/>
                         </Grid>
                     </Border>
-                </Grid>
-            </TabItem>
-        </TabControl>
 
-        <Grid Grid.Row="2" Margin="0,20,0,0">
-            <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" VerticalAlignment="Center"/>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Command="{Binding ExportOtCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="GENERATE OT EXCEL" Style="{StaticResource DangerButton}" Margin="0,0,12,0" Padding="25,12"/>
-                <Button Command="{Binding DraftEmailCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="DRAFT OUTAGE EMAIL" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="25,12" BorderThickness="0" Cursor="Hand"/>
-            </StackPanel>
+                    <TextBox Grid.Row="1" Text="{Binding OtPreviewBody, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Background="#FFFFFF" Foreground="#000000" FontFamily="Calibri, Arial" FontSize="14" Padding="15" BorderBrush="#CCCCCC" BorderThickness="1" MinHeight="300"/>
+
+                    <Button Grid.Row="2" Command="{Binding ExportOtCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="GENERATE OT EMAIL DRAFT" Style="{StaticResource DangerButton}" Padding="20,15" Margin="0,15,0,0"/>
+                </Grid>
+            </Border>
         </Grid>
+
+        <Grid Grid.Row="2" Visibility="{Binding IsChecked, ElementName=RbOutageDrafter, Converter={StaticResource BoolToVis}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="6*"/>
+                <ColumnDefinition Width="4*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,15,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+                    <StackPanel HorizontalAlignment="Stretch">
+
+                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                                    <TextBlock Text="Load Store Profile" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,8" FontSize="14"/>
+                                    <ComboBox ItemsSource="{Binding StoreProfiles}" SelectedItem="{Binding SelectedProfile}" DisplayMemberPath="DisplayName" Height="34" Padding="5"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">
+                                    <Button Command="{Binding AddNewProfileCommand}" Content="+ ADD NEW" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,8" BorderThickness="0" Margin="0,0,8,0"/>
+                                    <Button Command="{Binding SaveProfileCommand}" Content="SAVE" Style="{StaticResource SuccessButton}" Padding="15,8" Margin="0,0,8,0"/>
+                                    <Button Command="{Binding DeleteProfileCommand}" Content="DELETE" Style="{StaticResource DangerButton}" Padding="15,8" Margin="0,0,8,0"/>
+                                    <Button Command="{Binding ClearOutageFormCommand}" Content="CLEAR" Background="{StaticResource TextSecondary}" Foreground="#FFFFFF" FontWeight="Bold" Padding="15,8" BorderThickness="0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Text="Outage Core Details" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,12" FontSize="14"/>
+                        <WrapPanel Margin="0,0,0,20">
+                            <StackPanel Margin="0,0,15,12" Width="110">
+                                <TextBlock Text="ISP *" Style="{StaticResource FormLabel}"/>
+                                <ComboBox SelectedValue="{Binding OutageData.Isp}" SelectedValuePath="Content" Height="34" Padding="5">
+                                    <ComboBoxItem Content="GLOBE" IsSelected="True"/>
+                                    <ComboBoxItem Content="CONVERGE"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="110">
+                                <TextBlock Text="Store Code *" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding OutageData.StoreCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="190">
+                                <TextBlock Text="Store Name *" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding OutageData.StoreName, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,12" Width="260">
+                                <TextBlock Text="Default IT-ZONE CC" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding OutageData.AllItZoneEmail, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                            </StackPanel>
+                        </WrapPanel>
+
+                        <TextBlock Text="Modem &amp; Issue Details" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,12" FontSize="14"/>
+                        <WrapPanel Margin="0,0,0,20">
+                            <StackPanel Margin="0,0,15,12" Width="210">
+                                <TextBlock Text="Modem Serial *" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding OutageData.ModemSerial, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="160">
+                                <TextBlock Text="CID / SID" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding OutageData.CidSid, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,12" Width="160">
+                                <TextBlock Text="Status *" Style="{StaticResource FormLabel}"/>
+                                <ComboBox SelectedValue="{Binding OutageData.IssueStatus}" SelectedValuePath="Content" Height="34" Padding="5">
+                                    <ComboBoxItem Content="DOWN" IsSelected="True"/>
+                                    <ComboBoxItem Content="INTERMITTENT"/>
+                                </ComboBox>
+                            </StackPanel>
+                        </WrapPanel>
+
+                        <StackPanel Margin="0,0,0,20">
+                            <TextBlock Text="Issue Description (Press Enter for new line)" Style="{StaticResource FormLabel}"/>
+                            <TextBox Text="{Binding OutageData.IssueDesc, UpdateSourceTrigger=PropertyChanged}" Height="80" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                        </StackPanel>
+
+                        <WrapPanel Margin="0,0,0,25" VerticalAlignment="Center">
+                            <StackPanel Margin="0,0,20,0">
+                                <TextBlock Text="Picture of Modem" Style="{StaticResource FormLabel}"/>
+                                <Button Command="{Binding BrowseAttachmentCommand}" Content="Browse Image..." Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" BorderThickness="0" Padding="15,8" Cursor="Hand"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding OutageData.AttachmentPath, StringFormat='Attached: {0}'}" VerticalAlignment="Bottom" Margin="0,0,0,8" FontSize="11" Foreground="{StaticResource BtnSuccess}" FontStyle="Italic" TextTrimming="CharacterEllipsis" MaxWidth="350"/>
+                        </WrapPanel>
+
+                        <TextBlock Text="Site Contact Info" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,12" FontSize="14"/>
+                        <StackPanel Margin="0,0,0,20">
+                            <TextBlock Text="Exact Address" Style="{StaticResource FormLabel}"/>
+                            <TextBox Text="{Binding OutageData.Address, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+
+                        <WrapPanel Margin="0,0,0,20">
+                            <StackPanel Margin="0,0,15,12" Width="210">
+                                <TextBlock Text="Contact Person / Number" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding OutageData.ContactPerson, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="160">
+                                <TextBlock Text="Availability" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding OutageData.Availability, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,12" Width="210">
+                                <TextBlock Text="Access Pass Needed?" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding OutageData.AccessPass, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </WrapPanel>
+
+                        <TextBlock Text="Zone Head Routing" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,12" FontSize="14"/>
+                        <WrapPanel Margin="0,0,0,25">
+                            <StackPanel Margin="0,0,20,12" Width="260">
+                                <TextBlock Text="Zone Head Name" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding OutageData.ZoneHeadName, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,12" Width="260">
+                                <TextBlock Text="Zone Head Email" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding OutageData.ZoneHeadEmail, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </WrapPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Background="#F3F3F3" BorderBrush="#CCCCCC" BorderThickness="1,1,1,0" CornerRadius="4,4,0,0" Padding="12">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="To:" Style="{StaticResource TbHeaderLabel}"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding OutagePreviewTo}" Style="{StaticResource TbHeaderValue}"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Cc:" Style="{StaticResource TbHeaderLabel}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding OutagePreviewCc}" Style="{StaticResource TbHeaderValue}"/>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Subject:" Style="{StaticResource TbHeaderLabel}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding OutagePreviewSubject}" Style="{StaticResource TbHeaderValue}" FontWeight="Bold"/>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Attach:" Style="{StaticResource TbHeaderLabel}" Margin="0,8,0,2"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding OutageData.AttachmentPath}" Foreground="#00529B" Margin="0,8,0,2" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
+                    </Border>
+
+                    <TextBox Grid.Row="1" Text="{Binding OutageData.GeneratedBody, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Background="#FFFFFF" Foreground="#000000" FontFamily="Calibri, Arial" FontSize="14" Padding="15" BorderBrush="#CCCCCC" BorderThickness="1" MinHeight="150"/>
+
+                    <Button Grid.Row="2" Command="{Binding DraftEmailCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="DRAFT OUTAGE EMAIL" Style="{StaticResource DangerButton}" Padding="20,15" Margin="0,15,0,0"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,15,0,0"/>
     </Grid>
 </UserControl>
