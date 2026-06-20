@@ -9,22 +9,22 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-
+using Bold = DocumentFormat.OpenXml.Wordprocessing.Bold;
 // OpenXML Aliases
 using Paragraph = DocumentFormat.OpenXml.Wordprocessing.Paragraph;
 using Run = DocumentFormat.OpenXml.Wordprocessing.Run;
-using Text = DocumentFormat.OpenXml.Wordprocessing.Text;
 using Table = DocumentFormat.OpenXml.Wordprocessing.Table;
-using TableRow = DocumentFormat.OpenXml.Wordprocessing.TableRow;
 using TableCell = DocumentFormat.OpenXml.Wordprocessing.TableCell;
-using Bold = DocumentFormat.OpenXml.Wordprocessing.Bold;
+using TableRow = DocumentFormat.OpenXml.Wordprocessing.TableRow;
+using Text = DocumentFormat.OpenXml.Wordprocessing.Text;
 
 namespace PuregoldITToolkit.Tools.FormsTool.Services
 {
     public class FormsExportService : IFormsExportService
     {
-        public async Task<bool> ExportInfToWordAsync(IEnumerable<InfEntryModel> entries, string infType, string filePath)
+        public async Task<bool> ExportInfToEmailAsync(IEnumerable<InfEntryModel> entries, string infType, string storeCode, string toAddresses, string ccAddresses, string signatureHtml)
         {
             if (entries == null || !entries.Any()) return false;
 
@@ -33,72 +33,73 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                 try
                 {
                     bool isType4 = infType.Contains("APAR");
+                    string subject = $"INF for PurePos {storeCode}";
 
-                    using (WordprocessingDocument wordDocument = WordprocessingDocument.Create(filePath, WordprocessingDocumentType.Document))
+                    StringBuilder emlContent = new StringBuilder();
+
+                    // Mail Headers
+                    emlContent.AppendLine($"To: {toAddresses}");
+                    if (!string.IsNullOrWhiteSpace(ccAddresses)) emlContent.AppendLine($"Cc: {ccAddresses}");
+                    emlContent.AppendLine("X-Unsent: 1"); // Marks as an editable draft in Thunderbird
+                    emlContent.AppendLine($"Subject: {subject}");
+                    emlContent.AppendLine("MIME-Version: 1.0");
+                    emlContent.AppendLine("Content-Type: text/html; charset=utf-8");
+                    emlContent.AppendLine();
+
+                    // HTML Body Construction
+                    StringBuilder htmlBody = new StringBuilder();
+                    htmlBody.AppendLine("<html><body><div style=\"font-family: Calibri, Arial, sans-serif; font-size: 14px; color: #000;\">");
+
+                    htmlBody.AppendLine("<p>Hi Team,</p>");
+                    htmlBody.AppendLine($"<p>Kindly check the attached INF items for <b>{storeCode}</b>. Type: <i>{infType}</i></p>");
+
+                    // Create the Data Table
+                    htmlBody.AppendLine("<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse: collapse; text-align: center; border-color: #DDDDDD; width: 100%;\">");
+                    htmlBody.AppendLine("<tr style=\"background-color: #2C3E50; color: #ffffff; font-weight: bold;\">");
+
+                    if (isType4)
+                        htmlBody.AppendLine("<th>Store</th><th>Reg SKU</th><th>Gen SKU (APAR)</th><th>UPC</th><th>PurePos Price</th><th>MMS Price</th><th>Description</th><th>IsPromo?</th>");
+                    else
+                        htmlBody.AppendLine("<th>Store</th><th>SKU</th><th>UPC</th><th>PurePos Price</th><th>MMS Price</th><th>Description</th><th>IsPromo?</th>");
+
+                    htmlBody.AppendLine("</tr>");
+
+                    foreach (var entry in entries)
                     {
-                        MainDocumentPart mainPart = wordDocument.AddMainDocumentPart();
-                        mainPart.Document = new Document();
-                        Body body = mainPart.Document.AppendChild(new Body());
-
-                        Paragraph titlePara = body.AppendChild(new Paragraph());
-                        Run titleRun = titlePara.AppendChild(new Run());
-                        titleRun.AppendChild(new Text($"INF Form: {infType}"));
-                        titleRun.RunProperties = new RunProperties(new Bold(), new FontSize() { Val = "28" });
-                        body.AppendChild(new Paragraph());
-
-                        Table table = new Table();
-
-                        TableProperties tblProp = new TableProperties(
-                            new TableBorders(
-                                new TopBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                                new BottomBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                                new LeftBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                                new RightBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                                new InsideHorizontalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 },
-                                new InsideVerticalBorder() { Val = new EnumValue<BorderValues>(BorderValues.Single), Size = 4 }
-                            ),
-                            new TableWidth() { Width = "5000", Type = TableWidthUnitValues.Pct }
-                        );
-                        table.AppendChild(tblProp);
-
-                        TableRow trHeader = new TableRow();
-                        string[] headers = isType4
-                            ? new[] { "Store", "Reg SKU", "Gen SKU (APAR)", "UPC", "PurePos Price", "MMS PRICE", "Description", "IsPromo?" }
-                            : new[] { "Store", "SKU", "UPC", "PurePos Price", "MMS PRICE", "Description", "IsPromo?" };
-
-                        foreach (var header in headers)
-                        {
-                            TableCell tc = new TableCell();
-                            Paragraph p = new Paragraph(new Run(new Text(header)) { RunProperties = new RunProperties(new Bold()) });
-                            tc.Append(p);
-                            trHeader.Append(tc);
-                        }
-                        table.Append(trHeader);
-
-                        foreach (var entry in entries)
-                        {
-                            TableRow tr = new TableRow();
-                            string[] rowData = isType4
-                                ? new[] { entry.StoreCode, entry.Sku, entry.GeneratedSku, entry.Upc, entry.PurePosPrice, entry.MmsPrice, entry.Description, entry.IsPromo }
-                                : new[] { entry.StoreCode, entry.Sku, entry.Upc, entry.PurePosPrice, entry.MmsPrice, entry.Description, entry.IsPromo };
-
-                            foreach (var data in rowData)
-                            {
-                                TableCell tc = new TableCell(new Paragraph(new Run(new Text(data ?? string.Empty))));
-                                tr.Append(tc);
-                            }
-                            table.Append(tr);
-                        }
-
-                        body.Append(table);
+                        htmlBody.AppendLine("<tr>");
+                        htmlBody.AppendLine($"<td>{entry.StoreCode}</td>");
+                        htmlBody.AppendLine($"<td>{entry.Sku}</td>");
+                        if (isType4) htmlBody.AppendLine($"<td>{entry.GeneratedSku}</td>");
+                        htmlBody.AppendLine($"<td>{entry.Upc}</td>");
+                        htmlBody.AppendLine($"<td>{entry.PurePosPrice}</td>");
+                        htmlBody.AppendLine($"<td>{entry.MmsPrice}</td>");
+                        htmlBody.AppendLine($"<td>{entry.Description}</td>");
+                        htmlBody.AppendLine($"<td>{entry.IsPromo}</td>");
+                        htmlBody.AppendLine("</tr>");
                     }
 
-                    Process.Start(filePath);
+                    htmlBody.AppendLine("</table>");
+                    htmlBody.AppendLine("<br/><br/>");
+
+                    // Inject the Global Signature
+                    if (!string.IsNullOrWhiteSpace(signatureHtml))
+                    {
+                        htmlBody.AppendLine(signatureHtml);
+                    }
+
+                    htmlBody.AppendLine("</div></body></html>");
+                    emlContent.AppendLine(htmlBody.ToString());
+
+                    // Save to system Temp folder and launch via ShellExecute (Thunderbird)
+                    string tempPath = Path.Combine(Path.GetTempPath(), $"INF_Draft_{storeCode}_{DateTime.Now:yyyyMMdd_HHmmss}.eml");
+                    File.WriteAllText(tempPath, emlContent.ToString());
+
+                    Process.Start(new ProcessStartInfo { FileName = tempPath, UseShellExecute = true });
                     return true;
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Word Export Error: {ex.Message}");
+                    Debug.WriteLine($"INF Email Draft Error: {ex.Message}");
                     return false;
                 }
             });

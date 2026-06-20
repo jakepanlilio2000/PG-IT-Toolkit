@@ -2,9 +2,11 @@
 using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.FormsTool.Interfaces;
 using PuregoldITToolkit.Tools.FormsTool.Models;
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -37,6 +39,14 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
             }
         }
 
+        // HARDCODED ROUTING LISTS (Add all your recipients here)
+        private string _emailTo = "user1@puregold.com.ph, user2@puregold.com.ph, user3@puregold.com.ph";
+        public string EmailTo { get => _emailTo; set => SetProperty(ref _emailTo, value); }
+
+        private string _emailCc = "cc1@puregold.com.ph, cc2@puregold.com.ph";
+        public string EmailCc { get => _emailCc; set => SetProperty(ref _emailCc, value); }
+
+
         public bool IsType4Apar => SelectedInfType != null && SelectedInfType.Contains("APAR");
         public bool IsPromoLocked => SelectedInfType != null && SelectedInfType.Contains("(Promo)");
 
@@ -53,7 +63,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
         public InfViewModel(IFormsExportService exportService)
         {
             _exportService = exportService;
-            SelectedInfType = InfTypes[0]; // Default selection
+            SelectedInfType = InfTypes[0];
 
             AddToTableCommand = new RelayCommand(AddEntry);
             RemoveItemCommand = new RelayCommand<InfEntryModel>(RemoveEntry);
@@ -62,18 +72,9 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
 
         private void EvaluatePromoLock()
         {
-            if (IsPromoLocked)
-            {
-                CurrentEntry.IsPromo = "YES";
-            }
-            else if (SelectedInfType != null && SelectedInfType.Contains("Regular"))
-            {
-                CurrentEntry.IsPromo = "NO";
-            }
-            else
-            {
-                CurrentEntry.IsPromo = string.Empty;
-            }
+            if (IsPromoLocked) CurrentEntry.IsPromo = "YES";
+            else if (SelectedInfType != null && SelectedInfType.Contains("Regular")) CurrentEntry.IsPromo = "NO";
+            else CurrentEntry.IsPromo = string.Empty;
         }
 
         private void AddEntry()
@@ -103,7 +104,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
             });
 
             CurrentEntry.Clear();
-            EvaluatePromoLock(); // Reset promo field based on selected type
+            EvaluatePromoLock();
             StatusMessage = "Item added to list.";
             ((AsyncRelayCommand)ExportCommand).NotifyCanExecuteChanged();
         }
@@ -119,21 +120,17 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
 
         private async Task ExportDataAsync()
         {
-            StatusMessage = "Generating Word Document...";
-            string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string folderPath = Path.Combine(desktopPath, "Puregold_Forms_Output");
+            StatusMessage = "Drafting INF Email Template...";
 
-            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+            string sig = "";
+            if (File.Exists(SettingsViewModel.SignatureFilePath))
+                sig = File.ReadAllText(SettingsViewModel.SignatureFilePath);
 
-            string fileName = $"INF_Form_{DateTime.Now:yyyyMMdd_HHmmss}.docx";
-            string fullPath = Path.Combine(folderPath, fileName);
+            string storeCode = InfTable.FirstOrDefault()?.StoreCode ?? "UNKNOWN";
 
-            bool success = await _exportService.ExportInfToWordAsync(InfTable, SelectedInfType, fullPath);
+            bool success = await _exportService.ExportInfToEmailAsync(InfTable, SelectedInfType, storeCode, EmailTo, EmailCc, sig);
 
-            if (success)
-                StatusMessage = "Success! Word document opened.";
-            else
-                StatusMessage = "Error generating Word file. Please try again.";
+            StatusMessage = success ? "Success! Thunderbird draft opened." : "Error drafting email.";
         }
     }
 }

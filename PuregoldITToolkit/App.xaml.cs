@@ -9,13 +9,15 @@ using PuregoldITToolkit.Tools.FormsTool.ViewModels;
 using PuregoldITToolkit.Tools.PimsVendorTool;
 using PuregoldITToolkit.Tools.PimsVendorTool.Services;
 using PuregoldITToolkit.Tools.PimsVendorTool.ViewModels;
-using PuregoldITToolkit.Tools.PureposTool;
 using PuregoldITToolkit.Tools.PureposTool.Services;
 using PuregoldITToolkit.Tools.PureposTool.ViewModels;
 using PuregoldITToolkit.Tools.PureposTools;
 using PuregoldITToolkit.Tools.ServiceDeskTool;
 using PuregoldITToolkit.Tools.ServiceDeskTool.Services;
 using PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels;
+using PuregoldITToolkit.Tools.SettingsTool;
+using PuregoldITToolkit.Tools.SettingsTool.Services;
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using PuregoldITToolkit.Tools.SodChecker;
 using PuregoldITToolkit.Tools.SodChecker.Services;
 using PuregoldITToolkit.Tools.SodChecker.ViewModels;
@@ -71,7 +73,14 @@ namespace PuregoldITToolkit
             // --- Service Desk Tool ---
             var sdService = new ServiceDeskService();
             var sdVm = new ServiceDeskViewModel(sdService);
-            var sdTool = new ServiceDeskTool(sdVm); 
+            var sdTool = new ServiceDeskTool(sdVm);
+
+            // --- Settings Tool ---
+            var settingsService = new SettingsService();
+            var settingsVm = new SettingsViewModel(settingsService);
+            var settingsTool = new SettingsTool(settingsVm);
+
+
 
             // ==========================================
             // 3. REGISTER TOOLS TO THE SIDEBAR
@@ -81,7 +90,8 @@ namespace PuregoldITToolkit
             registryService.RegisterTool(formsTool);
             registryService.RegisterTool(vendorTool);
             registryService.RegisterTool(pureposTool);
-            registryService.RegisterTool(sdTool); 
+            registryService.RegisterTool(sdTool);
+            registryService.RegisterTool(settingsTool);
 
 
             // ==========================================

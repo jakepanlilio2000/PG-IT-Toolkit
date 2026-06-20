@@ -2,6 +2,7 @@
 using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.ServiceDeskTool.Interfaces;
 using PuregoldITToolkit.Tools.ServiceDeskTool.Models;
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels; 
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -18,7 +19,6 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
     {
         private readonly IServiceDeskService _service;
         private readonly string _profilesFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StoreProfilesDatabase.json");
-        private readonly string _signatureFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EmailSignature.txt");
 
         private DateTime _cutoffStart = new DateTime(2026, 5, 20);
         private DateTime _cutoffEnd = new DateTime(2026, 6, 4);
@@ -33,13 +33,6 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
         {
             get => _cutoffEnd;
             set { if (SetProperty(ref _cutoffEnd, value)) UpdatePreviews(); }
-        }
-
-        private string _signatureHtml;
-        public string SignatureHtml
-        {
-            get => _signatureHtml;
-            set => SetProperty(ref _signatureHtml, value);
         }
 
         public ObservableCollection<OtEntryModel> OtEntries { get; } = new ObservableCollection<OtEntryModel>();
@@ -84,17 +77,16 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
         private bool _isBusy;
         public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
 
+        // Commands
         public ICommand AddOtRowCommand { get; }
         public ICommand RemoveOtRowCommand { get; }
         public ICommand ExportOtCommand { get; }
         public ICommand DraftEmailCommand { get; }
         public ICommand BrowseAttachmentCommand { get; }
-
         public ICommand SaveProfileCommand { get; }
         public ICommand DeleteProfileCommand { get; }
         public ICommand AddNewProfileCommand { get; }
         public ICommand ClearOutageFormCommand { get; }
-        public ICommand SaveSignatureCommand { get; }
 
         public ServiceDeskViewModel(IServiceDeskService service)
         {
@@ -110,7 +102,6 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
             DeleteProfileCommand = new RelayCommand(DeleteStoreProfile);
             AddNewProfileCommand = new RelayCommand(AddNewProfile);
             ClearOutageFormCommand = new RelayCommand(ClearOutageForm);
-            SaveSignatureCommand = new RelayCommand(SaveSignature);
 
             OtEntries.CollectionChanged += (s, e) => UpdatePreviews();
             OutageData.PropertyChanged += (s, e) => {
@@ -120,19 +111,16 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
             };
 
             LoadStoreDatabase();
-            LoadSignature();
             AddRow();
         }
 
-        private void LoadSignature()
+        // Fetches the signature directly from the global settings
+        private string GetGlobalSignature()
         {
-            if (File.Exists(_signatureFilePath))
-                SignatureHtml = File.ReadAllText(_signatureFilePath);
-        }
+            if (File.Exists(SettingsViewModel.SignatureFilePath))
+                return File.ReadAllText(SettingsViewModel.SignatureFilePath);
 
-        private void SaveSignature()
-        {
-            try { File.WriteAllText(_signatureFilePath, SignatureHtml); StatusMessage = "Signature HTML saved securely."; } catch { }
+            return string.Empty;
         }
 
         private void UpdatePreviews()
@@ -240,7 +228,10 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
             if (OtEntries.Count == 0) return;
             IsBusy = true;
             StatusMessage = "Generating Excel & Drafting OT email template...";
-            bool success = await _service.ExportOtReportAsync(OtEntries.ToList(), CutoffStart, CutoffEnd, SignatureHtml);
+
+            // Fetch global signature directly
+            bool success = await _service.ExportOtReportAsync(OtEntries.ToList(), CutoffStart, CutoffEnd, GetGlobalSignature());
+
             StatusMessage = success ? "Success! OT Draft opened in Thunderbird." : "Failed to create email draft.";
             IsBusy = false;
         }
@@ -249,7 +240,10 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
         {
             IsBusy = true;
             StatusMessage = "Drafting email template with attachment...";
-            bool success = await _service.DraftOutageEmailAsync(OutageData, SignatureHtml);
+
+            // Fetch global signature directly
+            bool success = await _service.DraftOutageEmailAsync(OutageData, GetGlobalSignature());
+
             StatusMessage = success ? "Success! Outage Draft opened in Thunderbird." : "Failed to create email draft.";
             IsBusy = false;
         }

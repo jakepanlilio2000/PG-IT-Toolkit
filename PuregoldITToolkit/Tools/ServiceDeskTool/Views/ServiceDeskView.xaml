@@ -62,6 +62,8 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <TextBlock Grid.Row="0" Text="Service Desk Utilities" FontSize="24" FontWeight="Light" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,15"/>
+
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
             <RadioButton x:Name="RbOtReport" Content="OT Report Generator" IsChecked="True" Style="{StaticResource SegmentedTab}"/>
             <RadioButton x:Name="RbOutageDrafter" Content="Broadband Outage Drafter" Style="{StaticResource SegmentedTab}"/>
@@ -79,7 +81,6 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <WrapPanel Grid.Row="0" Margin="0,0,0,20">
@@ -126,13 +127,6 @@
                             </DataGrid.Columns>
                         </DataGrid>
                     </Border>
-
-                    <StackPanel Grid.Row="3" Margin="0,20,0,0">
-                        <TextBlock Text="Raw HTML Signature (Persistent)" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,5"/>
-                        <TextBlock Text="This raw HTML code will be injected at the bottom of all generated OT and Outage emails." FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10"/>
-                        <TextBox Text="{Binding SignatureHtml, UpdateSourceTrigger=PropertyChanged}" Height="80" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" Background="{StaticResource BgApp}"/>
-                        <Button Command="{Binding SaveSignatureCommand}" Content="SAVE SIGNATURE TO CACHE" Style="{StaticResource SuccessButton}" Padding="15,8" HorizontalAlignment="Left" Margin="0,10,0,0"/>
-                    </StackPanel>
                 </Grid>
             </Border>
 

@@ -13,7 +13,11 @@
     xmlns:sdV="clr-namespace:PuregoldITToolkit.Tools.ServiceDeskTool.Views"
     xmlns:sdVm="clr-namespace:PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels"
     xmlns:sodV="clr-namespace:PuregoldITToolkit.Tools.SodChecker.Views"
-    xmlns:sodVm="clr-namespace:PuregoldITToolkit.Tools.SodChecker.ViewModels">
+    xmlns:sodVm="clr-namespace:PuregoldITToolkit.Tools.SodChecker.ViewModels"
+    xmlns:setV="clr-namespace:PuregoldITToolkit.Tools.SettingsTool.Views"
+    xmlns:setVm="clr-namespace:PuregoldITToolkit.Tools.SettingsTool.ViewModels"
+    
+    >
 
     <Application.Resources>
 
@@ -64,6 +68,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type sdVm:ServiceDeskViewModel}">
             <sdV:ServiceDeskView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type setVm:SettingsViewModel}">
+            <setV:SettingsView />
         </DataTemplate>
 
         <!--  ==========================================  -->

@@ -134,6 +134,14 @@
     <Compile Include="Tools\ServiceDeskTool\Views\ServiceDeskView.xaml.cs">
       <DependentUpon>ServiceDeskView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Tools\SettingsTool\Interfaces\ISettingsService.cs" />
+    <Compile Include="Tools\SettingsTool\Models\SettingsModel.cs" />
+    <Compile Include="Tools\SettingsTool\Services\SettingsService.cs" />
+    <Compile Include="Tools\SettingsTool\SettingsTool.cs" />
+    <Compile Include="Tools\SettingsTool\ViewModels\SettingsViewModel.cs" />
+    <Compile Include="Tools\SettingsTool\Views\SettingsView.xaml.cs">
+      <DependentUpon>SettingsView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Tools\SodCheckerTool.cs" />
     <Compile Include="Tools\SodChecker\Interfaces\ISodCheckerService.cs" />
     <Compile Include="Tools\SodChecker\Models\FileCheckStatus.cs" />
@@ -178,6 +186,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Tools\ServiceDeskTool\Views\ServiceDeskView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tools\SettingsTool\Views\SettingsView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
