@@ -62,6 +62,13 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
         public int ProgressValue { get => _progressValue; set => SetProperty(ref _progressValue, value); }
         public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
 
+        private string _filterCardLast4;
+        private string _filterMemberName;
+        private string _filterExactAmount;
+
+        public string FilterCardLast4 { get => _filterCardLast4; set => SetProperty(ref _filterCardLast4, value); }
+        public string FilterMemberName { get => _filterMemberName; set => SetProperty(ref _filterMemberName, value); }
+        public string FilterExactAmount { get => _filterExactAmount; set => SetProperty(ref _filterExactAmount, value); }
         public ICommand ProcessCommand { get; }
 
         public EJConsolidatorViewModel(IEJConsolidatorService consolidatorService)
@@ -152,7 +159,10 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                     SecondReceiptOnly = this.SecondReceiptOnly,
                     GcashBarcodeOnly = this.GcashBarcodeOnly,
                     HacsOnlineOnly = this.HacsOnlineOnly,
-                    XReadZReadOnly = this.XReadZReadOnly
+                    XReadZReadOnly = this.XReadZReadOnly,
+                    FilterCardLast4 = this.FilterCardLast4,
+                    FilterMemberName = this.FilterMemberName,
+                    FilterExactAmount = this.FilterExactAmount
                 };
 
                 for (var d = StartDate.Date; d <= EndDate.Date; d = d.AddDays(1)) options.TargetDates.Add(d);

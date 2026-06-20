@@ -102,11 +102,9 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             Parallel.ForEach(txtFiles, file =>
             {
                 string fileContent = File.ReadAllText(file, Encoding.UTF8);
-
                 if (options.IsModeTrxFinder && !string.IsNullOrWhiteSpace(options.TargetTrxNumber))
                 {
-                    if (fileContent.IndexOf(options.TargetTrxNumber.Trim(), StringComparison.OrdinalIgnoreCase) < 0)
-                        return;
+                    if (fileContent.IndexOf(options.TargetTrxNumber.Trim(), StringComparison.OrdinalIgnoreCase) < 0) return;
                 }
 
                 var blocks = Regex.Split(fileContent, @"(?=Puregold Price Club|SECOND RECEIPT)", RegexOptions.IgnoreCase);
@@ -117,7 +115,15 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                     if (string.IsNullOrWhiteSpace(block)) continue;
                     if (_filterService.IsMatch(block, options))
                     {
-                        filteredReceipts.Add(block.Trim());
+                        string cardMatch = Regex.Match(block, @"Card:\s*\d{12}(\d{4})").Groups[1].Value;
+                        string memberMatch = Regex.Match(block, @"Member:\s*([^\n\r]+)").Groups[1].Value.Trim();
+                        string amountMatch = Regex.Match(block, @"TOTAL\s*[\d,.]+\s*([\d,.]+)").Groups[1].Value.Trim();
+
+                        string enhancedBlock = block.Trim() + Environment.NewLine +
+                                               $"[EXTRACTED DATA] Card: ****{cardMatch} | Member: {memberMatch} | Amount: {amountMatch}" +
+                                               Environment.NewLine;
+
+                        filteredReceipts.Add(enhancedBlock);
                     }
                 }
             });
@@ -133,18 +139,12 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 {
                     foreach (var receipt in finalReceiptList)
                     {
-                        using (StringReader reader = new StringReader(receipt))
-                        {
-                            string line;
-                            while ((line = reader.ReadLine()) != null) writer.WriteLine(line);
-                        }
-                        writer.WriteLine();
+                        writer.WriteLine(receipt);
                         writer.WriteLine(new string('-', 50));
                         writer.WriteLine();
                     }
                 }
             }
-
             return finalReceiptList.Count;
         }
 
@@ -315,7 +315,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             }
             catch (Exception ex)
             {
-                // This will now properly output the WinSCP missing executable error
                 progress?.Report($"  [Failed] Fallback Connection Error: {ex.Message}");
             }
             return false;

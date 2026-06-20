@@ -132,12 +132,23 @@
             <StackPanel>
                 <TextBlock Text="Extraction Filters &amp; Format" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
 
+                
                 <WrapPanel Margin="0,0,0,15">
                     <ToggleButton Content="Second Receipt Only" IsChecked="{Binding SecondReceiptOnly}" Style="{StaticResource TileToggleStyle}" />
                     <ToggleButton Content="GCash Barcodes Only" IsChecked="{Binding GcashBarcodeOnly}" Style="{StaticResource TileToggleStyle}" />
                     <ToggleButton Content="HACS Online Only" IsChecked="{Binding HacsOnlineOnly}" Style="{StaticResource TileToggleStyle}" />
                     <ToggleButton Content="X-Read / Z-Read Only" IsChecked="{Binding XReadZReadOnly}" Style="{StaticResource TileToggleStyle}" />
                     <ToggleButton Content="Merge Output Into Single File" IsChecked="{Binding MergeAllIntoOneFile}" Style="{StaticResource TileToggleStyle}" />
+                </WrapPanel>
+                <WrapPanel Margin="0,5">
+                    <TextBlock Text="Card (Last 4):" Width="120" Style="{StaticResource FormLabel}"/>
+                    <TextBox Text="{Binding FilterCardLast4}" Width="80" Margin="0,0,25,0"/>
+
+                    <TextBlock Text="Member Name:" Width="120" Style="{StaticResource FormLabel}"/>
+                    <TextBox Text="{Binding FilterMemberName}" Width="160" Margin="0,0,25,0"/>
+
+                    <TextBlock Text="Exact Amount:" Width="120" Style="{StaticResource FormLabel}"/>
+                    <TextBox Text="{Binding FilterExactAmount}" Width="160"/>
                 </WrapPanel>
 
                 <WrapPanel Margin="0,5">
