@@ -5,102 +5,190 @@
 
     <UserControl.Resources>
         <conv:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <Style x:Key="SegmentedTab" TargetType="RadioButton">
+            <Setter Property="Background" Value="{StaticResource BgApp}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="Padding" Value="20,12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="4" Margin="0,0,8,0" BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{StaticResource BgHighlight}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrandPrimary}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="{StaticResource BrandPrimary}"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource BrandPrimary}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="FormLabel" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="5*"/>
-            <ColumnDefinition Width="5*"/>
+            <ColumnDefinition Width="55*"/>
+            <ColumnDefinition Width="45*"/>
         </Grid.ColumnDefinitions>
-        <TabControl Grid.Row="1" Grid.Column="0" Margin="0,0,20,0" Background="Transparent" BorderThickness="0">
-            <TabItem Header="Auto Permission.sh" FontWeight="Bold">
-                <Border Style="{StaticResource CardStyle}" Margin="0,10,0,0">
+
+        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,15">
+            <RadioButton x:Name="RbAutoPerm" Content="Auto Permission.sh" IsChecked="True" Style="{StaticResource SegmentedTab}"/>
+            <RadioButton x:Name="RbManualEj" Content="Manual EJ Save" Style="{StaticResource SegmentedTab}"/>
+            <RadioButton x:Name="RbCli" Content="Remote CLI (SSH)" Style="{StaticResource SegmentedTab}"/>
+            <RadioButton x:Name="RbEod" Content="EOD Generator" Style="{StaticResource SegmentedTab}"/>
+        </StackPanel>
+
+        <Grid Grid.Row="2" Grid.Column="0" Margin="0,0,20,0">
+
+            <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbAutoPerm, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="Network Config (Used by CLI as well)" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                    <WrapPanel Margin="0,0,0,20">
+                        <StackPanel Margin="0,0,20,0" Width="160">
+                            <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
+                            <TextBox Text="{Binding PermissionData.LiveServerIp}"/>
+                        </StackPanel>
+                        <StackPanel Width="110">
+                            <TextBlock Text="Total POS Lanes" Style="{StaticResource FormLabel}"/>
+                            <TextBox Text="{Binding PermissionData.TotalLanes}"/>
+                        </StackPanel>
+                    </WrapPanel>
+
+                    <TextBlock Text="CONSO Credentials" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,15,0,15" FontSize="14"/>
+                    <WrapPanel Margin="0,0,0,25">
+                        <StackPanel Margin="0,0,20,0" Width="160">
+                            <TextBlock Text="Username" Style="{StaticResource FormLabel}"/>
+                            <TextBox Text="{Binding PermissionData.ConsoUser}"/>
+                        </StackPanel>
+                        <StackPanel Width="160">
+                            <TextBlock Text="Password" Style="{StaticResource FormLabel}"/>
+                            <TextBox Text="{Binding PermissionData.ConsoPassword}"/>
+                        </StackPanel>
+                    </WrapPanel>
+
+                    <Button Command="{Binding RunPermissionCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE PARALLEL PERMISSIONS" Style="{StaticResource DangerButton}" Padding="20,12"/>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbManualEj, Converter={StaticResource BoolToVis}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
                     <StackPanel>
-                        <TextBlock Text="Network Config" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                        <TextBlock Text="Store &amp; Network" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                        <WrapPanel Margin="0,0,0,20">
+                            <StackPanel Margin="0,0,20,0" Width="90">
+                                <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding EjData.StoreCode}" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,20,0" Width="130">
+                                <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding EjData.LiveServerIp}"/>
+                            </StackPanel>
+                            <StackPanel Width="130">
+                                <TextBlock Text="FTP Server" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding EjData.FtpServer}"/>
+                            </StackPanel>
+                        </WrapPanel>
+
+                        <TextBlock Text="Date Range" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,15" FontSize="14"/>
                         <WrapPanel Margin="0,0,0,20">
                             <StackPanel Margin="0,0,20,0" Width="160">
-                                <TextBlock Text="Live Server IP" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding PermissionData.LiveServerIp}"/>
-                            </StackPanel>
-                            <StackPanel Width="110">
-                                <TextBlock Text="Total POS Lanes" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding PermissionData.TotalLanes}"/>
-                            </StackPanel>
-                        </WrapPanel>
-
-                        <TextBlock Text="CONSO Credentials" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,15,0,15" FontSize="14"/>
-                        <WrapPanel Margin="0,0,0,25">
-                            <StackPanel Margin="0,0,20,0" Width="160">
-                                <TextBlock Text="Username" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding PermissionData.ConsoUser}"/>
+                                <TextBlock Text="From Date" Style="{StaticResource FormLabel}"/>
+                                <DatePicker SelectedDate="{Binding EjData.DateFrom}" Height="34" Padding="5"/>
                             </StackPanel>
                             <StackPanel Width="160">
-                                <TextBlock Text="Password" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding PermissionData.ConsoPassword}"/>
+                                <TextBlock Text="To Date" Style="{StaticResource FormLabel}"/>
+                                <DatePicker SelectedDate="{Binding EjData.DateTo}" Height="34" Padding="5"/>
                             </StackPanel>
                         </WrapPanel>
 
-                        <Button Command="{Binding RunPermissionCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE PERMISSIONS" Style="{StaticResource DangerButton}"/>
+                        <TextBlock Text="CONSO Credentials" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,15" FontSize="14"/>
+                        <WrapPanel Margin="0,0,0,25">
+                            <StackPanel Margin="0,0,20,0" Width="160">
+                                <TextBlock Text="Username" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding EjData.ConsoUser}"/>
+                            </StackPanel>
+                            <StackPanel Width="160">
+                                <TextBlock Text="Password" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding EjData.ConsoPassword}"/>
+                            </StackPanel>
+                        </WrapPanel>
+
+                        <Button Command="{Binding RunEjSaveCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="SCAN &amp; SYNC EJ ARCHIVES" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="20,12" BorderThickness="0" Cursor="Hand"/>
                     </StackPanel>
-                </Border>
-            </TabItem>
+                </ScrollViewer>
+            </Border>
 
-            <TabItem Header="Manual EJ Save" FontWeight="Bold" Width="200">
-                <Border Style="{StaticResource CardStyle}" Margin="0,10,0,0">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
-                        <StackPanel>
-                            <TextBlock Text="Store &amp; Network" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
-                            <WrapPanel Margin="0,0,0,20">
-                                <StackPanel Margin="0,0,20,0" Width="90">
-                                    <TextBlock Text="Store Code" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                    <TextBox Text="{Binding EjData.StoreCode}" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Margin="0,0,20,0" Width="130">
-                                    <TextBlock Text="Live Server IP" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                    <TextBox Text="{Binding EjData.LiveServerIp}"/>
-                                </StackPanel>
-                                <StackPanel Width="130">
-                                    <TextBlock Text="FTP Server" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                    <TextBox Text="{Binding EjData.FtpServer}"/>
-                                </StackPanel>
-                            </WrapPanel>
+            <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbCli, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="Specific IP Target" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
 
-                            <TextBlock Text="Date Range" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,15" FontSize="14"/>
-                            <WrapPanel Margin="0,0,0,20">
-                                <StackPanel Margin="0,0,20,0" Width="160">
-                                    <TextBlock Text="From Date" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                    <DatePicker SelectedDate="{Binding EjData.DateFrom}" Height="34" Padding="5"/>
-                                </StackPanel>
-                                <StackPanel Width="160">
-                                    <TextBlock Text="To Date" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                    <DatePicker SelectedDate="{Binding EjData.DateTo}" Height="34" Padding="5"/>
-                                </StackPanel>
-                            </WrapPanel>
-
-                            <TextBlock Text="CONSO Credentials" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,15" FontSize="14"/>
-                            <WrapPanel Margin="0,0,0,25">
-                                <StackPanel Margin="0,0,20,0" Width="160">
-                                    <TextBlock Text="Username" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                    <TextBox Text="{Binding EjData.ConsoUser}"/>
-                                </StackPanel>
-                                <StackPanel Width="160">
-                                    <TextBlock Text="Password" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
-                                    <TextBox Text="{Binding EjData.ConsoPassword}"/>
-                                </StackPanel>
-                            </WrapPanel>
-
-                            <Button Command="{Binding RunEjSaveCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="SCAN &amp; SYNC EJ ARCHIVES" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="20,12" BorderThickness="0" Cursor="Hand"/>
+                    <WrapPanel Margin="0,0,0,15">
+                        <StackPanel Margin="0,0,15,10" Width="130">
+                            <TextBlock Text="IP Address" Style="{StaticResource FormLabel}"/>
+                            <TextBox Text="{Binding CliTargetIp}"/>
                         </StackPanel>
-                    </ScrollViewer>
-                </Border>
-            </TabItem>
-        </TabControl>
+                        <StackPanel Margin="0,0,15,10" Width="110">
+                            <TextBlock Text="Username" Style="{StaticResource FormLabel}"/>
+                            <TextBox Text="{Binding CliUsername}"/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,0,10" Width="110">
+                            <TextBlock Text="Password" Style="{StaticResource FormLabel}"/>
+                            <TextBox Text="{Binding CliPassword}"/>
+                        </StackPanel>
+                    </WrapPanel>
 
-        <Border Grid.Row="1" Grid.Column="1" Background="#2C3E50" CornerRadius="8" Padding="15" Margin="0,32,0,0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,25">
+                        <Button Command="{Binding RunSingleCliCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE ON SPECIFIC IP" Style="{StaticResource DangerButton}" Padding="15,8" Margin="0,0,10,0"/>
+                        <Button Command="{Binding OpenPuttyCommand}" Content="OPEN INTERACTIVE PUTTY" Style="{StaticResource SuccessButton}" Padding="15,8"/>
+                    </StackPanel>
+
+                    <TextBlock Text="Command to Execute" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,10" FontSize="14"/>
+                    <TextBox Text="{Binding CliCommand}" Height="60" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" Background="{StaticResource BgApp}" Margin="0,0,0,25"/>
+
+                    <TextBlock Text="Batch Execution" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                    <TextBlock Text="Uses IP prefix and Total Lanes from 'Auto Permission' tab." FontSize="11" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,-10,0,15"/>
+
+                    <StackPanel Orientation="Horizontal">
+                        <Button Command="{Binding RunAllPosCliCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE ON ALL POS LANES" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,8" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0"/>
+                        <Button Command="{Binding RunConsoCliCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE ON CONSO" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,8" BorderThickness="0" Cursor="Hand"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbEod, Converter={StaticResource BoolToVis}}">
+                <Grid>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="🛠️" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                        <TextBlock Text="EOD Generator is under construction." FontSize="18" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Grid.Column="1" Background="#2C3E50" CornerRadius="8" Padding="15">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>

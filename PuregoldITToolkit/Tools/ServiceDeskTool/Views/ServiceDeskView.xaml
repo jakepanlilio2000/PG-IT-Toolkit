@@ -62,8 +62,6 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Service Desk Utilities" FontSize="24" FontWeight="Light" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,15"/>
-
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
             <RadioButton x:Name="RbOtReport" Content="OT Report Generator" IsChecked="True" Style="{StaticResource SegmentedTab}"/>
             <RadioButton x:Name="RbOutageDrafter" Content="Broadband Outage Drafter" Style="{StaticResource SegmentedTab}"/>
