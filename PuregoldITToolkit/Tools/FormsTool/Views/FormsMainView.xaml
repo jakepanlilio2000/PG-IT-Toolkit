@@ -5,7 +5,6 @@
              xmlns:views="clr-namespace:PuregoldITToolkit.Tools.FormsTool.Views">
 
     <UserControl.Resources>
-        <!-- Mapping ViewModels to Views -->
         <DataTemplate DataType="{x:Type viewModels:InfViewModel}">
             <views:InfView/>
         </DataTemplate>
@@ -19,25 +18,32 @@
             <views:TsrfView/>
         </DataTemplate>
 
-        <!-- Segmented Tab Style -->
         <Style x:Key="SegmentedTab" TargetType="RadioButton">
-            <Setter Property="Background" Value="#2F3640"/>
-            <Setter Property="Foreground" Value="#7F8FA6"/>
-            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="Background" Value="{StaticResource BgApp}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="Padding" Value="25,12"/>
             <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="4" Margin="0,0,5,0">
+                        <Border Background="{TemplateBinding Background}" 
+                                Padding="{TemplateBinding Padding}" 
+                                CornerRadius="4" 
+                                Margin="0,0,8,0"
+                                BorderBrush="{StaticResource BorderLight}"
+                                BorderThickness="1">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#353B48"/>
+                                <Setter Property="Background" Value="{StaticResource BgHighlight}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrandPrimary}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Background" Value="#E1B12C"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Background" Value="{StaticResource BrandPrimary}"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource BrandPrimary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -52,8 +58,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- TOP NAVIGATION TABS -->
-        <Border Grid.Row="0" Background="#F5F6FA" Padding="15,15,15,5" BorderBrush="#DCDDE1" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" Background="{StaticResource BgCard}" Padding="20,15,20,10" BorderBrush="{StaticResource BorderLight}" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal">
                 <RadioButton Content="INF (Item Not Found)" IsChecked="{Binding IsInfSelected}" Style="{StaticResource SegmentedTab}"/>
                 <RadioButton Content="OB (Official Business)" IsChecked="{Binding IsObSelected}" Style="{StaticResource SegmentedTab}"/>
@@ -62,7 +67,6 @@
             </StackPanel>
         </Border>
 
-        <!-- DYNAMIC FORM CONTENT -->
-        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" />
+        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" Padding="15" />
     </Grid>
 </UserControl>

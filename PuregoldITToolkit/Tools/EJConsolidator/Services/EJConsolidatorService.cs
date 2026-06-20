@@ -30,11 +30,9 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             string masterFile = Path.Combine(sodPath, $"Master_Consolidated_{options.StoreCode}_{DateTime.Now:yyyyMMdd}.txt");
             string trxFile = Path.Combine(sodPath, $"{options.TargetTrxNumber}.txt");
 
-            // Replace the old txt when processing new EJ
             if (options.IsModeTrxFinder && File.Exists(trxFile)) File.Delete(trxFile);
             if (!options.IsModeTrxFinder && options.MergeAllIntoOneFile && File.Exists(masterFile)) File.Delete(masterFile);
 
-            // Setup Local Offline Cache
             string cacheRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EJ_Cache", options.StoreCode);
             Directory.CreateDirectory(cacheRoot);
 
@@ -78,7 +76,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
 
                     if (Directory.Exists(dateCacheDir))
                     {
-                        // Delete daily files before merge if applicable
                         string dailyFile = Path.Combine(sodPath, $"Merged_{options.StoreCode}_{dateStr}.txt");
                         if (!options.IsModeTrxFinder && !options.MergeAllIntoOneFile && File.Exists(dailyFile)) File.Delete(dailyFile);
 
@@ -100,33 +97,24 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             if (txtFiles.Length == 0) return 0;
 
             int rawReceiptCount = 0;
-
-            // Thread-safe collection for parallel processing
             var filteredReceipts = new System.Collections.Concurrent.ConcurrentBag<string>();
 
-            // MASSIVE SPEEDUP: Process all POS lane files simultaneously using all CPU cores
             Parallel.ForEach(txtFiles, file =>
             {
                 string fileContent = File.ReadAllText(file, Encoding.UTF8);
 
-                // PRE-FILTER BYPASS: If searching for a transaction, and this specific POS file doesn't have it,
-                // instantly skip the file without doing ANY regex math. This saves seconds of load time!
                 if (options.IsModeTrxFinder && !string.IsNullOrWhiteSpace(options.TargetTrxNumber))
                 {
                     if (fileContent.IndexOf(options.TargetTrxNumber.Trim(), StringComparison.OrdinalIgnoreCase) < 0)
                         return;
                 }
 
-                // Split only this specific file (Requires a fraction of the RAM)
                 var blocks = Regex.Split(fileContent, @"(?=Puregold Price Club|SECOND RECEIPT)", RegexOptions.IgnoreCase);
-
-                // Safely add to total count across threads
                 System.Threading.Interlocked.Add(ref rawReceiptCount, blocks.Length);
 
                 foreach (var block in blocks)
                 {
                     if (string.IsNullOrWhiteSpace(block)) continue;
-
                     if (_filterService.IsMatch(block, options))
                     {
                         filteredReceipts.Add(block.Trim());
@@ -143,7 +131,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
 
                 using (StreamWriter writer = new StreamWriter(targetFile, append: true, encoding: Encoding.UTF8))
                 {
-                    // Optional: You can sort the finalReceiptList here if you want them in a specific order
                     foreach (var receipt in finalReceiptList)
                     {
                         using (StringReader reader = new StringReader(receipt))
@@ -164,9 +151,13 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
         private bool DownloadFromPrimaryFtp(EJFilterOptions options, string dateStr, string tempDir, IProgress<string> progress)
         {
             bool connected = false;
+            Exception lastException = null;
 
             using (Session session = new Session())
             {
+                // Explicitly define executable path to prevent SessionLocalException
+                // session.ExecutablePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WinSCP.exe");
+
                 for (int i = 1; i <= 12; i++)
                 {
                     try
@@ -181,10 +172,18 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         connected = true;
                         break;
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        // Capture the exception instead of blindly swallowing it
+                        lastException = ex;
+                    }
                 }
 
-                if (!connected) return false;
+                if (!connected)
+                {
+                    progress?.Report($"  [Failed] Primary FTP Connection Error: {lastException?.Message}");
+                    return false;
+                }
 
                 try
                 {
@@ -258,7 +257,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         string localZipPath = Path.Combine(tempDir, "merged_fallback.zip");
                         session.GetFiles(doneZipPath, localZipPath).Check();
 
-                        // CRITICAL FIX: Safe Inner Extraction for Fallback
                         string innerDir = Path.Combine(tempDir, "Inner");
                         Directory.CreateDirectory(innerDir);
                         ExtractZipSafe(localZipPath, innerDir, progress);
@@ -317,7 +315,8 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             }
             catch (Exception ex)
             {
-                progress?.Report($"  Fallback Connection Error: {ex.Message}");
+                // This will now properly output the WinSCP missing executable error
+                progress?.Report($"  [Failed] Fallback Connection Error: {ex.Message}");
             }
             return false;
         }

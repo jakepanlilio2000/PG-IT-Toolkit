@@ -7,23 +7,31 @@
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
 
         <Style x:Key="SegmentedTab" TargetType="RadioButton">
-            <Setter Property="Background" Value="#2F3640"/>
-            <Setter Property="Foreground" Value="#7F8FA6"/>
-            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="Background" Value="{StaticResource BgApp}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="Padding" Value="25,12"/>
             <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="4" Margin="0,0,5,0">
+                        <Border Background="{TemplateBinding Background}" 
+                                Padding="{TemplateBinding Padding}" 
+                                CornerRadius="4" 
+                                Margin="0,0,8,0"
+                                BorderBrush="{StaticResource BorderLight}"
+                                BorderThickness="1">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#353B48"/>
+                                <Setter Property="Background" Value="{StaticResource BgHighlight}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrandPrimary}"/>
                             </Trigger>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Background" Value="#0097E6"/>
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Background" Value="{StaticResource BrandPrimary}"/>
+                                <Setter Property="Foreground" Value="#FFFFFF"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource BrandPrimary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -32,7 +40,7 @@
         </Style>
 
         <DataTemplate x:Key="StatusCellTemplate" DataType="{x:Type models:FileCheckStatus}">
-            <Border x:Name="BgBorder" CornerRadius="4" Padding="5" Margin="2">
+            <Border x:Name="BgBorder" CornerRadius="4" Padding="6" Margin="2">
                 <StackPanel>
                     <TextBlock x:Name="TxtStatus" Text="NO" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" FontSize="11"/>
                     <TextBlock x:Name="TxtMeta" Text="{Binding FormattedSize}" Foreground="#E0E0E0" HorizontalAlignment="Center" FontSize="9" Margin="0,2,0,0"/>
@@ -40,25 +48,26 @@
             </Border>
             <DataTemplate.Triggers>
                 <DataTrigger Binding="{Binding State}" Value="Missing">
-                    <Setter TargetName="BgBorder" Property="Background" Value="#E74C3C"/>
+                    <Setter TargetName="BgBorder" Property="Background" Value="{StaticResource BtnDanger}"/>
                     <Setter TargetName="TxtStatus" Property="Text" Value="NO"/>
                     <Setter TargetName="TxtMeta" Property="Visibility" Value="Collapsed"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding State}" Value="Ok">
-                    <Setter TargetName="BgBorder" Property="Background" Value="#2ECC71"/>
+                    <Setter TargetName="BgBorder" Property="Background" Value="{StaticResource BtnSuccess}"/>
                     <Setter TargetName="TxtStatus" Property="Text" Value="YES ✓"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding State}" Value="Rerun">
-                    <Setter TargetName="BgBorder" Property="Background" Value="#F39C12"/>
+                    <Setter TargetName="BgBorder" Property="Background" Value="{StaticResource BrandAccent}"/>
                     <Setter TargetName="TxtStatus" Property="Text" Value="RERUN ↻"/>
+                    <Setter TargetName="TxtStatus" Property="Foreground" Value="{StaticResource BrandPrimaryDark}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding State}" Value="Empty">
-                    <Setter TargetName="BgBorder" Property="Background" Value="#F1C40F"/>
+                    <Setter TargetName="BgBorder" Property="Background" Value="{StaticResource BtnWarning}"/>
                     <Setter TargetName="TxtStatus" Property="Text" Value="EMPTY ⚠"/>
-                    <Setter TargetName="TxtStatus" Property="Foreground" Value="Black"/>
+                    <Setter TargetName="TxtStatus" Property="Foreground" Value="#FFFFFF"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding State}" Value="Skipped">
-                    <Setter TargetName="BgBorder" Property="Background" Value="#BDC3C7"/>
+                    <Setter TargetName="BgBorder" Property="Background" Value="{StaticResource TextSecondary}"/>
                     <Setter TargetName="TxtStatus" Property="Text" Value="SKIPPED"/>
                     <Setter TargetName="TxtMeta" Property="Visibility" Value="Collapsed"/>
                 </DataTrigger>
@@ -76,6 +85,7 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                
                 <StackPanel Orientation="Horizontal">
                     <RadioButton Content="Daily Overview" IsChecked="{Binding IsModeDaily}" Style="{StaticResource SegmentedTab}"/>
                     <RadioButton Content="Store History" IsChecked="{Binding IsModeHistory}" Style="{StaticResource SegmentedTab}"/>
@@ -83,7 +93,7 @@
                 </StackPanel>
             </StackPanel>
 
-            <Border Grid.Row="1" Background="#F5F6FA" CornerRadius="6" Padding="15" Margin="0,0,0,15" BorderBrush="#DCDDE1" BorderThickness="1">
+            <Border Grid.Row="1" Style="{StaticResource CardStyle}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -91,150 +101,149 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Visibility="{Binding IsModeDaily, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="Target Date:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <DatePicker SelectedDate="{Binding TargetDate}" Width="150"/>
-                        <TextBlock Text="* Scans all stores from your config for the selected date." Foreground="#7F8FA6" FontStyle="Italic" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                        <TextBlock Text="Target Date:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{StaticResource TextPrimary}"/>
+                        <DatePicker SelectedDate="{Binding TargetDate}" Width="160" Height="34" Padding="5"/>
+                        <TextBlock Text="* Scans all stores from your config for the selected date." Foreground="{StaticResource TextSecondary}" FontStyle="Italic" VerticalAlignment="Center" Margin="20,0,0,0"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Visibility="{Binding IsModeHistory, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="Select Store:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <ComboBox ItemsSource="{Binding AvailableStores}" SelectedItem="{Binding SelectedHistoryStore}" DisplayMemberPath="StoreName" Width="150" Margin="0,0,15,0"/>
+                        <TextBlock Text="Select Store:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{StaticResource TextPrimary}"/>
+                        <ComboBox ItemsSource="{Binding AvailableStores}" SelectedItem="{Binding SelectedHistoryStore}" DisplayMemberPath="StoreName" Width="160" Height="34" Margin="0,0,20,0" Padding="5"/>
 
-                        <TextBlock Text="Date Range:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <DatePicker SelectedDate="{Binding StartDate}" Width="120" Margin="0,0,10,0"/>
-                        <TextBlock Text="to" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <DatePicker SelectedDate="{Binding EndDate}" Width="120"/>
+                        <TextBlock Text="Date Range:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{StaticResource TextPrimary}"/>
+                        <DatePicker SelectedDate="{Binding StartDate}" Width="130" Height="34" Margin="0,0,12,0" Padding="5"/>
+                        <TextBlock Text="to" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{StaticResource TextSecondary}"/>
+                        <DatePicker SelectedDate="{Binding EndDate}" Width="130" Height="34" Padding="5"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Visibility="{Binding IsModeTargeted, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="Specific Log:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{StaticResource TextPrimary}"/>
+                        <ComboBox ItemsSource="{Binding AvailableColumns}" SelectedItem="{Binding SelectedColumn}" Width="130" Height="34" Margin="0,0,20,0" Padding="5"/>
 
-                        <TextBlock Text="Specific Log:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <ComboBox ItemsSource="{Binding AvailableColumns}" SelectedItem="{Binding SelectedColumn}" Width="100" Margin="0,0,15,0" Padding="5,2"/>
+                        <TextBlock Text="Date Range:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{StaticResource TextPrimary}"/>
+                        <DatePicker SelectedDate="{Binding StartDate}" Width="120" Height="34" Margin="0,0,12,0" Padding="5"/>
+                        <TextBlock Text="to" VerticalAlignment="Center" Margin="0,0,12,0" Foreground="{StaticResource TextSecondary}"/>
+                        <DatePicker SelectedDate="{Binding EndDate}" Width="120" Height="34" Padding="5"/>
 
-                        <TextBlock Text="Date Range:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <DatePicker SelectedDate="{Binding StartDate}" Width="110" Margin="0,0,10,0"/>
-                        <TextBlock Text="to" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <DatePicker SelectedDate="{Binding EndDate}" Width="110"/>
-
-                        <TextBlock Text="* Scans a single column across all stores and dates." Foreground="#7F8FA6" FontStyle="Italic" VerticalAlignment="Center" Margin="15,0,0,0"/>
+                        <TextBlock Text="* Scans a single column across all stores and dates." Foreground="{StaticResource TextSecondary}" FontStyle="Italic" VerticalAlignment="Center" Margin="20,0,0,0"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <Button Command="{Binding ToggleStoreManagerCommand}" Content="⚙️ CONFIG" Background="#7F8FA6" Foreground="White" FontWeight="Bold" Padding="15,8" Margin="0,0,10,0" BorderThickness="0" Cursor="Hand"/>
-                        <Button Command="{Binding ScanCommand}" Content="START SCAN" Background="#44BD32" Foreground="White" FontWeight="Bold" Padding="25,8" BorderThickness="0" Cursor="Hand"/>
+                        <Button Command="{Binding ToggleStoreManagerCommand}" Content="⚙️ CONFIG" Background="{StaticResource TextSecondary}" Foreground="#FFFFFF" FontWeight="Bold" Padding="20,10" Margin="0,0,12,0"/>
+                        <Button Command="{Binding ScanCommand}" Content="START SCAN" Style="{StaticResource DangerButton}" Padding="30,10"/>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <StackPanel Grid.Row="2" Margin="0,0,0,10">
-                <TextBlock Text="{Binding StatusMessage}" Foreground="#0097E6" FontWeight="Bold" FontSize="11" Margin="0,0,0,5"/>
-                <ProgressBar Value="{Binding ScanProgress}" Height="4" Background="#DCDDE1" Foreground="#44BD32" BorderThickness="0" Maximum="100"/>
+            <StackPanel Grid.Row="2" Margin="0,0,0,12">
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" FontSize="12" Margin="0,0,0,8"/>
+                <ProgressBar Value="{Binding ScanProgress}" Height="6" Background="{StaticResource BorderLight}" Foreground="{StaticResource BrandPrimary}" BorderThickness="0" Maximum="100"/>
             </StackPanel>
 
-            <DataGrid Grid.Row="3" ItemsSource="{Binding StoreResults}" AutoGenerateColumns="False" CanUserAddRows="False" 
-                      HeadersVisibility="Column" Background="White" RowBackground="White" AlternatingRowBackground="#F5F6FA"
-                      BorderBrush="#DCDDE1" BorderThickness="1" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#ECF0F1">
-
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="ID / Date" Binding="{Binding DisplayId}" FontWeight="Bold" Width="90" IsReadOnly="True"/>
-                    <DataGridTextColumn Header="Name / Day" Binding="{Binding DisplayName}" Width="160" IsReadOnly="True"/>
-
-                    <DataGridTemplateColumn Header="EJ" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding EjStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Pollog" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding PollogStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="CRM" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding CrmStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Promo" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding PromoStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="BIR" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding BirStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="NonTrade" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding NonTradeStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="DOS Log" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding DosStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Mob Prc" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding MobilePriceStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="PlusKu" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding PlusKuPriceStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Reg Prc" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding RegPriceStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="SIS98" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding Sis98Status}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="ShelfT" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding ShelftagStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="Kiosk" Width="*">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <ContentControl Content="{Binding KioskStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
+            <Border Grid.Row="3" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource BgCard}">
+                <DataGrid ItemsSource="{Binding StoreResults}" AutoGenerateColumns="False" CanUserAddRows="False" 
+                          HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}"
+                          BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID / Date" Binding="{Binding DisplayId}" FontWeight="Bold" Width="100" IsReadOnly="True"/>
+                        <DataGridTextColumn Header="Name / Day" Binding="{Binding DisplayName}" Width="170" IsReadOnly="True"/>
+                        <DataGridTemplateColumn Header="EJ" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding EjStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Pollog" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding PollogStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="CRM" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding CrmStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Promo" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding PromoStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="BIR" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding BirStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="NonTrade" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding NonTradeStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="DOS Log" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding DosStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Mob Prc" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding MobilePriceStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="PlusKu" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding PlusKuPriceStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Reg Prc" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding RegPriceStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="SIS98" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding Sis98Status}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="ShelfT" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding ShelftagStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Kiosk" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ContentControl Content="{Binding KioskStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
         </Grid>
 
-        <Grid Background="#99000000">
+        <Grid Background="#CC000000">
             <Grid.Style>
                 <Style TargetType="Grid">
                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -246,9 +255,9 @@
                 </Style>
             </Grid.Style>
 
-            <Border Background="White" Width="550" Height="450" CornerRadius="8" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Border Background="{StaticResource BgCard}" Width="650" Height="550" CornerRadius="8" Padding="25" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Border.Effect>
-                    <DropShadowEffect Color="Black" Opacity="0.3" BlurRadius="15"/>
+                    <DropShadowEffect Color="Black" Opacity="0.3" BlurRadius="20"/>
                 </Border.Effect>
                 <Grid>
                     <Grid.RowDefinitions>
@@ -257,42 +266,44 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <Grid Grid.Row="0" Margin="0,0,0,15">
-                        <TextBlock Text="Store Configuration Manager" FontSize="18" FontWeight="Bold" Foreground="#2F3640"/>
-                        <Button Command="{Binding ToggleStoreManagerCommand}" Content="✕" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontSize="16" Cursor="Hand" Foreground="#7F8FA6"/>
+                    <Grid Grid.Row="0" Margin="0,0,0,20">
+                        <TextBlock Text="Store Configuration Manager" FontSize="20" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}"/>
+                        <Button Command="{Binding ToggleStoreManagerCommand}" Content="✕" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" FontSize="18" Cursor="Hand" Foreground="{StaticResource TextSecondary}" Padding="5"/>
                     </Grid>
 
-                    <Border Grid.Row="1" Background="#F5F6FA" Padding="10" CornerRadius="6" Margin="0,0,0,15">
+                    <Border Grid.Row="1" Background="{StaticResource BgApp}" Padding="15" CornerRadius="6" Margin="0,0,0,20" BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
                         <WrapPanel VerticalAlignment="Center">
-                            <TextBlock Text="Code:" VerticalAlignment="Center" Margin="0,0,5,0" FontWeight="SemiBold"/>
-                            <TextBox Text="{Binding NewStore.StoreCode, UpdateSourceTrigger=PropertyChanged}" Width="50" Margin="0,0,10,0"/>
+                            <TextBlock Text="Code:" VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                            <TextBox Text="{Binding NewStore.StoreCode, UpdateSourceTrigger=PropertyChanged}" Width="70" Margin="0,0,15,0"/>
 
-                            <TextBlock Text="Name:" VerticalAlignment="Center" Margin="0,0,5,0" FontWeight="SemiBold"/>
-                            <TextBox Text="{Binding NewStore.StoreName, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="0,0,10,0"/>
+                            <TextBlock Text="Name:" VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                            <TextBox Text="{Binding NewStore.StoreName, UpdateSourceTrigger=PropertyChanged}" Width="180" Margin="0,0,15,0"/>
 
-                            <TextBlock Text="Type:" VerticalAlignment="Center" Margin="0,0,5,0" FontWeight="SemiBold"/>
-                            <TextBox Text="{Binding NewStore.StoreType}" Width="70" Margin="0,0,10,0"/>
+                            <TextBlock Text="Type:" VerticalAlignment="Center" Margin="0,0,8,0" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}"/>
+                            <TextBox Text="{Binding NewStore.StoreType}" Width="80" Margin="0,0,15,0"/>
 
-                            <Button Command="{Binding AddStoreCommand}" Content="+ ADD STORE" Background="#44BD32" Foreground="White" FontWeight="Bold" Padding="10,5" BorderThickness="0" Cursor="Hand"/>
+                            <Button Command="{Binding AddStoreCommand}" Content="+ ADD STORE" Style="{StaticResource DangerButton}" Padding="15,8"/>
                         </WrapPanel>
                     </Border>
 
-                    <DataGrid Grid.Row="2" ItemsSource="{Binding AvailableStores}" AutoGenerateColumns="False" CanUserAddRows="False" 
-                              HeadersVisibility="Column" Background="White" RowBackground="White" AlternatingRowBackground="#F5F6FA"
-                              BorderBrush="#DCDDE1" BorderThickness="1" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#ECF0F1">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Code" Binding="{Binding StoreCode}" FontWeight="Bold" Width="60" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Store Name" Binding="{Binding StoreName}" Width="*" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="Type" Binding="{Binding StoreType}" Width="80" IsReadOnly="True"/>
-                            <DataGridTemplateColumn Header="Action" Width="80">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <Button Content="Delete" Command="{Binding DataContext.DeleteStoreCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Background="#E74C3C" Foreground="White" BorderThickness="0" Padding="5,2" Cursor="Hand"/>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                    <Border Grid.Row="2" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource BgCard}">
+                        <DataGrid ItemsSource="{Binding AvailableStores}" AutoGenerateColumns="False" CanUserAddRows="False" 
+                                  HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}"
+                                  BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Code" Binding="{Binding StoreCode}" FontWeight="Bold" Width="70" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Store Name" Binding="{Binding StoreName}" Width="*" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="Type" Binding="{Binding StoreType}" Width="90" IsReadOnly="True"/>
+                                <DataGridTemplateColumn Header="Action" Width="90">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Button Content="Delete" Command="{Binding DataContext.DeleteStoreCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Style="{StaticResource DangerButton}" Padding="12,6"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
                 </Grid>
             </Border>
         </Grid>

@@ -3,6 +3,7 @@ using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.EJConsolidator.Interfaces;
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
 using System;
+using System.Net;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -20,31 +21,26 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
         public bool IsModeConsolidator { get => _isModeConsolidator; set { if (SetProperty(ref _isModeConsolidator, value) && value) IsModeTrxFinder = false; } }
         public bool IsModeTrxFinder { get => _isModeTrxFinder; set { if (SetProperty(ref _isModeTrxFinder, value) && value) IsModeConsolidator = false; } }
 
-        // Settings
         private string _storeCode;
         private string _targetTrxNumber;
         private string _posLanes;
         private string _liveServerIp = "192.92.92.50";
         private int _totalPosCount = 6;
-        private DateTime _startDate = DateTime.Now.AddDays(-2); // Default to 2 days ago for EJ
+        private DateTime _startDate = DateTime.Now.AddDays(-2); 
         private DateTime _endDate = DateTime.Now;
         private bool _mergeAllIntoOneFile;
 
-        // Filters
         private string _specificCashier;
         private string _specificBagger;
         private bool _secondReceiptOnly;
         private bool _gcashBarcodeOnly;
         private bool _hacsOnlineOnly;
         private bool _xReadZReadOnly;
-
-        // Status
         private string _statusMessage = "Ready.";
         private string _statusColor = "#7F8FA6";
         private int _progressValue = 0;
         private bool _isBusy;
 
-        // Accessors
         public string StoreCode { get => _storeCode; set => SetProperty(ref _storeCode, value); }
         public string TargetTrxNumber { get => _targetTrxNumber; set => SetProperty(ref _targetTrxNumber, value); }
         public string PosLanes { get => _posLanes; set => SetProperty(ref _posLanes, value); }
@@ -76,33 +72,70 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
 
         private async Task ExecuteProcessAsync()
         {
-            if (string.IsNullOrWhiteSpace(StoreCode) || !Regex.IsMatch(StoreCode.Trim(), @"^\d+$"))
+            if (string.IsNullOrWhiteSpace(StoreCode))
             {
-                SetStatus("Validation Failed: Store Code must be a valid numeric value.", "#E74C3C");
+                SetStatus("Validation Error: Store Code cannot be empty.", "#C41E3A");
+                return;
+            }
+            if (!Regex.IsMatch(StoreCode.Trim(), @"^\d+$"))
+            {
+                SetStatus("Validation Error: Store Code must contain only numbers.", "#C41E3A");
                 return;
             }
 
-            if (IsModeTrxFinder && string.IsNullOrWhiteSpace(TargetTrxNumber))
+            // 2. Live Server IP Validation
+            if (string.IsNullOrWhiteSpace(LiveServerIp))
             {
-                SetStatus("Validation Failed: Transaction Number is required in Finder Mode.", "#E74C3C");
+                SetStatus("Validation Error: Live Server IP cannot be empty.", "#C41E3A");
+                return;
+            }
+            if (!IPAddress.TryParse(LiveServerIp.Trim(), out _))
+            {
+                SetStatus("Validation Error: Live Server IP is not a valid IPv4 address.", "#C41E3A");
                 return;
             }
 
+            // 3. POS Count Validation
+            if (TotalPosCount <= 0)
+            {
+                SetStatus("Validation Error: Total POS Lanes must be greater than 0.", "#C41E3A");
+                return;
+            }
+
+            // 4. Date Validation
             if (StartDate.Date > EndDate.Date)
             {
-                SetStatus("Validation Failed: Start Date cannot be later than End Date.", "#E74C3C");
+                SetStatus("Validation Error: Start Date cannot be later than End Date.", "#C41E3A");
+                return;
+            }
+            if (EndDate.Date > DateTime.Now.Date)
+            {
+                SetStatus("Validation Error: Cannot process future dates.", "#C41E3A");
                 return;
             }
 
-            if (!string.IsNullOrWhiteSpace(PosLanes) && !Regex.IsMatch(PosLanes.Replace(",", ""), @"^\d+$"))
+            // 5. Target Lanes Format Validation (Allows numbers, commas, and spaces)
+            if (!string.IsNullOrWhiteSpace(PosLanes))
             {
-                SetStatus("Validation Failed: POS Lanes must be numbers separated by commas.", "#E74C3C");
+                if (!Regex.IsMatch(PosLanes, @"^[\d\s,]+$"))
+                {
+                    SetStatus("Validation Error: Target Lanes must be numbers separated by commas (e.g. 1, 3, 10).", "#C41E3A");
+                    return;
+                }
+            }
+
+            // 6. Mode-Specific Validations
+            if (IsModeTrxFinder && string.IsNullOrWhiteSpace(TargetTrxNumber))
+            {
+                SetStatus("Validation Error: Transaction Number is required in Finder Mode.", "#C41E3A");
                 return;
             }
+
+            // --- END VALIDATION ---
 
             IsBusy = true;
             ProgressValue = 0;
-            SetStatus("Initializing Offline Cache & Extractor...", "#0097E6");
+            SetStatus("Initializing Offline Cache & Extractor...", "#2980B9");
 
             try
             {
@@ -132,23 +165,23 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                     }
                 }
 
-                var textProgress = new Progress<string>(msg => SetStatus(msg, "#0097E6"));
+                var textProgress = new Progress<string>(msg => SetStatus(msg, "#2980B9"));
                 var pctProgress = new Progress<int>(pct => ProgressValue = pct);
 
                 int resultCount = await _consolidatorService.ProcessConsolidationAsync(options, textProgress, pctProgress);
 
                 if (resultCount > 0)
                 {
-                    SetStatus($"Process Completed! {resultCount} matching blocks saved to Desktop\\SOD_Output.", "#44BD32");
+                    SetStatus($"Process Completed! {resultCount} matching blocks saved to Desktop\\SOD_Output.", "#27AE60");
                 }
                 else
                 {
-                    SetStatus("Process finished, but NO files were downloaded or NO receipts matched your filters.", "#F39C12");
+                    SetStatus("Process finished, but NO files were downloaded or NO receipts matched your filters.", "#E67E22");
                 }
             }
             catch (Exception ex)
             {
-                SetStatus($"Critical Error: {ex.Message}", "#E74C3C");
+                SetStatus($"Critical Error: {ex.Message}", "#C41E3A");
             }
             finally
             {

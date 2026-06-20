@@ -1,0 +1,170 @@
+﻿<UserControl x:Class="PuregoldITToolkit.Tools.PimsVendorTool.Views.VendorManagerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <Style x:Key="DynamicSaveButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{StaticResource BtnSuccess}"/>
+            <Setter Property="Content" Value="+ ADD VENDOR"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEditMode}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource BrandAccent}"/>
+                    <Setter Property="Foreground" Value="{StaticResource BrandPrimaryDark}"/>
+                    <Setter Property="Content" Value="✓ UPDATE VENDOR"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3.5*"/>
+            <ColumnDefinition Width="6.5*"/>
+        </Grid.ColumnDefinitions>
+
+        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,15,0" VerticalAlignment="Top">
+            <StackPanel>
+
+                <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="SQL Connection Settings" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,12" FontSize="14"/>
+
+                        <WrapPanel Margin="0,0,0,10">
+                            <StackPanel Margin="0,0,12,0" Width="140">
+                                <TextBlock Text="Server IP" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,5"/>
+                                <TextBox Text="{Binding SqlServer, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Width="110">
+                                <TextBlock Text="Database" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,5"/>
+                                <TextBox Text="{Binding SqlDatabase, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </WrapPanel>
+
+                        <WrapPanel>
+                            <StackPanel Margin="0,0,12,0" Width="110">
+                                <TextBlock Text="Username" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,5"/>
+                                <TextBox Text="{Binding SqlUsername, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Width="140">
+                                <TextBlock Text="Password" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,5"/>
+                                <TextBox Text="{Binding SqlPassword, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="Vendor Details" FontWeight="Bold" FontSize="16" Margin="0,0,0,5" Foreground="{StaticResource TextPrimary}"/>
+                <TextBlock Text="Enter Code &amp; Name to auto-generate DB formats. Click grid item to edit/delete." TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,15" FontStyle="Italic" FontSize="12"/>
+
+                <StackPanel Margin="0,0,0,15">
+                    <TextBlock Text="Vendor Code (VENDORCD) *" FontWeight="SemiBold" Margin="0,0,0,5" Foreground="{StaticResource TextPrimary}"/>
+                    <TextBox Text="{Binding InputVendorCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,25">
+                    <TextBlock Text="Vendor Name *" FontWeight="SemiBold" Margin="0,0,0,5" Foreground="{StaticResource TextPrimary}"/>
+                    <TextBox Text="{Binding InputVendorName, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+
+                <Button Command="{Binding SaveCommand}" Style="{StaticResource DynamicSaveButton}" Margin="0,0,0,12"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Command="{Binding DeleteCommand}" Content="DELETE" Style="{StaticResource DangerButton}" Padding="10"/>
+                    <Button Grid.Column="2" Command="{Binding ClearCommand}" Content="CLEAR" Background="{StaticResource TextSecondary}" Foreground="#FFFFFF" FontWeight="Bold" Padding="10" BorderThickness="0" Cursor="Hand"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Grid.Column="1" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource BgCard}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <Border Background="{StaticResource BrandPrimary}" Padding="15,12" CornerRadius="6,6,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="VENDORS" Foreground="{StaticResource BrandAccent}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,20,0" FontSize="14"/>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBox Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}" Width="220" Margin="0,0,8,0" Tag="Search Code or Name..."/>
+                            <Button Command="{Binding SearchCommand}" Content="SEARCH" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="18,8"/>
+                        </StackPanel>
+
+                        <Button Grid.Column="2" Command="{Binding LoadCommand}" Content="CONNECT &amp; REFRESH" Background="{StaticResource BrandPrimaryDark}" Foreground="#FFFFFF" FontWeight="Bold" Padding="18,8" ToolTip="Refresh Grid Data"/>
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="1">
+                    <DataGrid ItemsSource="{Binding VendorsList}" SelectedItem="{Binding SelectedVendor}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" 
+                              HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}" 
+                              BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="VendorCd" Binding="{Binding VendorCd}" FontWeight="Bold" Width="100"/>
+                            <DataGridTextColumn Header="Vendor (Generated)" Binding="{Binding Vendor}" Width="*"/>
+                            <DataGridTextColumn Header="Sort" Binding="{Binding Sort}" Width="220"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Border Background="#CCFFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <ProgressBar IsIndeterminate="True" Width="120" Height="10" Margin="0,0,0,12" Foreground="{StaticResource BrandPrimary}"/>
+                            <TextBlock Text="Processing..." FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Grid.Row="2" Background="{StaticResource BgApp}" Padding="12" CornerRadius="0,0,6,6" BorderThickness="0,1,0,0" BorderBrush="{StaticResource BorderLight}">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+
+                        <StackPanel.Resources>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Setter Property="Width" Value="40"/>
+                                <Setter Property="Height" Value="32"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="Margin" Value="0,0,5,0"/>
+                                <Setter Property="Background" Value="{StaticResource BorderLight}"/>
+                                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                            </Style>
+                        </StackPanel.Resources>
+
+                        <Button Command="{Binding FirstPageCommand}" Content="&lt;&lt;"/>
+                        <Button Command="{Binding PrevPageCommand}" Content="&lt;" Margin="0,0,15,0"/>
+
+                        <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,15,0">
+                            <Run Text="Page "/>
+                            <Run Text="{Binding CurrentPage}"/>
+                            <Run Text=" of "/>
+                            <Run Text="{Binding TotalPages}"/>
+                        </TextBlock>
+
+                        <Button Command="{Binding NextPageCommand}" Content="&gt;"/>
+                        <Button Command="{Binding LastPageCommand}" Content="&gt;&gt;" Margin="0"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" Margin="0,15,0,0"/>
+    </Grid>
+</UserControl>
