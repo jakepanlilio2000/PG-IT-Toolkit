@@ -10,6 +10,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Bold = DocumentFormat.OpenXml.Wordprocessing.Bold;
 // OpenXML Aliases
@@ -24,7 +25,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
 {
     public class FormsExportService : IFormsExportService
     {
-        public async Task<bool> ExportInfToEmailAsync(IEnumerable<InfEntryModel> entries, string infType, string storeCode, string toAddresses, string ccAddresses, string signatureHtml)
+        public async Task<bool> ExportInfToEmailAsync(IEnumerable<InfEntryModel> entries, string infType, string storeCode, string storeName, string toAddresses, string ccAddresses, string signatureHtml, IEnumerable<string> screenshotPaths)
         {
             if (entries == null || !entries.Any()) return false;
 
@@ -33,29 +34,39 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                 try
                 {
                     bool isType4 = infType.Contains("APAR");
-                    string subject = $"INF for PurePos {storeCode}";
+
+                    // Strips the "1. ", "2. ", etc., from the INF string
+                    string cleanInfType = Regex.Replace(infType, @"^\d+\.\s*", "");
+
+                    string subject = $"Item Not Found: {storeCode}-{storeName} Purepos";
+                    string boundary = "----=_Part_" + Guid.NewGuid().ToString("N");
 
                     StringBuilder emlContent = new StringBuilder();
 
                     // Mail Headers
                     emlContent.AppendLine($"To: {toAddresses}");
                     if (!string.IsNullOrWhiteSpace(ccAddresses)) emlContent.AppendLine($"Cc: {ccAddresses}");
-                    emlContent.AppendLine("X-Unsent: 1"); // Marks as an editable draft in Thunderbird
+                    emlContent.AppendLine("X-Unsent: 1");
                     emlContent.AppendLine($"Subject: {subject}");
                     emlContent.AppendLine("MIME-Version: 1.0");
-                    emlContent.AppendLine("Content-Type: text/html; charset=utf-8");
+                    emlContent.AppendLine($"Content-Type: multipart/related; boundary=\"{boundary}\"");
                     emlContent.AppendLine();
 
                     // HTML Body Construction
+                    emlContent.AppendLine($"--{boundary}");
+                    emlContent.AppendLine("Content-Type: text/html; charset=utf-8");
+                    emlContent.AppendLine();
+
                     StringBuilder htmlBody = new StringBuilder();
-                    htmlBody.AppendLine("<html><body><div style=\"font-family: Calibri, Arial, sans-serif; font-size: 14px; color: #000;\">");
+                    htmlBody.AppendLine("<html><body>");
 
-                    htmlBody.AppendLine("<p>Hi Team,</p>");
-                    htmlBody.AppendLine($"<p>Kindly check the attached INF items for <b>{storeCode}</b>. Type: <i>{infType}</i></p>");
+                    htmlBody.AppendLine("<p>Masayang araw po,<br><br>");
+                    htmlBody.AppendLine($"Makikisuyo po sana INF Concern for {storeCode} - {storeName}<br><br>");
+                    htmlBody.AppendLine($"Concern (UNMATCH / INF):&nbsp; {cleanInfType}</p><br>");
 
-                    // Create the Data Table
-                    htmlBody.AppendLine("<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\" style=\"border-collapse: collapse; text-align: center; border-color: #DDDDDD; width: 100%;\">");
-                    htmlBody.AppendLine("<tr style=\"background-color: #2C3E50; color: #ffffff; font-weight: bold;\">");
+                    // Plain Table (No Styles)
+                    htmlBody.AppendLine("<table border=\"1\">");
+                    htmlBody.AppendLine("<tr>");
 
                     if (isType4)
                         htmlBody.AppendLine("<th>Store</th><th>Reg SKU</th><th>Gen SKU (APAR)</th><th>UPC</th><th>PurePos Price</th><th>MMS Price</th><th>Description</th><th>IsPromo?</th>");
@@ -81,16 +92,51 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                     htmlBody.AppendLine("</table>");
                     htmlBody.AppendLine("<br/><br/>");
 
-                    // Inject the Global Signature
+                    // Process Screenshots
+                    List<Tuple<string, string, string>> attachments = new List<Tuple<string, string, string>>();
+                    if (screenshotPaths != null && screenshotPaths.Any())
+                    {
+                        foreach (var path in screenshotPaths)
+                        {
+                            if (File.Exists(path))
+                            {
+                                string cid = "img_" + Guid.NewGuid().ToString("N") + "@puregold.com";
+                                string fileName = Path.GetFileName(path);
+                                attachments.Add(Tuple.Create(path, cid, fileName));
+
+                                // Inject HTML tag with fixed width
+                                htmlBody.AppendLine($"<img src=\"cid:{cid}\" width=\"500\" /><br/><br/>");
+                            }
+                        }
+                    }
+
                     if (!string.IsNullOrWhiteSpace(signatureHtml))
                     {
                         htmlBody.AppendLine(signatureHtml);
                     }
 
-                    htmlBody.AppendLine("</div></body></html>");
+                    htmlBody.AppendLine("</body></html>");
                     emlContent.AppendLine(htmlBody.ToString());
+                    emlContent.AppendLine();
 
-                    // Save to system Temp folder and launch via ShellExecute (Thunderbird)
+                    // Embed Images as Base64 encoded parts
+                    foreach (var att in attachments)
+                    {
+                        byte[] fileBytes = File.ReadAllBytes(att.Item1);
+                        string base64 = Convert.ToBase64String(fileBytes, Base64FormattingOptions.InsertLineBreaks);
+                        string mimeType = att.Item3.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg";
+
+                        emlContent.AppendLine($"--{boundary}");
+                        emlContent.AppendLine($"Content-Type: {mimeType}; name=\"{att.Item3}\"");
+                        emlContent.AppendLine("Content-Transfer-Encoding: base64");
+                        emlContent.AppendLine($"Content-ID: <{att.Item2}>");
+                        emlContent.AppendLine($"Content-Disposition: inline; filename=\"{att.Item3}\"");
+                        emlContent.AppendLine();
+                        emlContent.AppendLine(base64);
+                    }
+
+                    emlContent.AppendLine($"--{boundary}--");
+
                     string tempPath = Path.Combine(Path.GetTempPath(), $"INF_Draft_{storeCode}_{DateTime.Now:yyyyMMdd_HHmmss}.eml");
                     File.WriteAllText(tempPath, emlContent.ToString());
 

@@ -33,34 +33,6 @@
         <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,15,0" VerticalAlignment="Top">
             <StackPanel>
 
-                <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
-                    <StackPanel>
-                        <TextBlock Text="SQL Connection Settings" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,12" FontSize="14"/>
-
-                        <WrapPanel Margin="0,0,0,10">
-                            <StackPanel Margin="0,0,12,0" Width="140">
-                                <TextBlock Text="Server IP" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding SqlServer, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                            <StackPanel Width="110">
-                                <TextBlock Text="Database" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding SqlDatabase, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </WrapPanel>
-
-                        <WrapPanel>
-                            <StackPanel Margin="0,0,12,0" Width="110">
-                                <TextBlock Text="Username" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding SqlUsername, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                            <StackPanel Width="140">
-                                <TextBlock Text="Password" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" FontSize="12" Margin="0,0,0,5"/>
-                                <TextBox Text="{Binding SqlPassword, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </WrapPanel>
-                    </StackPanel>
-                </Border>
-
                 <TextBlock Text="Vendor Details" FontWeight="Bold" FontSize="16" Margin="0,0,0,5" Foreground="{StaticResource TextPrimary}"/>
                 <TextBlock Text="Enter Code &amp; Name to auto-generate DB formats. Click grid item to edit/delete." TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,15" FontStyle="Italic" FontSize="12"/>
 

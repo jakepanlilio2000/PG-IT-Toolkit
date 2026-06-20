@@ -49,7 +49,7 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Numerics" />
-    <Reference Include="System.Text.Json, Version=10.0.0.3, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL" />
+    <Reference Include="System.Text.Json, Version=10.0.0.4, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -118,6 +118,8 @@
     </Compile>
     <Compile Include="Tools\PureposTool.cs" />
     <Compile Include="Tools\PureposTool\Interfaces\IPureposService.cs" />
+    <Compile Include="Tools\PureposTool\Models\EjSaveModel.cs" />
+    <Compile Include="Tools\PureposTool\Models\EodModel.cs" />
     <Compile Include="Tools\PureposTool\Models\PureposModels.cs" />
     <Compile Include="Tools\PureposTool\Services\PureposService.cs" />
     <Compile Include="Tools\PureposTool\ViewModels\PureposViewModel.cs" />

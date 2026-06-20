@@ -2,8 +2,9 @@
 using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.SettingsTool.Interfaces;
 using PuregoldITToolkit.Tools.SettingsTool.Models;
-using System;
+using PuregoldITToolkit.Tools.SettingsTool.Services;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -13,45 +14,56 @@ namespace PuregoldITToolkit.Tools.SettingsTool.ViewModels
     {
         private readonly ISettingsService _settingsService;
 
-        public static readonly string SignatureFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EmailSignature.txt");
-
-        public SettingsModel SettingsData { get; } = new SettingsModel();
+        // The backing field and property with both GET and SET to fix CS0200 and IDE0044
+        private SettingsModel _settingsData;
+        public SettingsModel SettingsData
+        {
+            get => _settingsData;
+            set => SetProperty(ref _settingsData, value);
+        }
 
         private string _statusMessage = "Ready.";
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
 
-        public ICommand SaveSignatureCommand { get; }
-        public ICommand ClearSignatureCommand { get; }
+        public ICommand SaveSettingsCommand { get; }
 
         public SettingsViewModel(ISettingsService settingsService)
         {
             _settingsService = settingsService;
 
-            SaveSignatureCommand = new AsyncRelayCommand(SaveSignatureAsync);
-            ClearSignatureCommand = new AsyncRelayCommand(ClearSignatureAsync);
+            // Initialize empty model so the UI doesn't crash before loading
+            _settingsData = new SettingsModel();
 
-            // Load the signature when the viewmodel initializes
-            _ = LoadSignatureAsync();
+            SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
+
+            // Load the settings asynchronously on startup
+            _ = LoadSettingsAsync();
         }
 
-        private async Task LoadSignatureAsync()
+        private async Task LoadSettingsAsync()
         {
-            SettingsData.SignatureHtml = await _settingsService.LoadSignatureAsync();
+            // Call the correct generic LoadSettingsAsync method to fix CS1061
+            SettingsData = await _settingsService.LoadSettingsAsync();
         }
 
-        private async Task SaveSignatureAsync()
+        private async Task SaveSettingsAsync()
         {
-            bool success = await _settingsService.SaveSignatureAsync(SettingsData.SignatureHtml);
-            StatusMessage = success
-                ? "Signature successfully saved! It will now automatically apply to all outgoing tool emails."
-                : "Failed to save signature.";
+            bool success = await _settingsService.SaveSettingsAsync(SettingsData);
+            StatusMessage = success ? "Global configurations successfully saved!" : "Failed to save settings.";
         }
 
-        private async Task ClearSignatureAsync()
+        // Helper method for other tools (like EOD Generator) to quickly pull settings
+        public static SettingsModel GetCurrentSettings()
         {
-            SettingsData.SignatureHtml = string.Empty;
-            bool success = await _settingsService.ClearSignatureAsync();
-            StatusMessage = success ? "Signature cleared." : "Failed to clear signature.";
+            if (File.Exists(SettingsService.ConfigFilePath))
+            {
+                try
+                {
+                    return JsonSerializer.Deserialize<SettingsModel>(File.ReadAllText(SettingsService.ConfigFilePath));
+                }
+                catch { }
+            }
+            return new SettingsModel();
         }
     }
 }

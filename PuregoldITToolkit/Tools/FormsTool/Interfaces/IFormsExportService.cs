@@ -7,7 +7,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.Interfaces
 {
     public interface IFormsExportService
     {
-        Task<bool> ExportInfToEmailAsync(IEnumerable<InfEntryModel> entries, string infType, string storeCode, string toAddresses, string ccAddresses, string signatureHtml);
+        Task<bool> ExportInfToEmailAsync(IEnumerable<InfEntryModel> entries, string infType, string storeCode, string storeName, string toAddresses, string ccAddresses, string signatureHtml, IEnumerable<string> screenshotPaths);
 
         Task<bool> ExportObToImageAsync(ObModel data, string templatePath, string outputPath);
         Task<ImageSource> GenerateObPreviewAsync(ObModel data, string templatePath);

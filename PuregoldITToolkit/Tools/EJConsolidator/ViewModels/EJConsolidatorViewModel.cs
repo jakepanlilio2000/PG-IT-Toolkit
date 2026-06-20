@@ -2,6 +2,7 @@
 using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.EJConsolidator.Interfaces;
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels; 
 using System;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -21,21 +22,30 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
         public bool IsModeConsolidator { get => _isModeConsolidator; set { if (SetProperty(ref _isModeConsolidator, value) && value) IsModeTrxFinder = false; } }
         public bool IsModeTrxFinder { get => _isModeTrxFinder; set { if (SetProperty(ref _isModeTrxFinder, value) && value) IsModeConsolidator = false; } }
 
+        // Settings (Defaults pulled dynamically in constructor)
         private string _storeCode;
         private string _targetTrxNumber;
         private string _posLanes;
-        private string _liveServerIp = "192.92.92.50";
+        private string _liveServerIp;
         private int _totalPosCount = 6;
-        private DateTime _startDate = DateTime.Now.AddDays(-2); 
+        private DateTime _startDate = DateTime.Now.AddDays(-2);
         private DateTime _endDate = DateTime.Now;
         private bool _mergeAllIntoOneFile;
 
+        // Filters
         private string _specificCashier;
         private string _specificBagger;
         private bool _secondReceiptOnly;
         private bool _gcashBarcodeOnly;
         private bool _hacsOnlineOnly;
         private bool _xReadZReadOnly;
+
+        // Advanced Filters
+        private string _filterCardLast4;
+        private string _filterMemberName;
+        private string _filterExactAmount;
+
+        // Status
         private string _statusMessage = "Ready.";
         private string _statusColor = "#7F8FA6";
         private int _progressValue = 0;
@@ -57,28 +67,31 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
         public bool HacsOnlineOnly { get => _hacsOnlineOnly; set => SetProperty(ref _hacsOnlineOnly, value); }
         public bool XReadZReadOnly { get => _xReadZReadOnly; set => SetProperty(ref _xReadZReadOnly, value); }
 
+        public string FilterCardLast4 { get => _filterCardLast4; set => SetProperty(ref _filterCardLast4, value); }
+        public string FilterMemberName { get => _filterMemberName; set => SetProperty(ref _filterMemberName, value); }
+        public string FilterExactAmount { get => _filterExactAmount; set => SetProperty(ref _filterExactAmount, value); }
+
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
         public string StatusColor { get => _statusColor; set => SetProperty(ref _statusColor, value); }
         public int ProgressValue { get => _progressValue; set => SetProperty(ref _progressValue, value); }
         public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
 
-        private string _filterCardLast4;
-        private string _filterMemberName;
-        private string _filterExactAmount;
-
-        public string FilterCardLast4 { get => _filterCardLast4; set => SetProperty(ref _filterCardLast4, value); }
-        public string FilterMemberName { get => _filterMemberName; set => SetProperty(ref _filterMemberName, value); }
-        public string FilterExactAmount { get => _filterExactAmount; set => SetProperty(ref _filterExactAmount, value); }
         public ICommand ProcessCommand { get; }
 
         public EJConsolidatorViewModel(IEJConsolidatorService consolidatorService)
         {
             _consolidatorService = consolidatorService;
-            ProcessCommand = new RelayCommand(async () => await ExecuteProcessAsync(), () => !IsBusy);
+            ProcessCommand = new AsyncRelayCommand(ExecuteProcessAsync, () => !IsBusy);
+
+            // Pull defaults from global settings
+            var globalSettings = SettingsViewModel.GetCurrentSettings();
+            StoreCode = globalSettings.DefaultStoreCode;
+            LiveServerIp = globalSettings.DefaultLiveServerIp;
         }
 
         private async Task ExecuteProcessAsync()
         {
+            // 1. Store Code Validation
             if (string.IsNullOrWhiteSpace(StoreCode))
             {
                 SetStatus("Validation Error: Store Code cannot be empty.", "#C41E3A");
@@ -121,7 +134,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                 return;
             }
 
-            // 5. Target Lanes Format Validation (Allows numbers, commas, and spaces)
+            // 5. Target Lanes Validation
             if (!string.IsNullOrWhiteSpace(PosLanes))
             {
                 if (!Regex.IsMatch(PosLanes, @"^[\d\s,]+$"))
@@ -138,11 +151,10 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                 return;
             }
 
-            // --- END VALIDATION ---
-
             IsBusy = true;
             ProgressValue = 0;
             SetStatus("Initializing Offline Cache & Extractor...", "#2980B9");
+            ((AsyncRelayCommand)ProcessCommand).NotifyCanExecuteChanged();
 
             try
             {
@@ -160,9 +172,9 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                     GcashBarcodeOnly = this.GcashBarcodeOnly,
                     HacsOnlineOnly = this.HacsOnlineOnly,
                     XReadZReadOnly = this.XReadZReadOnly,
-                    FilterCardLast4 = this.FilterCardLast4,
-                    FilterMemberName = this.FilterMemberName,
-                    FilterExactAmount = this.FilterExactAmount
+                    FilterCardLast4 = this.FilterCardLast4?.Trim(),
+                    FilterMemberName = this.FilterMemberName?.Trim(),
+                    FilterExactAmount = this.FilterExactAmount?.Trim()
                 };
 
                 for (var d = StartDate.Date; d <= EndDate.Date; d = d.AddDays(1)) options.TargetDates.Add(d);
@@ -196,6 +208,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
             finally
             {
                 IsBusy = false;
+                ((AsyncRelayCommand)ProcessCommand).NotifyCanExecuteChanged();
             }
         }
 

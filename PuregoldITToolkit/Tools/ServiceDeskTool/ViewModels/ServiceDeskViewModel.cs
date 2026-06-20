@@ -2,13 +2,12 @@
 using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.ServiceDeskTool.Interfaces;
 using PuregoldITToolkit.Tools.ServiceDeskTool.Models;
-using PuregoldITToolkit.Tools.SettingsTool.ViewModels; 
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels; // Imports the global settings
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -61,7 +60,7 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
         // OT Previews
         public string OtPreviewTo => "jymendoza@puregold.com.ph";
         public string OtPreviewCc => "allITzone11@puregold.com.ph";
-        public string OtPreviewSubject => $"OT for cut-off {CutoffStart:MMMM d} TO {CutoffEnd:MMMM d}, {CutoffEnd.Year}".ToUpper();
+        public string OtPreviewSubject => $"Overtime Application Approval";
 
         private string _otPreviewBody;
         public string OtPreviewBody { get => _otPreviewBody; set => SetProperty(ref _otPreviewBody, value); }
@@ -114,13 +113,11 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
             AddRow();
         }
 
-        // Fetches the signature directly from the global settings
+        // *** FIX: Uses the new Global Settings JSON instead of the old TXT file ***
         private string GetGlobalSignature()
         {
-            if (File.Exists(SettingsViewModel.SignatureFilePath))
-                return File.ReadAllText(SettingsViewModel.SignatureFilePath);
-
-            return string.Empty;
+            var settings = SettingsViewModel.GetCurrentSettings();
+            return settings.SignatureHtml ?? string.Empty;
         }
 
         private void UpdatePreviews()
@@ -229,7 +226,6 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
             IsBusy = true;
             StatusMessage = "Generating Excel & Drafting OT email template...";
 
-            // Fetch global signature directly
             bool success = await _service.ExportOtReportAsync(OtEntries.ToList(), CutoffStart, CutoffEnd, GetGlobalSignature());
 
             StatusMessage = success ? "Success! OT Draft opened in Thunderbird." : "Failed to create email draft.";
@@ -241,7 +237,6 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
             IsBusy = true;
             StatusMessage = "Drafting email template with attachment...";
 
-            // Fetch global signature directly
             bool success = await _service.DraftOutageEmailAsync(OutageData, GetGlobalSignature());
 
             StatusMessage = success ? "Success! Outage Draft opened in Thunderbird." : "Failed to create email draft.";

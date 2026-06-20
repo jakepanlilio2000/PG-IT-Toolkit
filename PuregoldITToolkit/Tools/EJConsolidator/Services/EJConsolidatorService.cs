@@ -1,5 +1,6 @@
 ﻿using PuregoldITToolkit.Tools.EJConsolidator.Interfaces;
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels; // Imports global settings
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -45,14 +46,12 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 {
                     string dateStr = targetDate.ToString("MMddyyyy");
                     string dateCacheDir = Path.Combine(cacheRoot, dateStr);
-                    bool useOfflineCache = false;
 
                     textProgress?.Report($"Processing Date: {dateStr}...");
 
                     if (Directory.Exists(dateCacheDir) && Directory.GetFiles(dateCacheDir, "*.txt", SearchOption.AllDirectories).Any())
                     {
                         textProgress?.Report($"  [Cache] Loaded {dateStr} instantly from offline storage.");
-                        useOfflineCache = true;
                     }
                     else
                     {
@@ -102,9 +101,11 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             Parallel.ForEach(txtFiles, file =>
             {
                 string fileContent = File.ReadAllText(file, Encoding.UTF8);
+
                 if (options.IsModeTrxFinder && !string.IsNullOrWhiteSpace(options.TargetTrxNumber))
                 {
-                    if (fileContent.IndexOf(options.TargetTrxNumber.Trim(), StringComparison.OrdinalIgnoreCase) < 0) return;
+                    if (fileContent.IndexOf(options.TargetTrxNumber.Trim(), StringComparison.OrdinalIgnoreCase) < 0)
+                        return;
                 }
 
                 var blocks = Regex.Split(fileContent, @"(?=Puregold Price Club|SECOND RECEIPT)", RegexOptions.IgnoreCase);
@@ -115,12 +116,16 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                     if (string.IsNullOrWhiteSpace(block)) continue;
                     if (_filterService.IsMatch(block, options))
                     {
-                        string cardMatch = Regex.Match(block, @"Card:\s*\d{12}(\d{4})").Groups[1].Value;
-                        string memberMatch = Regex.Match(block, @"Member:\s*([^\n\r]+)").Groups[1].Value.Trim();
-                        string amountMatch = Regex.Match(block, @"TOTAL\s*[\d,.]+\s*([\d,.]+)").Groups[1].Value.Trim();
+                        string cardMatch = Regex.Match(block, @"(?i)Member Card Number:\s*.*?(\d{4})\b").Groups[1].Value;
+                        string memberMatch = Regex.Match(block, @"(?i)Member Name:\s*([^\n\r]+)").Groups[1].Value.Trim();
+                        string amountMatch = Regex.Match(block, @"(?i)Total(?: Amt Due)?\s*(?:Php)?\s*([\d,.]+)").Groups[1].Value.Trim();
+
+                        string cardText = string.IsNullOrEmpty(cardMatch) ? "N/A" : $"****{cardMatch}";
+                        string memberText = string.IsNullOrEmpty(memberMatch) ? "N/A" : memberMatch;
+                        string amountText = string.IsNullOrEmpty(amountMatch) ? "0.00" : amountMatch;
 
                         string enhancedBlock = block.Trim() + Environment.NewLine +
-                                               $"[EXTRACTED DATA] Card: ****{cardMatch} | Member: {memberMatch} | Amount: {amountMatch}" +
+                                               $"[EXTRACTED DATA] Card: {cardText} | Member: {memberText} | Amount: Php {amountText}" +
                                                Environment.NewLine;
 
                         filteredReceipts.Add(enhancedBlock);
@@ -139,12 +144,18 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 {
                     foreach (var receipt in finalReceiptList)
                     {
-                        writer.WriteLine(receipt);
+                        using (StringReader reader = new StringReader(receipt))
+                        {
+                            string line;
+                            while ((line = reader.ReadLine()) != null) writer.WriteLine(line);
+                        }
+                        writer.WriteLine();
                         writer.WriteLine(new string('-', 50));
                         writer.WriteLine();
                     }
                 }
             }
+
             return finalReceiptList.Count;
         }
 
@@ -153,11 +164,12 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             bool connected = false;
             Exception lastException = null;
 
+            // Fetch FTP Server dynamically from Global Settings
+            var globalSettings = SettingsViewModel.GetCurrentSettings();
+            string ftpHost = !string.IsNullOrWhiteSpace(globalSettings.DefaultFtpServer) ? globalSettings.DefaultFtpServer : "192.168.200.177";
+
             using (Session session = new Session())
             {
-                // Explicitly define executable path to prevent SessionLocalException
-                // session.ExecutablePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WinSCP.exe");
-
                 for (int i = 1; i <= 12; i++)
                 {
                     try
@@ -165,7 +177,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         session.Open(new SessionOptions
                         {
                             Protocol = Protocol.Ftp,
-                            HostName = "192.168.200.177",
+                            HostName = ftpHost,
                             UserName = $"ftp{i}@puregold",
                             Password = "pw@1234"
                         });
@@ -174,7 +186,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                     }
                     catch (Exception ex)
                     {
-                        // Capture the exception instead of blindly swallowing it
                         lastException = ex;
                     }
                 }
@@ -236,12 +247,15 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
         {
             try
             {
+                // Fetch CONSO credentials dynamically from Global Settings
+                var globalSettings = SettingsViewModel.GetCurrentSettings();
+
                 SessionOptions fallbackOptions = new SessionOptions
                 {
                     Protocol = Protocol.Sftp,
                     HostName = options.LiveServerIp,
-                    UserName = $"pgsanfernando{options.StoreCode}",
-                    Password = $"pgsanfernando{options.StoreCode}",
+                    UserName = globalSettings.ConsoUser,
+                    Password = globalSettings.ConsoPassword,
                     SshHostKeyPolicy = SshHostKeyPolicy.AcceptNew
                 };
 

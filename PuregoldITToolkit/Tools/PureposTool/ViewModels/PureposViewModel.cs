@@ -16,6 +16,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
 
         public AutoPermissionModel PermissionData { get; } = new AutoPermissionModel();
         public EjSaveModel EjData { get; } = new EjSaveModel();
+        public EodModel EodData { get; } = new EodModel();
 
         // CLI Properties
         private string _cliTargetIp = "192.92.92.51";
@@ -31,14 +32,20 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         private string _cliOutput = "Ready to execute...\n";
         public string CliOutput { get => _cliOutput; set => SetProperty(ref _cliOutput, value); }
 
+        // EOD Preview Properties
+        public string EodPreviewTo { get; private set; }
+        public string EodPreviewCc { get; private set; }
+        public string EodPreviewSubject { get; private set; }
+        public string EodPreviewBody { get; private set; }
+
         private bool _isBusy;
         public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
 
         public ICommand RunPermissionCommand { get; }
         public ICommand RunEjSaveCommand { get; }
         public ICommand ClearLogCommand { get; }
+        public ICommand RunEodCommand { get; }
 
-        // New CLI Commands
         public ICommand RunSingleCliCommand { get; }
         public ICommand RunAllPosCliCommand { get; }
         public ICommand RunConsoCliCommand { get; }
@@ -50,19 +57,47 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             RunPermissionCommand = new AsyncRelayCommand(ExecutePermissionAsync);
             RunEjSaveCommand = new AsyncRelayCommand(ExecuteEjSaveAsync);
             ClearLogCommand = new RelayCommand(() => CliOutput = "Logs cleared.\n");
+            RunEodCommand = new AsyncRelayCommand(ExecuteEodAsync);
 
             RunSingleCliCommand = new AsyncRelayCommand(ExecuteSingleCliAsync);
             RunAllPosCliCommand = new AsyncRelayCommand(ExecuteAllPosCliAsync);
             RunConsoCliCommand = new AsyncRelayCommand(ExecuteConsoCliAsync);
             OpenPuttyCommand = new RelayCommand(ExecutePutty);
+
+            // Subscribe to EOD Changes to update Live Preview in real-time
+            EodData.PropertyChanged += (s, e) => UpdateEodPreview();
+            UpdateEodPreview();
+        }
+
+        private void UpdateEodPreview()
+        {
+            var settings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
+
+            EodPreviewTo = EodData.TestModeEmail ? settings.SmtpUser : "AllITDataControllersMMS@puregold.com.ph";
+            EodPreviewCc = EodData.TestModeEmail ? "" : "jymendoza@puregold.com.ph, allITzone11@puregold.com.ph";
+
+            DateTime targetDate = EodData.UseYesterday ? DateTime.Now.AddDays(-1) : DateTime.Now;
+            EodPreviewSubject = $"{EodData.StoreCode} - {EodData.StoreName} - EOD File Purepos POLLOG {targetDate:MM-dd-yy}";
+
+            // FIX: Changed EodData.StoreOfficer to EodData.StoreOffice
+            EodPreviewBody = $"Masayang Araw!\n\nPlease see attached POLLOG file for {EodData.StoreCode} - {EodData.StoreName}\n\nStore Manager: {EodData.StoreManager}\nStore Offices: {EodData.StoreOfficer}\n\n[HTML Signature attached internally]";
+
+            OnPropertyChanged(nameof(EodPreviewTo));
+            OnPropertyChanged(nameof(EodPreviewCc));
+            OnPropertyChanged(nameof(EodPreviewSubject));
+            OnPropertyChanged(nameof(EodPreviewBody));
         }
 
         private void AppendLog(string message)
         {
-            System.Windows.Application.Current.Dispatcher.Invoke(() =>
-            {
-                CliOutput += $"{message}\n";
-            });
+            System.Windows.Application.Current.Dispatcher.Invoke(() => { CliOutput += $"{message}\n"; });
+        }
+
+        private async Task ExecuteEodAsync()
+        {
+            IsBusy = true;
+            await _service.RunEodGeneratorAsync(EodData, AppendLog);
+            IsBusy = false;
         }
 
         private async Task ExecutePermissionAsync()
@@ -113,7 +148,11 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         {
             IsBusy = true;
             AppendLog($"\n> Executing on CONSO ({PermissionData.LiveServerIp}): {CliCommand}");
-            string result = await _service.RunSshCommandAsync(PermissionData.LiveServerIp, PermissionData.ConsoUser, PermissionData.ConsoPassword, CliCommand);
+
+            // FIX: Pull ConsoUser and ConsoPassword dynamically from global settings
+            var globalSettings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
+
+            string result = await _service.RunSshCommandAsync(PermissionData.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword, CliCommand);
             AppendLog(result);
             IsBusy = false;
         }
@@ -122,7 +161,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         {
             try
             {
-                // Launches Putty with auto-login parameters
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "putty.exe",

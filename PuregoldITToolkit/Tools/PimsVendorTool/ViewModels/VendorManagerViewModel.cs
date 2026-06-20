@@ -2,6 +2,7 @@
 using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.PimsVendorTool.Interfaces;
 using PuregoldITToolkit.Tools.PimsVendorTool.Models;
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels; // Added for global settings access
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -15,16 +16,6 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.ViewModels
 
         public ObservableCollection<VendorModel> VendorsList { get; } = new ObservableCollection<VendorModel>();
 
-        private string _sqlServer = "192.168.200.50";
-        private string _sqlDatabase = "PGBIS";
-        private string _sqlUsername = "sa";
-        private string _sqlPassword = "sa";
-
-        public string SqlServer { get => _sqlServer; set => SetProperty(ref _sqlServer, value); }
-        public string SqlDatabase { get => _sqlDatabase; set => SetProperty(ref _sqlDatabase, value); }
-        public string SqlUsername { get => _sqlUsername; set => SetProperty(ref _sqlUsername, value); }
-        public string SqlPassword { get => _sqlPassword; set => SetProperty(ref _sqlPassword, value); }
-
         private string _inputVendorCode;
         private string _inputVendorName;
         public string InputVendorCode { get => _inputVendorCode; set { SetProperty(ref _inputVendorCode, value); CheckIfEditMode(); } }
@@ -36,7 +27,6 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.ViewModels
         private bool _isEditMode;
         public bool IsEditMode { get => _isEditMode; set => SetProperty(ref _isEditMode, value); }
 
-        // --- NEW PROPERTIES ---
         private bool _isBusy;
         public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
 
@@ -58,7 +48,7 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.ViewModels
         }
 
         private int _currentPage = 1;
-        private int _pageSize = 20; // Changed to 20
+        private int _pageSize = 20;
         private int _totalPages = 1;
         private int _totalItems = 0;
 
@@ -96,7 +86,8 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.ViewModels
 
         private void ApplyCredentials()
         {
-            _repository.SetCredentials(SqlServer, SqlDatabase, SqlUsername, SqlPassword);
+            var settings = SettingsViewModel.GetCurrentSettings();
+            _repository.SetCredentials(settings.PimsSqlServer, settings.PimsSqlDatabase, settings.PimsSqlUsername, settings.PimsSqlPassword);
         }
 
         private void CheckIfEditMode()
@@ -113,15 +104,16 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.ViewModels
 
         private async Task LoadVendorsAsync()
         {
-            if (string.IsNullOrWhiteSpace(SqlServer) || string.IsNullOrWhiteSpace(SqlDatabase) || string.IsNullOrWhiteSpace(SqlUsername))
+            var settings = SettingsViewModel.GetCurrentSettings();
+            if (string.IsNullOrWhiteSpace(settings.PimsSqlServer) || string.IsNullOrWhiteSpace(settings.PimsSqlDatabase) || string.IsNullOrWhiteSpace(settings.PimsSqlUsername))
             {
-                StatusMessage = "Validation: Server, Database, and Username must be configured.";
+                StatusMessage = "Validation: PIMS Server, Database, and Username must be configured in Global Settings.";
                 return;
             }
 
-            IsBusy = true; // Show loading indicator
+            IsBusy = true;
             ApplyCredentials();
-            StatusMessage = $"Connecting to {SqlServer} and loading Page {CurrentPage}...";
+            StatusMessage = $"Connecting to {settings.PimsSqlServer} and loading Page {CurrentPage}...";
             VendorsList.Clear();
 
             var result = await _repository.GetVendorsPagedAsync(CurrentPage, PageSize, SearchQuery);
@@ -144,7 +136,7 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.ViewModels
             else StatusMessage = $"Showing {VendorsList.Count} items (Total: {TotalItems} vendors).";
 
             ClearForm();
-            IsBusy = false; // Hide loading indicator
+            IsBusy = false;
         }
 
         private async Task SaveVendorAsync()

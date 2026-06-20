@@ -19,13 +19,13 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.Services
                 try
                 {
                     string cutoffPeriod = $"{cutoffStart:MMMM d} TO {cutoffEnd:MMMM d}, {cutoffEnd.Year}".ToUpper();
-                    string subject = $"OT for cut-off {cutoffPeriod}";
+                    string subject = $"Overtime Application Approval";
 
                     string toAddresses = "jymendoza@puregold.com.ph";
                     string ccAddresses = "allITzone11@puregold.com.ph";
 
                     // 1. Generate Excel File
-                    string excelFileName = $"OT_Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                    string excelFileName = $"Overtime Monitoring.xlsx";
                     string excelPath = Path.Combine(Path.GetTempPath(), excelFileName);
 
                     using (var workbook = new XLWorkbook())

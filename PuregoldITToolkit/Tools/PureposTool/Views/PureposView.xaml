@@ -65,8 +65,8 @@
 
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbAutoPerm, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
-                    <TextBlock Text="Network Config (Used by CLI as well)" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
-                    <WrapPanel Margin="0,0,0,20">
+                    <TextBlock Text="Network Config (Uses Global Credentials)" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                    <WrapPanel Margin="0,0,0,25">
                         <StackPanel Margin="0,0,20,0" Width="160">
                             <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
                             <TextBox Text="{Binding PermissionData.LiveServerIp}"/>
@@ -77,26 +77,14 @@
                         </StackPanel>
                     </WrapPanel>
 
-                    <TextBlock Text="CONSO Credentials" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,15,0,15" FontSize="14"/>
-                    <WrapPanel Margin="0,0,0,25">
-                        <StackPanel Margin="0,0,20,0" Width="160">
-                            <TextBlock Text="Username" Style="{StaticResource FormLabel}"/>
-                            <TextBox Text="{Binding PermissionData.ConsoUser}"/>
-                        </StackPanel>
-                        <StackPanel Width="160">
-                            <TextBlock Text="Password" Style="{StaticResource FormLabel}"/>
-                            <TextBox Text="{Binding PermissionData.ConsoPassword}"/>
-                        </StackPanel>
-                    </WrapPanel>
-
-                    <Button Command="{Binding RunPermissionCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE PARALLEL PERMISSIONS" Style="{StaticResource DangerButton}" Padding="20,12"/>
+                    <Button Command="{Binding RunPermissionCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE PARALLEL PERMISSIONS" Style="{StaticResource DangerButton}" Padding="20,12" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbManualEj, Converter={StaticResource BoolToVis}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
                     <StackPanel>
-                        <TextBlock Text="Store &amp; Network" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                        <TextBlock Text="Store &amp; Network Configuration" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
                         <WrapPanel Margin="0,0,0,20">
                             <StackPanel Margin="0,0,20,0" Width="90">
                                 <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
@@ -113,7 +101,7 @@
                         </WrapPanel>
 
                         <TextBlock Text="Date Range" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,15" FontSize="14"/>
-                        <WrapPanel Margin="0,0,0,20">
+                        <WrapPanel Margin="0,0,0,25">
                             <StackPanel Margin="0,0,20,0" Width="160">
                                 <TextBlock Text="From Date" Style="{StaticResource FormLabel}"/>
                                 <DatePicker SelectedDate="{Binding EjData.DateFrom}" Height="34" Padding="5"/>
@@ -124,19 +112,7 @@
                             </StackPanel>
                         </WrapPanel>
 
-                        <TextBlock Text="CONSO Credentials" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,15" FontSize="14"/>
-                        <WrapPanel Margin="0,0,0,25">
-                            <StackPanel Margin="0,0,20,0" Width="160">
-                                <TextBlock Text="Username" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding EjData.ConsoUser}"/>
-                            </StackPanel>
-                            <StackPanel Width="160">
-                                <TextBlock Text="Password" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding EjData.ConsoPassword}"/>
-                            </StackPanel>
-                        </WrapPanel>
-
-                        <Button Command="{Binding RunEjSaveCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="SCAN &amp; SYNC EJ ARCHIVES" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="20,12" BorderThickness="0" Cursor="Hand"/>
+                        <Button Command="{Binding RunEjSaveCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="SCAN &amp; SYNC EJ ARCHIVES" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="20,12" BorderThickness="0" Cursor="Hand" HorizontalAlignment="Left"/>
                     </StackPanel>
                 </ScrollViewer>
             </Border>
@@ -179,12 +155,69 @@
             </Border>
 
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbEod, Converter={StaticResource BoolToVis}}">
-                <Grid>
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock Text="🛠️" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                        <TextBlock Text="EOD Generator is under construction." FontSize="18" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="Store Identity &amp; Network Configuration" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                        <WrapPanel Margin="0,0,0,20">
+                            <StackPanel Margin="0,0,15,12" Width="100">
+                                <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding EodData.StoreCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="160">
+                                <TextBlock Text="Store Name" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding EodData.StoreName, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="130">
+                                <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding EodData.LiveServerIp, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </WrapPanel>
+
+                        <TextBlock Text="Email Body Details" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                        <WrapPanel Margin="0,0,0,25">
+                            <StackPanel Margin="0,0,15,12" Width="200">
+                                <TextBlock Text="Store Manager" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding EodData.StoreManager, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,12" Width="250">
+                                <TextBlock Text="Store Officers" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding EodData.StoreOfficer, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </WrapPanel>
+
+                        <TextBlock Text="Execution Toggles" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                        <WrapPanel Margin="0,0,0,25">
+                            <CheckBox Content="Process YESTERDAY'S Date" IsChecked="{Binding EodData.UseYesterday}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,20,0"/>
+                            <CheckBox Content="Test Mode (Send to Self)" IsChecked="{Binding EodData.TestModeEmail}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,20,0"/>
+                            <CheckBox Content="Show Live Email Preview" IsChecked="{Binding EodData.EnableLivePreview}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold"/>
+                        </WrapPanel>
+
+                        <Border Visibility="{Binding EodData.EnableLivePreview, Converter={StaticResource BoolToVis}}" Background="#F3F3F3" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4" Margin="0,0,0,25">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Text="Live Email Details Preview" Background="{StaticResource BrandPrimary}" Foreground="#FFFFFF" FontWeight="Bold" Padding="12,6" Margin="0,0,0,10"/>
+
+                                <TextBlock Grid.Row="1" Text="{Binding EodPreviewTo, StringFormat='To: {0}'}" Foreground="#666666" FontWeight="SemiBold" Padding="12,0" TextWrapping="Wrap"/>
+                                <TextBlock Grid.Row="2" Text="{Binding EodPreviewCc, StringFormat='Cc: {0}'}" Foreground="#666666" FontWeight="SemiBold" Padding="12,4" TextWrapping="Wrap"/>
+                                <TextBlock Grid.Row="3" Text="{Binding EodPreviewSubject, StringFormat='Subject: {0}'}" Foreground="#000000" FontWeight="Bold" Padding="12,0" TextWrapping="Wrap"/>
+
+                                <TextBlock Grid.Row="4" Text="📎 Attached: 722_YYYYMMDD.zip" Foreground="#00529B" FontWeight="SemiBold" Padding="12,8" Margin="0,0,0,5"/>
+
+                                <TextBox Grid.Row="5" Text="{Binding EodPreviewBody, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Background="#FFFFFF" Foreground="#000000" FontFamily="Calibri, Arial" FontSize="14" Padding="12" BorderBrush="#CCCCCC" BorderThickness="0,1,0,0"/>
+                            </Grid>
+                        </Border>
+
+                        <Button Command="{Binding RunEodCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE EOD GENERATOR" Style="{StaticResource DangerButton}" Padding="20,15" HorizontalAlignment="Left"/>
                     </StackPanel>
-                </Grid>
+                </ScrollViewer>
             </Border>
         </Grid>
 

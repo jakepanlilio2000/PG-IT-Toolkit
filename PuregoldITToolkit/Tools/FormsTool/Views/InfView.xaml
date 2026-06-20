@@ -4,105 +4,200 @@
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
         <Style x:Key="FormLabel" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Setter Property="Margin" Value="0,0,0,5"/>
         </Style>
+
+        <Style x:Key="TbHeaderLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#666666"/>
+            <Setter Property="Width" Value="60"/>
+            <Setter Property="Margin" Value="0,2"/>
+        </Style>
+
+        <Style x:Key="TbHeaderValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#000000"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="15">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Style="{StaticResource CardStyle}">
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
             <StackPanel>
-                <TextBlock Text="Item Data Entry" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
-                <WrapPanel Margin="0,0,0,15">
-                    <TextBlock Text="INF Form Type:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{StaticResource TextPrimary}"/>
-                    <ComboBox ItemsSource="{Binding InfTypes}" SelectedItem="{Binding SelectedInfType}" Width="320" Height="34" Padding="5"/>
-                </WrapPanel>
 
-                <WrapPanel>
-                    <StackPanel Margin="0,0,15,12" Width="80">
-                        <TextBlock Text="Store Code *" Style="{StaticResource FormLabel}"/>
-                        <TextBox Text="{Binding CurrentEntry.StoreCode, UpdateSourceTrigger=PropertyChanged}"/>
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="Store Context &amp; Routing" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
+                        <WrapPanel>
+                            <StackPanel Margin="0,0,20,12" Width="200">
+                                <TextBlock Text="Store Name" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding StoreName, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,0,12" Width="300">
+                                <TextBlock Text="Additional CC (Optional)" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding AdditionalCc, UpdateSourceTrigger=PropertyChanged}" ToolTip="Separate multiple emails with commas"/>
+                            </StackPanel>
+                        </WrapPanel>
                     </StackPanel>
-                    <StackPanel Margin="0,0,15,12" Width="110">
-                        <TextBlock Text="SKU *" Style="{StaticResource FormLabel}"/>
-                        <TextBox Text="{Binding CurrentEntry.Sku, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,15,12" Width="130" Visibility="{Binding IsType4Apar, Converter={StaticResource BoolToVis}}">
-                        <TextBlock Text="Gen. SKU (APAR) *" Style="{StaticResource FormLabel}" Foreground="{StaticResource BrandPrimary}"/>
-                        <TextBox Text="{Binding CurrentEntry.GeneratedSku, UpdateSourceTrigger=PropertyChanged}" BorderBrush="{StaticResource BrandPrimary}"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,15,12" Width="140">
-                        <TextBlock Text="UPC" Style="{StaticResource FormLabel}"/>
-                        <TextBox Text="{Binding CurrentEntry.Upc, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,15,12" Width="110">
-                        <TextBlock Text="PurePOS Price" Style="{StaticResource FormLabel}"/>
-                        <TextBox Text="{Binding CurrentEntry.PurePosPrice, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,15,12" Width="110">
-                        <TextBlock Text="MMS Price" Style="{StaticResource FormLabel}"/>
-                        <TextBox Text="{Binding CurrentEntry.MmsPrice, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,15,12" Width="210">
-                        <TextBlock Text="Description" Style="{StaticResource FormLabel}"/>
-                        <TextBox Text="{Binding CurrentEntry.Description, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,15,12" Width="80">
-                        <TextBlock Text="Is Promo?" Style="{StaticResource FormLabel}"/>
-                        <TextBox Text="{Binding CurrentEntry.IsPromo, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsPromoLocked}"/>
-                    </StackPanel>
-                </WrapPanel>
+                </Border>
 
-                <Button Command="{Binding AddToTableCommand}" Content="+ ADD TO LIST" Style="{StaticResource DangerButton}" Padding="20,10" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="Item Data Entry" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
+                        <WrapPanel Margin="0,0,0,15">
+                            <TextBlock Text="INF Form Type:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{StaticResource TextPrimary}"/>
+                            <ComboBox ItemsSource="{Binding InfTypes}" SelectedItem="{Binding SelectedInfType}" Width="320" Height="34" Padding="5"/>
+                        </WrapPanel>
+
+                        <WrapPanel>
+                            <StackPanel Margin="0,0,15,12" Width="80">
+                                <TextBlock Text="Store Code *" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding CurrentEntry.StoreCode, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="110">
+                                <TextBlock Text="SKU *" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding CurrentEntry.Sku, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="130" Visibility="{Binding IsType4Apar, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="Gen. SKU (APAR) *" Style="{StaticResource FormLabel}" Foreground="{StaticResource BrandPrimary}"/>
+                                <TextBox Text="{Binding CurrentEntry.GeneratedSku, UpdateSourceTrigger=PropertyChanged}" BorderBrush="{StaticResource BrandPrimary}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="140">
+                                <TextBlock Text="UPC" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding CurrentEntry.Upc, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="110">
+                                <TextBlock Text="PurePOS Price" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding CurrentEntry.PurePosPrice, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="110">
+                                <TextBlock Text="MMS Price" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding CurrentEntry.MmsPrice, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="210">
+                                <TextBlock Text="Description" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding CurrentEntry.Description, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="80">
+                                <TextBlock Text="Is Promo?" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding CurrentEntry.IsPromo, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="{Binding IsPromoLocked}"/>
+                            </StackPanel>
+                        </WrapPanel>
+
+                        <Button Command="{Binding AddToTableCommand}" Content="+ ADD TO LIST" Style="{StaticResource DangerButton}" Padding="20,10" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="Supporting Screenshots (Optional)" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
+                        <Button Command="{Binding AddScreenshotCommand}" Content="BROWSE IMAGES..." Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" BorderThickness="0" Padding="15,8" HorizontalAlignment="Left" Margin="0,0,0,10" Cursor="Hand"/>
+                        <ItemsControl ItemsSource="{Binding ScreenshotPaths}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <WrapPanel Margin="0,0,0,5" VerticalAlignment="Center">
+                                        <Button Command="{Binding DataContext.RemoveScreenshotCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Content="✕" Style="{StaticResource DangerButton}" Padding="8,2" Margin="0,0,10,0"/>
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}" FontStyle="Italic"/>
+                                    </WrapPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource BgCard}" Margin="0,0,0,20" MinHeight="150" MaxHeight="300">
+                    <DataGrid ItemsSource="{Binding InfTable}" AutoGenerateColumns="False" CanUserAddRows="False" 
+                              HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}"
+                              BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}" VerticalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Store" Binding="{Binding StoreCode}" FontWeight="Bold" Width="70"/>
+                            <DataGridTextColumn Header="Reg. SKU" Binding="{Binding Sku}" Width="110"/>
+                            <DataGridTextColumn Header="Generated SKU (APAR)" Binding="{Binding GeneratedSku}" Width="150">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding DataContext.IsType4Apar, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="UPC" Binding="{Binding Upc}" Width="140"/>
+                            <DataGridTextColumn Header="PurePos Price" Binding="{Binding PurePosPrice}" Width="110"/>
+                            <DataGridTextColumn Header="MMS Price" Binding="{Binding MmsPrice}" Width="110"/>
+                            <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*"/>
+                            <DataGridTextColumn Header="Is Promo?" Binding="{Binding IsPromo}" Width="90"/>
+                            <DataGridTemplateColumn Header="Action" Width="80">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="✕" Command="{Binding DataContext.RemoveItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Style="{StaticResource DangerButton}" Padding="12,4"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Border>
+
+                <Border Background="#F3F3F3" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="Live Email Details Preview" Background="{StaticResource BrandPrimary}" Foreground="#FFFFFF" FontWeight="Bold" Padding="12,6" Margin="0,0,0,10"/>
+
+                        <Grid Grid.Row="1" Margin="12,0,12,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="To:" Style="{StaticResource TbHeaderLabel}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding InfPreviewTo}" Style="{StaticResource TbHeaderValue}" Foreground="#00529B"/>
+                        </Grid>
+
+                        <Grid Grid.Row="2" Margin="12,0,12,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Cc:" Style="{StaticResource TbHeaderLabel}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding InfPreviewCc}" Style="{StaticResource TbHeaderValue}" Foreground="#00529B"/>
+                        </Grid>
+
+                        <Grid Grid.Row="3" Margin="12,0,12,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="Subject:" Style="{StaticResource TbHeaderLabel}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding InfPreviewSubject}" Style="{StaticResource TbHeaderValue}" FontWeight="Bold"/>
+                        </Grid>
+
+                        <TextBox Grid.Row="5" Text="{Binding InfPreviewBody, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Background="#FFFFFF" Foreground="#000000" FontFamily="Calibri, Arial" FontSize="14" Padding="12" BorderBrush="#CCCCCC" BorderThickness="0,1,0,0" MinHeight="150"/>
+                    </Grid>
+                </Border>
+
             </StackPanel>
-        </Border>
+        </ScrollViewer>
 
-        <Border Grid.Row="1" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource BgCard}" Margin="0,0,0,20">
-            <DataGrid ItemsSource="{Binding InfTable}" AutoGenerateColumns="False" CanUserAddRows="False" 
-                      HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}"
-                      BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Store" Binding="{Binding StoreCode}" FontWeight="Bold" Width="70"/>
-                    <DataGridTextColumn Header="Reg. SKU" Binding="{Binding Sku}" Width="110"/>
-                    <DataGridTextColumn Header="Generated SKU (APAR)" Binding="{Binding GeneratedSku}" Width="150">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding DataContext.IsType4Apar, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn Header="UPC" Binding="{Binding Upc}" Width="140"/>
-                    <DataGridTextColumn Header="PurePos Price" Binding="{Binding PurePosPrice}" Width="110"/>
-                    <DataGridTextColumn Header="MMS Price" Binding="{Binding MmsPrice}" Width="110"/>
-                    <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*"/>
-                    <DataGridTextColumn Header="Is Promo?" Binding="{Binding IsPromo}" Width="90"/>
-                    <DataGridTemplateColumn Header="Action" Width="80">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Button Content="✕" Command="{Binding DataContext.RemoveItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" Style="{StaticResource DangerButton}" Padding="12,4"/>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Border>
-
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="1" Margin="0,15,0,0">
             <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" VerticalAlignment="Center"/>
-            <Button Command="{Binding ExportCommand}" Content="DRAFT INF EMAIL" Style="{StaticResource DangerButton}" Padding="30,12" HorizontalAlignment="Right"/>
+            <Button Command="{Binding ExportCommand}" Content="DRAFT INF EMAIL" Style="{StaticResource DangerButton}" Padding="30,15" HorizontalAlignment="Right"/>
         </Grid>
     </Grid>
 </UserControl>

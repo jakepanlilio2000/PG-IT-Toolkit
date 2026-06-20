@@ -39,27 +39,23 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 string pattern = $@"(?i)Bagger[^:]*:\s*{Regex.Escape(filters.SpecificBagger.Trim())}";
                 if (!Regex.IsMatch(block, pattern)) return false;
             }
-            // 1. Filter by Card Number (Last 4)
+
             if (!string.IsNullOrWhiteSpace(filters.FilterCardLast4))
             {
-                // Matches "Card: ****1234"
-                string pattern = $@"Card:\s*\**{Regex.Escape(filters.FilterCardLast4.Trim())}";
+                string pattern = $@"(?i)Member Card Number:\s*.*?{Regex.Escape(filters.FilterCardLast4.Trim())}\b";
                 if (!Regex.IsMatch(block, pattern)) return false;
             }
 
-            // 2. Filter by Member Name
             if (!string.IsNullOrWhiteSpace(filters.FilterMemberName))
             {
-                string pattern = $@"(?i)Member:\s*{Regex.Escape(filters.FilterMemberName.Trim())}";
+                string pattern = $@"(?i)Member Name:\s*.*?{Regex.Escape(filters.FilterMemberName.Trim())}";
                 if (!Regex.IsMatch(block, pattern)) return false;
             }
 
-            // 3. Filter by Exact Amount
             if (!string.IsNullOrWhiteSpace(filters.FilterExactAmount))
             {
-                // Looks for the total line, accounting for commas/decimals
                 string amountEscaped = Regex.Escape(filters.FilterExactAmount.Trim());
-                string pattern = $@"(?i)TOTAL\s*[\d,.]+\s*{amountEscaped}(\s|$)";
+                string pattern = $@"(?i)Total(?: Amt Due)?\s*(?:Php)?\s*{amountEscaped}(?:\s|$)";
                 if (!Regex.IsMatch(block, pattern)) return false;
             }
 
