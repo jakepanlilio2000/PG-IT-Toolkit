@@ -25,9 +25,10 @@ namespace PuregoldITToolkit.Tools.SodChecker.ViewModels
         private bool _isModeHistory = false;
         private bool _isModeTargeted = false;
 
-        public bool IsModeDaily { get => _isModeDaily; set { if (SetProperty(ref _isModeDaily, value) && value) { IsModeHistory = false; IsModeTargeted = false; RefreshDisplayGrid(); } } }
-        public bool IsModeHistory { get => _isModeHistory; set { if (SetProperty(ref _isModeHistory, value) && value) { IsModeDaily = false; IsModeTargeted = false; RefreshDisplayGrid(); } } }
-        public bool IsModeTargeted { get => _isModeTargeted; set { if (SetProperty(ref _isModeTargeted, value) && value) { IsModeDaily = false; IsModeHistory = false; RefreshDisplayGrid(); } } }
+        public bool IsModeDaily { get => _isModeDaily; set { if (SetProperty(ref _isModeDaily, value) && value) { IsModeHistory = false; IsModeTargeted = false; UpdateColumnVisibility(); RefreshDisplayGrid(); } } }
+        public bool IsModeHistory { get => _isModeHistory; set { if (SetProperty(ref _isModeHistory, value) && value) { IsModeDaily = false; IsModeTargeted = false; UpdateColumnVisibility(); RefreshDisplayGrid(); } } }
+        public bool IsModeTargeted { get => _isModeTargeted; set { if (SetProperty(ref _isModeTargeted, value) && value) { IsModeDaily = false; IsModeHistory = false; UpdateColumnVisibility(); RefreshDisplayGrid(); } } }
+
         // Parameters
         private DateTime _targetDate = DateTime.Now;
         private DateTime _startDate = DateTime.Now.AddDays(-7);
@@ -39,7 +40,22 @@ namespace PuregoldITToolkit.Tools.SodChecker.ViewModels
         public DateTime StartDate { get => _startDate; set { if (SetProperty(ref _startDate, value)) RefreshDisplayGrid(); } }
         public DateTime EndDate { get => _endDate; set { if (SetProperty(ref _endDate, value)) RefreshDisplayGrid(); } }
         public StoreConfig SelectedHistoryStore { get => _selectedHistoryStore; set { if (SetProperty(ref _selectedHistoryStore, value)) RefreshDisplayGrid(); } }
-        public string SelectedColumn { get => _selectedColumn; set { if (SetProperty(ref _selectedColumn, value)) RefreshDisplayGrid(); } }
+        public string SelectedColumn { get => _selectedColumn; set { if (SetProperty(ref _selectedColumn, value)) { UpdateColumnVisibility(); RefreshDisplayGrid(); } } }
+
+        // --- NEW: Column Visibility Toggles ---
+        public bool IsColEjVisible => !IsModeTargeted || SelectedColumn == "EJ";
+        public bool IsColPollogVisible => !IsModeTargeted || SelectedColumn == "Pollog";
+        public bool IsColCrmVisible => !IsModeTargeted || SelectedColumn == "CRM";
+        public bool IsColPromoVisible => !IsModeTargeted || SelectedColumn == "Promo";
+        public bool IsColBirVisible => !IsModeTargeted || SelectedColumn == "BIR";
+        public bool IsColNonTradeVisible => !IsModeTargeted || SelectedColumn == "NonTrade";
+        public bool IsColDosVisible => !IsModeTargeted || SelectedColumn == "DOS Log";
+        public bool IsColMobPriceVisible => !IsModeTargeted || SelectedColumn == "Mob Price";
+        public bool IsColPlusKuVisible => !IsModeTargeted || SelectedColumn == "PlusKu";
+        public bool IsColRegPriceVisible => !IsModeTargeted || SelectedColumn == "Reg Price";
+        public bool IsColSis98Visible => !IsModeTargeted || SelectedColumn == "SIS98";
+        public bool IsColShelftagVisible => !IsModeTargeted || SelectedColumn == "Shelftag";
+        public bool IsColKioskVisible => !IsModeTargeted || SelectedColumn == "Kiosk";
 
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
         public int ScanProgress { get => _scanProgress; set => SetProperty(ref _scanProgress, value); }
@@ -69,6 +85,23 @@ namespace PuregoldITToolkit.Tools.SodChecker.ViewModels
             _ = LoadStoresAsync();
         }
 
+        private void UpdateColumnVisibility()
+        {
+            OnPropertyChanged(nameof(IsColEjVisible));
+            OnPropertyChanged(nameof(IsColPollogVisible));
+            OnPropertyChanged(nameof(IsColCrmVisible));
+            OnPropertyChanged(nameof(IsColPromoVisible));
+            OnPropertyChanged(nameof(IsColBirVisible));
+            OnPropertyChanged(nameof(IsColNonTradeVisible));
+            OnPropertyChanged(nameof(IsColDosVisible));
+            OnPropertyChanged(nameof(IsColMobPriceVisible));
+            OnPropertyChanged(nameof(IsColPlusKuVisible));
+            OnPropertyChanged(nameof(IsColRegPriceVisible));
+            OnPropertyChanged(nameof(IsColSis98Visible));
+            OnPropertyChanged(nameof(IsColShelftagVisible));
+            OnPropertyChanged(nameof(IsColKioskVisible));
+        }
+
         private async void RefreshDisplayGrid()
         {
             StoreResults.Clear();
@@ -94,10 +127,7 @@ namespace PuregoldITToolkit.Tools.SodChecker.ViewModels
                     {
                         foreach (var s in AvailableStores)
                         {
-                            // Apply targeted column initial setup
                             var result = new SodStoreResult { DisplayId = $"{s.StoreCode} ({d:MM/dd})", DisplayName = s.StoreName, TargetStoreCode = s.StoreCode, TargetDate = d };
-
-                            // Pre-mark irrelevant columns as gray Skipped state
                             SetInitialSkippedStates(result, SelectedColumn);
                             StoreResults.Add(result);
                         }

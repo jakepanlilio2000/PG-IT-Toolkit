@@ -9,7 +9,6 @@ namespace PuregoldITToolkit.Tools.SettingsTool.Services
 {
     public class SettingsService : ISettingsService
     {
-        // This is where the signature is physically stored
         private readonly string _signatureFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EmailSignature.txt");
         public static readonly string ConfigFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "GlobalConfig.json");
         public async Task<string> LoadSignatureAsync()

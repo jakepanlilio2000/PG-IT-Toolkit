@@ -8,10 +8,10 @@ namespace PuregoldITToolkit.Tools.SettingsTool.Models
         private string _signatureHtml;
         private string _smtpServer = "192.168.200.153";
         private int _smtpPort = 587;
-        private string _smtpUser = "jcpanlilio@puregold.intra";
-        private string _smtpPass = "steep seldom limited";
-        private string _senderName = "IT-SAN FERNANDO Jake Ashley C. Panlilio";
-        private string _thunderbirdSentPath = @"D:\Jash Email\Mail\Local Folders\Sent";
+        private string _smtpUser = "email@puregold.intra";
+        private string _smtpPass = "defaultpassword";
+        private string _senderName = "IT-Biringan Crispin Dela Cruz";
+        private string _thunderbirdSentPath = @"D:\*foldername*\Mail\Local Folders\Sent";
 
         // PurePOS & Network Credentials
         private string _consoUser = "pgsanfernando722";

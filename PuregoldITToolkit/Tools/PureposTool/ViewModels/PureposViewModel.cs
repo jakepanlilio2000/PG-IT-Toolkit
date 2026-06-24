@@ -19,7 +19,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         public EodModel EodData { get; } = new EodModel();
 
         // CLI Properties
-        private string _cliTargetIp = "192.92.92.51";
+        private string _cliTargetIp = "***.***.***.51";
         private string _cliUsername = "cashier";
         private string _cliPassword = "cashier";
         private string _cliCommand = "ls -la";
@@ -32,11 +32,11 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         private string _cliOutput = "Ready to execute...\n";
         public string CliOutput { get => _cliOutput; set => SetProperty(ref _cliOutput, value); }
 
-        // EOD Preview Properties
         public string EodPreviewTo { get; private set; }
         public string EodPreviewCc { get; private set; }
         public string EodPreviewSubject { get; private set; }
         public string EodPreviewBody { get; private set; }
+        public string EodPreviewAttachment { get; private set; } 
 
         private bool _isBusy;
         public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
@@ -63,8 +63,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             RunAllPosCliCommand = new AsyncRelayCommand(ExecuteAllPosCliAsync);
             RunConsoCliCommand = new AsyncRelayCommand(ExecuteConsoCliAsync);
             OpenPuttyCommand = new RelayCommand(ExecutePutty);
-
-            // Subscribe to EOD Changes to update Live Preview in real-time
             EodData.PropertyChanged += (s, e) => UpdateEodPreview();
             UpdateEodPreview();
         }
@@ -77,14 +75,15 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             EodPreviewCc = EodData.TestModeEmail ? "" : "jymendoza@puregold.com.ph, allITzone11@puregold.com.ph";
 
             DateTime targetDate = EodData.UseYesterday ? DateTime.Now.AddDays(-1) : DateTime.Now;
-            EodPreviewSubject = $"{EodData.StoreCode} - {EodData.StoreName} - EOD File Purepos POLLOG {targetDate:MM-dd-yy}";
 
-            // FIX: Changed EodData.StoreOfficer to EodData.StoreOffice
-            EodPreviewBody = $"Masayang Araw!\n\nPlease see attached POLLOG file for {EodData.StoreCode} - {EodData.StoreName}\n\nStore Manager: {EodData.StoreManager}\nStore Offices: {EodData.StoreOfficer}\n\n[HTML Signature attached internally]";
+            EodPreviewSubject = $"{EodData.StoreCode} - {EodData.StoreName} - EOD File Purepos POLLOG {targetDate:MM-dd-yy}";
+            EodPreviewAttachment = $"📎 Attached: {EodData.StoreCode}_{targetDate:yyyyMMdd}.zip";
+            EodPreviewBody = $"Masayang Araw!\n\nPlease see attached POLLOG file for {EodData.StoreCode} - {EodData.StoreName}\n\nStore Manager: {EodData.StoreManager}\nStore Officers: {EodData.StoreOfficer}\n\n[HTML Signature attached internally]";
 
             OnPropertyChanged(nameof(EodPreviewTo));
             OnPropertyChanged(nameof(EodPreviewCc));
             OnPropertyChanged(nameof(EodPreviewSubject));
+            OnPropertyChanged(nameof(EodPreviewAttachment));
             OnPropertyChanged(nameof(EodPreviewBody));
         }
 
@@ -149,7 +148,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             IsBusy = true;
             AppendLog($"\n> Executing on CONSO ({PermissionData.LiveServerIp}): {CliCommand}");
 
-            // FIX: Pull ConsoUser and ConsoPassword dynamically from global settings
             var globalSettings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
 
             string result = await _service.RunSshCommandAsync(PermissionData.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword, CliCommand);

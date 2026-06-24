@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -46,7 +47,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
 
             tasks.Add(Task.Run(() =>
             {
-                // Pull credentials from Global Settings
                 ExecuteSshCommandSync(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword, "sh /opt/purepos/scripts/permission.sh", logCallback);
             }));
 
@@ -137,7 +137,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                     }
                     if (cleanedCount == 0) logCallback("[-] No old remnants found to clean.");
 
-                    // 1. Download via SFTP using Global Settings
                     logCallback($"\n[*] Connecting to {config.LiveServerIp} to download {dosFilename}...");
                     using (var sftp = new Renci.SshNet.SftpClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
                     {
@@ -180,10 +179,8 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
 
                     logCallback("[*] Preparing email...");
 
-                    System.Net.Mail.MailMessage mail = new System.Net.Mail.MailMessage
-                    {
-                        From = new System.Net.Mail.MailAddress(globalSettings.SmtpUser, globalSettings.SenderName)
-                    };
+                    System.Net.Mail.MailMessage mail = new System.Net.Mail.MailMessage();
+                    mail.From = new System.Net.Mail.MailAddress(globalSettings.SmtpUser, globalSettings.SenderName);
 
                     if (config.TestModeEmail)
                     {
@@ -225,13 +222,49 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                         smtp.Send(mail);
                     }
                     logCallback("[+] Email successfully sent out over the network.");
-
                     logCallback("[*] Injecting copy into Thunderbird Local Sent folder...");
                     if (!string.IsNullOrWhiteSpace(globalSettings.ThunderbirdSentPath) && Directory.Exists(Path.GetDirectoryName(globalSettings.ThunderbirdSentPath)))
                     {
-                        string mboxSeparator = $"From - {DateTime.Now:ddd MMM dd HH:mm:ss yyyy}\n";
-                        string rawHeaders = $"From: {mail.From}\r\nTo: {mail.To}\r\nSubject: {mail.Subject}\r\nDate: {DateTime.Now:R}\r\nContent-Type: text/html\r\n\r\n";
-                        File.AppendAllText(globalSettings.ThunderbirdSentPath, mboxSeparator + rawHeaders + htmlContent + "\r\n\r\n");
+                        string boundary = "----=_Part_" + Guid.NewGuid().ToString("N");
+                        StringBuilder mboxContent = new StringBuilder();
+                        mboxContent.Append($"From - {DateTime.Now.ToString("ddd MMM dd HH:mm:ss yyyy", System.Globalization.CultureInfo.InvariantCulture)}\n");
+                        mboxContent.AppendLine($"From: {mail.From}");
+                        mboxContent.AppendLine($"To: {mail.To}");
+
+                        if (mail.CC.Count > 0)
+                        {
+                            var ccList = mail.CC.Select(c => c.Address).ToArray();
+                            mboxContent.AppendLine($"Cc: {string.Join(", ", ccList)}");
+                        }
+
+                        mboxContent.AppendLine($"Subject: {mail.Subject}");
+                        mboxContent.AppendLine($"Date: {DateTime.Now:R}");
+                        mboxContent.AppendLine("MIME-Version: 1.0");
+                        mboxContent.AppendLine($"Content-Type: multipart/mixed; boundary=\"{boundary}\"");
+                        mboxContent.AppendLine();
+                        mboxContent.AppendLine($"--{boundary}");
+                        mboxContent.AppendLine("Content-Type: text/html; charset=utf-8");
+                        mboxContent.AppendLine();
+                        mboxContent.AppendLine(htmlContent);
+                        mboxContent.AppendLine();
+
+                        if (File.Exists(zipFilepath))
+                        {
+                            byte[] zipBytes = File.ReadAllBytes(zipFilepath);
+                            string base64Zip = Convert.ToBase64String(zipBytes, Base64FormattingOptions.InsertLineBreaks);
+
+                            mboxContent.AppendLine($"--{boundary}");
+                            mboxContent.AppendLine($"Content-Type: application/zip; name=\"{zipFilename}\"");
+                            mboxContent.AppendLine("Content-Transfer-Encoding: base64");
+                            mboxContent.AppendLine($"Content-Disposition: attachment; filename=\"{zipFilename}\"");
+                            mboxContent.AppendLine();
+                            mboxContent.AppendLine(base64Zip);
+                        }
+
+                        mboxContent.AppendLine($"--{boundary}--");
+                        mboxContent.AppendLine();
+
+                        File.AppendAllText(globalSettings.ThunderbirdSentPath, mboxContent.ToString());
                         logCallback($"[+] Local copy written to {globalSettings.ThunderbirdSentPath}");
                     }
                     else
@@ -287,8 +320,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                         logCallback("\nALL EJ FILES ARE UP TO DATE. No missing dates found.");
                         return;
                     }
-
-                    // (SFTP Upload Block would go here using globalSettings.ConsoUser and globalSettings.ConsoPassword)
 
                     logCallback("\nMANUAL EJ SAVE COMPLETED.");
                 }

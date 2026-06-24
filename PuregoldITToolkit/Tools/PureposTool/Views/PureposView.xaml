@@ -209,7 +209,7 @@
                                 <TextBlock Grid.Row="2" Text="{Binding EodPreviewCc, StringFormat='Cc: {0}'}" Foreground="#666666" FontWeight="SemiBold" Padding="12,4" TextWrapping="Wrap"/>
                                 <TextBlock Grid.Row="3" Text="{Binding EodPreviewSubject, StringFormat='Subject: {0}'}" Foreground="#000000" FontWeight="Bold" Padding="12,0" TextWrapping="Wrap"/>
 
-                                <TextBlock Grid.Row="4" Text="📎 Attached: 722_YYYYMMDD.zip" Foreground="#00529B" FontWeight="SemiBold" Padding="12,8" Margin="0,0,0,5"/>
+                                <TextBlock Grid.Row="4" Text="{Binding EodPreviewAttachment}" Foreground="#00529B" FontWeight="SemiBold" Padding="12,8" Margin="0,0,0,5"/>
 
                                 <TextBox Grid.Row="5" Text="{Binding EodPreviewBody, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Background="#FFFFFF" Foreground="#000000" FontFamily="Calibri, Arial" FontSize="14" Padding="12" BorderBrush="#CCCCCC" BorderThickness="0,1,0,0"/>
                             </Grid>

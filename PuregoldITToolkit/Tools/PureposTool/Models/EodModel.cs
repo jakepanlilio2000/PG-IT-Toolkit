@@ -7,9 +7,9 @@ namespace PuregoldITToolkit.Tools.PureposTool.Models
     {
         private string _liveServerIp;
         private string _storeCode;
-        private string _storeName = "San Fernando";
-        private string _storeManager = "Mr. Gener G. Paguio";
-        private string _storeOfficer = "Mr. Francis Pio Emmanuel Y. Pena & Mr. Ulysses Torres";
+        private string _storeName = "Biringan";
+        private string _storeManager = "Mr. Jose P. Rizal";
+        private string _storeOfficer = "Mr. Juan Dela Cruz & Mr. Julian Felippe";
         private bool _useYesterday = false;
         private bool _testModeEmail = false;
         private bool _enableLivePreview = false;

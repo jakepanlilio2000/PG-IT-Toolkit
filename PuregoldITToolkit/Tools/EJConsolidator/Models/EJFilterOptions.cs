@@ -28,6 +28,8 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Models
         public string FilterCardLast4 { get; set; }
         public string FilterMemberName { get; set; }
         public string FilterExactAmount { get; set; }
+
+        public string FilterProductOrSku { get; set; }
     }
 
 }

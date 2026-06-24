@@ -76,6 +76,8 @@
     </UserControl.Resources>
 
     <Grid>
+        <FrameworkElement x:Name="VmProxy" DataContext="{Binding}" Visibility="Collapsed"/>
+
         <Grid Margin="15">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -85,7 +87,6 @@
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Margin="0,0,0,15">
-                
                 <StackPanel Orientation="Horizontal">
                     <RadioButton Content="Daily Overview" IsChecked="{Binding IsModeDaily}" Style="{StaticResource SegmentedTab}"/>
                     <RadioButton Content="Store History" IsChecked="{Binding IsModeHistory}" Style="{StaticResource SegmentedTab}"/>
@@ -147,91 +148,104 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="ID / Date" Binding="{Binding DisplayId}" FontWeight="Bold" Width="100" IsReadOnly="True"/>
                         <DataGridTextColumn Header="Name / Day" Binding="{Binding DisplayName}" Width="170" IsReadOnly="True"/>
-                        <DataGridTemplateColumn Header="EJ" Width="*">
+
+                        <DataGridTemplateColumn Header="EJ" Width="*" Visibility="{Binding DataContext.IsColEjVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding EjStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Pollog" Width="*">
+
+                        <DataGridTemplateColumn Header="Pollog" Width="*" Visibility="{Binding DataContext.IsColPollogVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding PollogStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="CRM" Width="*">
+
+                        <DataGridTemplateColumn Header="CRM" Width="*" Visibility="{Binding DataContext.IsColCrmVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding CrmStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Promo" Width="*">
+
+                        <DataGridTemplateColumn Header="Promo" Width="*" Visibility="{Binding DataContext.IsColPromoVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding PromoStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="BIR" Width="*">
+
+                        <DataGridTemplateColumn Header="BIR" Width="*" Visibility="{Binding DataContext.IsColBirVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding BirStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="NonTrade" Width="*">
+
+                        <DataGridTemplateColumn Header="NonTrade" Width="*" Visibility="{Binding DataContext.IsColNonTradeVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding NonTradeStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="DOS Log" Width="*">
+
+                        <DataGridTemplateColumn Header="DOS Log" Width="*" Visibility="{Binding DataContext.IsColDosVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding DosStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Mob Prc" Width="*">
+
+                        <DataGridTemplateColumn Header="Mob Prc" Width="*" Visibility="{Binding DataContext.IsColMobPriceVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding MobilePriceStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="PlusKu" Width="*">
+
+                        <DataGridTemplateColumn Header="PlusKu" Width="*" Visibility="{Binding DataContext.IsColPlusKuVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding PlusKuPriceStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Reg Prc" Width="*">
+
+                        <DataGridTemplateColumn Header="Reg Prc" Width="*" Visibility="{Binding DataContext.IsColRegPriceVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding RegPriceStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="SIS98" Width="*">
+
+                        <DataGridTemplateColumn Header="SIS98" Width="*" Visibility="{Binding DataContext.IsColSis98Visible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding Sis98Status}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="ShelfT" Width="*">
+
+                        <DataGridTemplateColumn Header="ShelfT" Width="*" Visibility="{Binding DataContext.IsColShelftagVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding ShelftagStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="Kiosk" Width="*">
+
+                        <DataGridTemplateColumn Header="Kiosk" Width="*" Visibility="{Binding DataContext.IsColKioskVisible, Source={x:Reference VmProxy}, Converter={StaticResource BoolToVis}}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <ContentControl Content="{Binding KioskStatus}" ContentTemplate="{StaticResource StatusCellTemplate}"/>

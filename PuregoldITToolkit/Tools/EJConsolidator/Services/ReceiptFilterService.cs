@@ -9,13 +9,11 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
     {
         public bool IsMatch(string block, EJFilterOptions filters)
         {
-            // Transaction Finder Mode Override
             if (filters.IsModeTrxFinder && !string.IsNullOrWhiteSpace(filters.TargetTrxNumber))
             {
                 return block.IndexOf(filters.TargetTrxNumber.Trim(), StringComparison.OrdinalIgnoreCase) >= 0;
             }
 
-            // Standard Consolidator Filters
             if (filters.SecondReceiptOnly && block.IndexOf("SECOND RECEIPT", StringComparison.OrdinalIgnoreCase) < 0)
                 return false;
 
@@ -57,6 +55,12 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 string amountEscaped = Regex.Escape(filters.FilterExactAmount.Trim());
                 string pattern = $@"(?i)Total(?: Amt Due)?\s*(?:Php)?\s*{amountEscaped}(?:\s|$)";
                 if (!Regex.IsMatch(block, pattern)) return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(filters.FilterProductOrSku))
+            {
+                if (block.IndexOf(filters.FilterProductOrSku.Trim(), StringComparison.OrdinalIgnoreCase) < 0)
+                    return false;
             }
 
             return true;

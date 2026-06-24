@@ -13,8 +13,6 @@ namespace PuregoldITToolkit.Tools.SettingsTool.ViewModels
     public class SettingsViewModel : ViewModelBase
     {
         private readonly ISettingsService _settingsService;
-
-        // The backing field and property with both GET and SET to fix CS0200 and IDE0044
         private SettingsModel _settingsData;
         public SettingsModel SettingsData
         {
@@ -30,19 +28,14 @@ namespace PuregoldITToolkit.Tools.SettingsTool.ViewModels
         public SettingsViewModel(ISettingsService settingsService)
         {
             _settingsService = settingsService;
-
-            // Initialize empty model so the UI doesn't crash before loading
             _settingsData = new SettingsModel();
 
             SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
-
-            // Load the settings asynchronously on startup
             _ = LoadSettingsAsync();
         }
 
         private async Task LoadSettingsAsync()
         {
-            // Call the correct generic LoadSettingsAsync method to fix CS1061
             SettingsData = await _settingsService.LoadSettingsAsync();
         }
 
@@ -51,8 +44,6 @@ namespace PuregoldITToolkit.Tools.SettingsTool.ViewModels
             bool success = await _settingsService.SaveSettingsAsync(SettingsData);
             StatusMessage = success ? "Global configurations successfully saved!" : "Failed to save settings.";
         }
-
-        // Helper method for other tools (like EOD Generator) to quickly pull settings
         public static SettingsModel GetCurrentSettings()
         {
             if (File.Exists(SettingsService.ConfigFilePath))

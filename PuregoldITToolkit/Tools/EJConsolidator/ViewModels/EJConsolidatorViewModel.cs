@@ -2,7 +2,7 @@
 using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.EJConsolidator.Interfaces;
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
-using PuregoldITToolkit.Tools.SettingsTool.ViewModels; 
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
 using System.Net;
 using System.Text.RegularExpressions;
@@ -22,7 +22,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
         public bool IsModeConsolidator { get => _isModeConsolidator; set { if (SetProperty(ref _isModeConsolidator, value) && value) IsModeTrxFinder = false; } }
         public bool IsModeTrxFinder { get => _isModeTrxFinder; set { if (SetProperty(ref _isModeTrxFinder, value) && value) IsModeConsolidator = false; } }
 
-        // Settings (Defaults pulled dynamically in constructor)
+        // Settings
         private string _storeCode;
         private string _targetTrxNumber;
         private string _posLanes;
@@ -44,6 +44,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
         private string _filterCardLast4;
         private string _filterMemberName;
         private string _filterExactAmount;
+        private string _filterProductOrSku; // NEW FILTER
 
         // Status
         private string _statusMessage = "Ready.";
@@ -70,6 +71,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
         public string FilterCardLast4 { get => _filterCardLast4; set => SetProperty(ref _filterCardLast4, value); }
         public string FilterMemberName { get => _filterMemberName; set => SetProperty(ref _filterMemberName, value); }
         public string FilterExactAmount { get => _filterExactAmount; set => SetProperty(ref _filterExactAmount, value); }
+        public string FilterProductOrSku { get => _filterProductOrSku; set => SetProperty(ref _filterProductOrSku, value); }
 
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
         public string StatusColor { get => _statusColor; set => SetProperty(ref _statusColor, value); }
@@ -83,7 +85,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
             _consolidatorService = consolidatorService;
             ProcessCommand = new AsyncRelayCommand(ExecuteProcessAsync, () => !IsBusy);
 
-            // Pull defaults from global settings
             var globalSettings = SettingsViewModel.GetCurrentSettings();
             StoreCode = globalSettings.DefaultStoreCode;
             LiveServerIp = globalSettings.DefaultLiveServerIp;
@@ -91,65 +92,11 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
 
         private async Task ExecuteProcessAsync()
         {
-            // 1. Store Code Validation
-            if (string.IsNullOrWhiteSpace(StoreCode))
-            {
-                SetStatus("Validation Error: Store Code cannot be empty.", "#C41E3A");
-                return;
-            }
-            if (!Regex.IsMatch(StoreCode.Trim(), @"^\d+$"))
-            {
-                SetStatus("Validation Error: Store Code must contain only numbers.", "#C41E3A");
-                return;
-            }
-
-            // 2. Live Server IP Validation
-            if (string.IsNullOrWhiteSpace(LiveServerIp))
-            {
-                SetStatus("Validation Error: Live Server IP cannot be empty.", "#C41E3A");
-                return;
-            }
-            if (!IPAddress.TryParse(LiveServerIp.Trim(), out _))
-            {
-                SetStatus("Validation Error: Live Server IP is not a valid IPv4 address.", "#C41E3A");
-                return;
-            }
-
-            // 3. POS Count Validation
-            if (TotalPosCount <= 0)
-            {
-                SetStatus("Validation Error: Total POS Lanes must be greater than 0.", "#C41E3A");
-                return;
-            }
-
-            // 4. Date Validation
-            if (StartDate.Date > EndDate.Date)
-            {
-                SetStatus("Validation Error: Start Date cannot be later than End Date.", "#C41E3A");
-                return;
-            }
-            if (EndDate.Date > DateTime.Now.Date)
-            {
-                SetStatus("Validation Error: Cannot process future dates.", "#C41E3A");
-                return;
-            }
-
-            // 5. Target Lanes Validation
-            if (!string.IsNullOrWhiteSpace(PosLanes))
-            {
-                if (!Regex.IsMatch(PosLanes, @"^[\d\s,]+$"))
-                {
-                    SetStatus("Validation Error: Target Lanes must be numbers separated by commas (e.g. 1, 3, 10).", "#C41E3A");
-                    return;
-                }
-            }
-
-            // 6. Mode-Specific Validations
-            if (IsModeTrxFinder && string.IsNullOrWhiteSpace(TargetTrxNumber))
-            {
-                SetStatus("Validation Error: Transaction Number is required in Finder Mode.", "#C41E3A");
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(StoreCode)) { SetStatus("Error: Store Code cannot be empty.", "#C41E3A"); return; }
+            if (string.IsNullOrWhiteSpace(LiveServerIp)) { SetStatus("Error: Live Server IP cannot be empty.", "#C41E3A"); return; }
+            if (TotalPosCount <= 0) { SetStatus("Error: Total POS Lanes must be greater than 0.", "#C41E3A"); return; }
+            if (StartDate.Date > EndDate.Date) { SetStatus("Error: Start Date cannot be later than End Date.", "#C41E3A"); return; }
+            if (IsModeTrxFinder && string.IsNullOrWhiteSpace(TargetTrxNumber)) { SetStatus("Error: Transaction Number is required in Finder Mode.", "#C41E3A"); return; }
 
             IsBusy = true;
             ProgressValue = 0;
@@ -174,7 +121,8 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                     XReadZReadOnly = this.XReadZReadOnly,
                     FilterCardLast4 = this.FilterCardLast4?.Trim(),
                     FilterMemberName = this.FilterMemberName?.Trim(),
-                    FilterExactAmount = this.FilterExactAmount?.Trim()
+                    FilterExactAmount = this.FilterExactAmount?.Trim(),
+                    FilterProductOrSku = this.FilterProductOrSku?.Trim() // Added mapping
                 };
 
                 for (var d = StartDate.Date; d <= EndDate.Date; d = d.AddDays(1)) options.TargetDates.Add(d);
@@ -198,7 +146,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                 }
                 else
                 {
-                    SetStatus("Process finished, but NO files were downloaded or NO receipts matched your filters.", "#E67E22");
+                    SetStatus("Process finished, but NO receipts matched your filters.", "#E67E22");
                 }
             }
             catch (Exception ex)
