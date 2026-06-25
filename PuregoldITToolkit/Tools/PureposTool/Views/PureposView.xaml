@@ -55,139 +55,195 @@
         </Grid.ColumnDefinitions>
 
         <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,0,0,15">
-            <RadioButton x:Name="RbAutoPerm" Content="Auto Permission.sh" IsChecked="True" Style="{StaticResource SegmentedTab}"/>
-            <RadioButton x:Name="RbManualEj" Content="Manual EJ Save" Style="{StaticResource SegmentedTab}"/>
-            <RadioButton x:Name="RbCli" Content="Remote CLI (SSH)" Style="{StaticResource SegmentedTab}"/>
-            <RadioButton x:Name="RbEod" Content="EOD Generator" Style="{StaticResource SegmentedTab}"/>
+            <RadioButton x:Name="RbAutoPerm" Content="🔑 Auto Permission" IsChecked="True" Style="{StaticResource SegmentedTab}"/>
+            <RadioButton x:Name="RbManualEj" Content="🗃️ Manual EJ Save" Style="{StaticResource SegmentedTab}"/>
+            <RadioButton x:Name="RbCli" Content="💻 Remote CLI" Style="{StaticResource SegmentedTab}"/>
+            <RadioButton x:Name="RbEod" Content="📧 EOD Generator" Style="{StaticResource SegmentedTab}"/>
         </StackPanel>
 
         <Grid Grid.Row="2" Grid.Column="0" Margin="0,0,20,0">
 
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbAutoPerm, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
-                    <TextBlock Text="Network Config (Uses Global Credentials)" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
-                    <WrapPanel Margin="0,0,0,25">
-                        <StackPanel Margin="0,0,20,0" Width="160">
-                            <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
-                            <TextBox Text="{Binding PermissionData.LiveServerIp}"/>
-                        </StackPanel>
-                        <StackPanel Width="110">
-                            <TextBlock Text="Total POS Lanes" Style="{StaticResource FormLabel}"/>
-                            <TextBox Text="{Binding PermissionData.TotalLanes}"/>
-                        </StackPanel>
-                    </WrapPanel>
+                    <TextBlock Text="Auto Permission Batch Execution" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,5"/>
+                    <TextBlock Text="Instantly triggers 'permission.sh' across all POS lanes and the CONSO server simultaneously to resolve local access issues." TextWrapping="Wrap" FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20"/>
 
-                    <Button Command="{Binding RunPermissionCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE PARALLEL PERMISSIONS" Style="{StaticResource DangerButton}" Padding="20,12" HorizontalAlignment="Left"/>
+                    <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
+                        <StackPanel>
+                            <TextBlock Text="Network Topology (Uses Global Credentials)" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
+                            <WrapPanel>
+                                <StackPanel Margin="0,0,25,0" Width="160">
+                                    <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
+                                    <TextBox Text="{Binding PermissionData.LiveServerIp}" FontWeight="Bold"/>
+                                </StackPanel>
+                                <StackPanel Width="110">
+                                    <TextBlock Text="Total POS Lanes" Style="{StaticResource FormLabel}"/>
+                                    <TextBox Text="{Binding PermissionData.TotalLanes}"/>
+                                </StackPanel>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Command="{Binding RunPermissionCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="🚀 EXECUTE PARALLEL PERMISSIONS" Style="{StaticResource DangerButton}" Padding="20,15" HorizontalAlignment="Left" FontSize="14"/>
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbManualEj, Converter={StaticResource BoolToVis}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
                     <StackPanel>
-                        <TextBlock Text="Store &amp; Network Configuration" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
-                        <WrapPanel Margin="0,0,0,20">
-                            <StackPanel Margin="0,0,20,0" Width="90">
-                                <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding EjData.StoreCode}" FontWeight="Bold"/>
-                            </StackPanel>
-                            <StackPanel Margin="0,0,20,0" Width="130">
-                                <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding EjData.LiveServerIp}"/>
-                            </StackPanel>
-                            <StackPanel Width="130">
-                                <TextBlock Text="FTP Server" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding EjData.FtpServer}"/>
-                            </StackPanel>
-                        </WrapPanel>
+                        <TextBlock Text="Manual EJ Archive Synchronization" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,5"/>
+                        <TextBlock Text="Detects missing EJ files on the Main FTP (.177) and securely bridges the missing archives from the local Conso server via SFTP." TextWrapping="Wrap" FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Date Range" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,10,0,15" FontSize="14"/>
-                        <WrapPanel Margin="0,0,0,25">
-                            <StackPanel Margin="0,0,20,0" Width="160">
-                                <TextBlock Text="From Date" Style="{StaticResource FormLabel}"/>
-                                <DatePicker SelectedDate="{Binding EjData.DateFrom}" Height="34" Padding="5"/>
+                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
+                            <StackPanel>
+                                <TextBlock Text="1. Store &amp; Network Configuration" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
+                                <WrapPanel>
+                                    <StackPanel Margin="0,0,20,0" Width="90">
+                                        <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EjData.StoreCode}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,20,0" Width="130">
+                                        <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EjData.LiveServerIp}"/>
+                                    </StackPanel>
+                                    <StackPanel Width="130">
+                                        <TextBlock Text="FTP Server" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EjData.FtpServer}"/>
+                                    </StackPanel>
+                                </WrapPanel>
                             </StackPanel>
-                            <StackPanel Width="160">
-                                <TextBlock Text="To Date" Style="{StaticResource FormLabel}"/>
-                                <DatePicker SelectedDate="{Binding EjData.DateTo}" Height="34" Padding="5"/>
-                            </StackPanel>
-                        </WrapPanel>
+                        </Border>
 
-                        <Button Command="{Binding RunEjSaveCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="SCAN &amp; SYNC EJ ARCHIVES" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="20,12" BorderThickness="0" Cursor="Hand" HorizontalAlignment="Left"/>
+                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="2. Scan Range" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
+                                <WrapPanel>
+                                    <StackPanel Margin="0,0,20,0" Width="160">
+                                        <TextBlock Text="From Date" Style="{StaticResource FormLabel}"/>
+                                        <DatePicker SelectedDate="{Binding EjData.DateFrom}" Height="34" Padding="5"/>
+                                    </StackPanel>
+                                    <StackPanel Width="160">
+                                        <TextBlock Text="To Date" Style="{StaticResource FormLabel}"/>
+                                        <DatePicker SelectedDate="{Binding EjData.DateTo}" Height="34" Padding="5"/>
+                                    </StackPanel>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Command="{Binding RunEjSaveCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="🔍 SCAN &amp; SYNC EJ ARCHIVES" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="25,15" BorderThickness="0" Cursor="Hand" HorizontalAlignment="Left" FontSize="14"/>
                     </StackPanel>
                 </ScrollViewer>
             </Border>
 
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbCli, Converter={StaticResource BoolToVis}}">
-                <StackPanel>
-                    <TextBlock Text="Specific IP Target" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+                    <StackPanel>
+                        <TextBlock Text="Remote Shell &amp; Batch Execution" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,5"/>
+                        <TextBlock Text="Run scripts or raw SSH commands directly on POS lanes or Conso servers without needing manual Putty sessions." TextWrapping="Wrap" FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20"/>
 
-                    <WrapPanel Margin="0,0,0,15">
-                        <StackPanel Margin="0,0,15,10" Width="130">
-                            <TextBlock Text="IP Address" Style="{StaticResource FormLabel}"/>
-                            <TextBox Text="{Binding CliTargetIp}"/>
-                        </StackPanel>
-                        <StackPanel Margin="0,0,15,10" Width="110">
-                            <TextBlock Text="Username" Style="{StaticResource FormLabel}"/>
-                            <TextBox Text="{Binding CliUsername}"/>
-                        </StackPanel>
-                        <StackPanel Margin="0,0,0,10" Width="110">
-                            <TextBlock Text="Password" Style="{StaticResource FormLabel}"/>
-                            <TextBox Text="{Binding CliPassword}"/>
-                        </StackPanel>
-                    </WrapPanel>
+                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
+                            <StackPanel>
+                                <TextBlock Text="1. Command &amp; Script Toolkit" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,25">
-                        <Button Command="{Binding RunSingleCliCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE ON SPECIFIC IP" Style="{StaticResource DangerButton}" Padding="15,8" Margin="0,0,10,0"/>
-                        <Button Command="{Binding OpenPuttyCommand}" Content="OPEN INTERACTIVE PUTTY" Style="{StaticResource SuccessButton}" Padding="15,8"/>
+                                <TextBlock Text="Ready Scripts on CONSO (/opt/purepos/scripts/)" Style="{StaticResource FormLabel}"/>
+                                <WrapPanel Margin="0,0,0,15">
+                                    <ComboBox ItemsSource="{Binding AvailableScripts}" SelectedItem="{Binding SelectedScript}" Width="350" Height="34" Padding="5" Margin="0,0,10,0"/>
+                                    <TextBlock Text="* Select to auto-fill the command below." Foreground="{StaticResource TextSecondary}" FontStyle="Italic" VerticalAlignment="Center" FontSize="11"/>
+                                </WrapPanel>
+
+                                <TextBlock Text="Command to Execute" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding CliCommand}" Height="60" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" Background="{StaticResource BgApp}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="2. Execution Targets" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
+
+                        <Border Background="{StaticResource BgApp}" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
+                            <StackPanel>
+                                <TextBlock Text="A. Specific Machine Target" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,12" FontSize="13"/>
+                                <WrapPanel Margin="0,0,0,15">
+                                    <StackPanel Margin="0,0,15,10" Width="130">
+                                        <TextBlock Text="IP Address" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding CliTargetIp}"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,15,10" Width="110">
+                                        <TextBlock Text="Username" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding CliUsername}"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,10" Width="110">
+                                        <TextBlock Text="Password" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding CliPassword}"/>
+                                    </StackPanel>
+                                </WrapPanel>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Command="{Binding RunSingleCliCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE ON IP" Style="{StaticResource DangerButton}" Padding="15,10" Margin="0,0,10,0"/>
+                                    <Button Command="{Binding OpenPuttyCommand}" Content="OPEN INTERACTIVE PUTTY" Style="{StaticResource SuccessButton}" Padding="15,10"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{StaticResource BgApp}" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Padding="15">
+                            <StackPanel>
+                                <TextBlock Text="B. Batch Execution Targets" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5" FontSize="13"/>
+                                <TextBlock Text="Automatically uses the IP Prefix and CONSO logic from the 'Auto Permission' tab configuration." FontSize="11" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,15"/>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Command="{Binding RunConsoCliCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE ON CONSO" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,10" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0"/>
+                                    <Button Command="{Binding RunAllPosCliCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE ON ALL POS LANES" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,10" BorderThickness="0" Cursor="Hand"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
                     </StackPanel>
-
-                    <TextBlock Text="Command to Execute" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,10" FontSize="14"/>
-                    <TextBox Text="{Binding CliCommand}" Height="60" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" Background="{StaticResource BgApp}" Margin="0,0,0,25"/>
-
-                    <TextBlock Text="Batch Execution" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
-                    <TextBlock Text="Uses IP prefix and Total Lanes from 'Auto Permission' tab." FontSize="11" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,-10,0,15"/>
-
-                    <StackPanel Orientation="Horizontal">
-                        <Button Command="{Binding RunAllPosCliCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE ON ALL POS LANES" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,8" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0"/>
-                        <Button Command="{Binding RunConsoCliCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE ON CONSO" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,8" BorderThickness="0" Cursor="Hand"/>
-                    </StackPanel>
-                </StackPanel>
+                </ScrollViewer>
             </Border>
 
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbEod, Converter={StaticResource BoolToVis}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
                     <StackPanel>
-                        <TextBlock Text="Store Identity &amp; Network Configuration" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                        <TextBlock Text="End-of-Day (EOD) POLLOG Broadcaster" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,5"/>
+                        <TextBlock Text="Automates the retrieval, compression, and distribution of daily POLLOG transaction files." TextWrapping="Wrap" FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20"/>
+
+                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
+                            <StackPanel>
+                                <TextBlock Text="1. Store Identity &amp; Target" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
+                                <WrapPanel>
+                                    <StackPanel Margin="0,0,15,12" Width="100">
+                                        <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EodData.StoreCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,15,12" Width="160">
+                                        <TextBlock Text="Store Name" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EodData.StoreName, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,15,12" Width="130">
+                                        <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EodData.LiveServerIp, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="2. Email Metadata" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
+                                <WrapPanel>
+                                    <StackPanel Margin="0,0,15,12" Width="200">
+                                        <TextBlock Text="Store Manager" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EodData.StoreManager, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,12" Width="250">
+                                        <TextBlock Text="Store Offices" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EodData.StoreOffice, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="3. Execution Toggles" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
                         <WrapPanel Margin="0,0,0,20">
-                            <StackPanel Margin="0,0,15,12" Width="100">
-                                <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding EodData.StoreCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
-                            </StackPanel>
-                            <StackPanel Margin="0,0,15,12" Width="160">
-                                <TextBlock Text="Store Name" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding EodData.StoreName, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                            <StackPanel Margin="0,0,15,12" Width="130">
-                                <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding EodData.LiveServerIp, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </WrapPanel>
-
-                        <TextBlock Text="Email Body Details" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
-                        <WrapPanel Margin="0,0,0,25">
-                            <StackPanel Margin="0,0,15,12" Width="200">
-                                <TextBlock Text="Store Manager" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding EodData.StoreManager, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                            <StackPanel Margin="0,0,0,12" Width="250">
-                                <TextBlock Text="Store Officers" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding EodData.StoreOfficer, UpdateSourceTrigger=PropertyChanged}"/>
-                            </StackPanel>
-                        </WrapPanel>
-
-                        <TextBlock Text="Execution Toggles" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
-                        <WrapPanel Margin="0,0,0,25">
-                            <CheckBox Content="Process YESTERDAY'S Date" IsChecked="{Binding EodData.UseYesterday}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,20,0"/>
+                            <CheckBox Content="Process YESTERDAY'S Date" IsChecked="{Binding EodData.UseYesterday}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,20,0" ToolTip="Uses UTC+8 Date - 1"/>
                             <CheckBox Content="Test Mode (Send to Self)" IsChecked="{Binding EodData.TestModeEmail}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,20,0"/>
                             <CheckBox Content="Show Live Email Preview" IsChecked="{Binding EodData.EnableLivePreview}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold"/>
                         </WrapPanel>
@@ -215,7 +271,7 @@
                             </Grid>
                         </Border>
 
-                        <Button Command="{Binding RunEodCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE EOD GENERATOR" Style="{StaticResource DangerButton}" Padding="20,15" HorizontalAlignment="Left"/>
+                        <Button Command="{Binding RunEodCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="📧 EXECUTE EOD GENERATOR" Style="{StaticResource DangerButton}" Padding="20,15" HorizontalAlignment="Left" FontSize="14"/>
                     </StackPanel>
                 </ScrollViewer>
             </Border>
@@ -229,8 +285,8 @@
                 </Grid.RowDefinitions>
 
                 <Grid Grid.Row="0" Margin="0,0,0,12">
-                    <TextBlock Text="Execution Logs" Foreground="{StaticResource BrandAccent}" FontWeight="Bold" VerticalAlignment="Center" FontSize="14"/>
-                    <Button Command="{Binding ClearLogCommand}" Content="CLEAR" HorizontalAlignment="Right" Style="{StaticResource DangerButton}" Padding="12,4" FontSize="11"/>
+                    <TextBlock Text="Terminal Logs" Foreground="{StaticResource BrandAccent}" FontWeight="Bold" VerticalAlignment="Center" FontSize="14"/>
+                    <Button Command="{Binding ClearLogCommand}" Content="CLEAR" HorizontalAlignment="Right" Style="{StaticResource DangerButton}" Padding="12,4" FontSize="11" Cursor="Hand"/>
                 </Grid>
 
                 <TextBox Grid.Row="1" Text="{Binding CliOutput, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Background="#1A252F" Foreground="#2ECC71" FontFamily="Consolas" FontSize="12" Padding="12" BorderThickness="0"/>

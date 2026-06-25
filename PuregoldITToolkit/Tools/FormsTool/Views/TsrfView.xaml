@@ -21,7 +21,9 @@
             <ColumnDefinition Width="45*"/>
         </Grid.ColumnDefinitions>
 
-        <ScrollViewer Grid.Row="1" Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,15,0">
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Technical Service Request Form (TSRF)" FontWeight="Bold" FontSize="18" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
+
+        <ScrollViewer Grid.Row="1" Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,15,0" Padding="0,0,10,0">
             <StackPanel>
                 <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
                     <StackPanel>
@@ -30,14 +32,15 @@
                     </StackPanel>
                 </Border>
 
-                <Border Style="{StaticResource CardStyle}">
+                <!-- SECTION 1: Document Meta -->
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,15">
                     <StackPanel>
-                        <TextBlock Text="Document Meta" FontWeight="Bold" FontSize="16" Margin="0,0,0,15" Foreground="{StaticResource TextPrimary}"/>
+                        <TextBlock Text="1. Document Meta" FontWeight="Bold" FontSize="14" Margin="0,0,0,15" Foreground="{StaticResource BrandPrimary}"/>
 
-                        <WrapPanel Margin="0,0,0,20">
+                        <WrapPanel>
                             <StackPanel Margin="0,0,15,12" Width="260">
                                 <TextBlock Text="Company *" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding FormData.Company, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBox Text="{Binding FormData.Company, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="160">
                                 <TextBlock Text="Others (Store) *" Style="{StaticResource FormLabel}"/>
@@ -52,12 +55,17 @@
                                 <TextBox Text="{Binding FormData.TsrfNumber, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="130">
-                                <TextBlock Text="Date" Style="{StaticResource FormLabel}"/>
+                                <TextBlock Text="Date Filed" Style="{StaticResource FormLabel}"/>
                                 <DatePicker SelectedDate="{Binding FormData.DateFiled}" Height="34" Padding="5"/>
                             </StackPanel>
                         </WrapPanel>
+                    </StackPanel>
+                </Border>
 
-                        <TextBlock Text="Technical Details" FontWeight="Bold" FontSize="16" Margin="0,10,0,15" Foreground="{StaticResource TextPrimary}"/>
+                <!-- SECTION 2: Technical Details -->
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,15">
+                    <StackPanel>
+                        <TextBlock Text="2. Technical Details" FontWeight="Bold" FontSize="14" Margin="0,0,0,15" Foreground="{StaticResource BrandPrimary}"/>
 
                         <StackPanel Margin="0,0,0,15">
                             <TextBlock Text="Asset Description *" Style="{StaticResource FormLabel}"/>
@@ -74,46 +82,53 @@
                             <TextBox Text="{Binding FormData.ActionTaken, UpdateSourceTrigger=PropertyChanged}" Height="70" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
                         </StackPanel>
 
-                        <StackPanel Margin="0,0,0,25">
+                        <StackPanel>
                             <TextBlock Text="Remarks" Style="{StaticResource FormLabel}"/>
                             <TextBox Text="{Binding FormData.Remarks, UpdateSourceTrigger=PropertyChanged}" Height="60" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
                         </StackPanel>
+                    </StackPanel>
+                </Border>
 
-                        <TextBlock Text="Action Signatories" FontWeight="Bold" FontSize="16" Margin="0,0,0,15" Foreground="{StaticResource TextPrimary}"/>
+                <!-- SECTION 3: Signatories -->
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="3. Approvals &amp; Signatories" FontWeight="Bold" FontSize="14" Margin="0,0,0,15" Foreground="{StaticResource BrandPrimary}"/>
 
-                        <WrapPanel Margin="0,0,0,20">
-                            <StackPanel Margin="0,0,20,15" Width="190">
-                                <TextBlock Text="Requester Name" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding FormData.RequesterName, UpdateSourceTrigger=PropertyChanged}"/>
-                                <TextBox Text="{Binding FormData.RequesterPosition, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0" Foreground="{StaticResource TextSecondary}" ToolTip="Position"/>
-                            </StackPanel>
-                            <StackPanel Margin="0,0,15,15" Width="190">
-                                <TextBlock Text="Performed By Name" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding FormData.PerformedByName, UpdateSourceTrigger=PropertyChanged}"/>
-                                <TextBox Text="{Binding FormData.PerformedByPosition, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0" Foreground="{StaticResource TextSecondary}" ToolTip="Position"/>
-                            </StackPanel>
-                        </WrapPanel>
+                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
+                            <WrapPanel>
+                                <StackPanel Margin="0,0,20,0" Width="200">
+                                    <TextBlock Text="Requester Name" Style="{StaticResource FormLabel}"/>
+                                    <TextBox Text="{Binding FormData.RequesterName, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBox Text="{Binding FormData.RequesterPosition, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0" Foreground="{StaticResource TextSecondary}" ToolTip="Position"/>
+                                </StackPanel>
+                                <StackPanel Width="200">
+                                    <TextBlock Text="Performed By Name" Style="{StaticResource FormLabel}"/>
+                                    <TextBox Text="{Binding FormData.PerformedByName, UpdateSourceTrigger=PropertyChanged}"/>
+                                    <TextBox Text="{Binding FormData.PerformedByPosition, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0" Foreground="{StaticResource TextSecondary}" ToolTip="Position"/>
+                                </StackPanel>
+                            </WrapPanel>
+                        </Border>
 
-                        <TextBlock Text="Noted By Signatories" FontWeight="Bold" FontSize="16" Margin="0,0,0,15" Foreground="{StaticResource TextPrimary}"/>
+                        <TextBlock Text="Noted By Signatories" FontWeight="Bold" FontSize="12" Margin="0,0,0,10" Foreground="{StaticResource TextSecondary}"/>
 
                         <WrapPanel>
-                            <StackPanel Margin="0,0,15,15" Width="160">
+                            <StackPanel Margin="0,0,15,15" Width="170">
                                 <TextBlock Text="Dept Head (1)" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding FormData.NotedByDeptHead1, UpdateSourceTrigger=PropertyChanged}"/>
                                 <TextBox Text="{Binding FormData.NotedByDeptHead1Pos, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0" Foreground="{StaticResource TextSecondary}"/>
                             </StackPanel>
-                            <StackPanel Margin="0,0,25,15" Width="160">
+                            <StackPanel Margin="0,0,25,15" Width="170">
                                 <TextBlock Text="Dept Head (2)" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding FormData.NotedByDeptHead2, UpdateSourceTrigger=PropertyChanged}"/>
                                 <TextBox Text="{Binding FormData.NotedByDeptHead2Pos, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0" Foreground="{StaticResource TextSecondary}"/>
                             </StackPanel>
 
-                            <StackPanel Margin="0,0,15,15" Width="160">
+                            <StackPanel Margin="0,0,15,15" Width="170">
                                 <TextBlock Text="MIS Head (1)" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding FormData.NotedByMis1, UpdateSourceTrigger=PropertyChanged}"/>
                                 <TextBox Text="{Binding FormData.NotedByMis1Pos, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0" Foreground="{StaticResource TextSecondary}"/>
                             </StackPanel>
-                            <StackPanel Margin="0,0,0,15" Width="160">
+                            <StackPanel Margin="0,0,0,15" Width="170">
                                 <TextBlock Text="MIS Head (2)" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding FormData.NotedByMis2, UpdateSourceTrigger=PropertyChanged}"/>
                                 <TextBox Text="{Binding FormData.NotedByMis2Pos, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0" Foreground="{StaticResource TextSecondary}"/>
@@ -124,16 +139,18 @@
             </StackPanel>
         </ScrollViewer>
 
-        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource CardStyle}" Margin="0,0,0,15">
+        <!-- Preview Pane -->
+        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource CardStyle}">
             <StackPanel VerticalAlignment="Top">
                 <TextBlock Text="Live Preview" FontWeight="Bold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" Margin="0,0,0,15"/>
                 <Image Source="{Binding LivePreviewImage}" Stretch="Uniform" MaxHeight="600" RenderOptions.BitmapScalingMode="HighQuality"/>
             </StackPanel>
         </Border>
 
-        <Grid Grid.Row="2" Grid.ColumnSpan="2">
+        <!-- Execution -->
+        <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,15,0,0">
             <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" VerticalAlignment="Center"/>
-            <Button Command="{Binding ExportCommand}" Content="SAVE FINAL TSRF" Style="{StaticResource DangerButton}" Padding="30,12" HorizontalAlignment="Right"/>
+            <Button Command="{Binding ExportCommand}" Content="💾 SAVE FINAL TSRF" FontSize="14" Style="{StaticResource DangerButton}" Padding="30,15" HorizontalAlignment="Right"/>
         </Grid>
     </Grid>
 </UserControl>

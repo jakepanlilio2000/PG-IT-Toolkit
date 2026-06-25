@@ -21,8 +21,11 @@
             <ColumnDefinition Width="4*"/>
         </Grid.ColumnDefinitions>
 
-        <ScrollViewer Grid.Row="1" Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,15,0">
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2" Text="Official Business (OB) Generator" FontWeight="Bold" FontSize="18" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
+
+        <ScrollViewer Grid.Row="1" Grid.Column="0" VerticalScrollBarVisibility="Auto" Margin="0,0,15,0" Padding="0,0,10,0">
             <StackPanel>
+
                 <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
                     <StackPanel>
                         <TextBlock Text="Instructions:" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,8"/>
@@ -30,28 +33,34 @@
                     </StackPanel>
                 </Border>
 
-                <Border Style="{StaticResource CardStyle}">
+                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,15">
                     <StackPanel>
-                        <TextBlock Text="Required Fields" FontWeight="Bold" FontSize="16" Margin="0,0,0,15" Foreground="{StaticResource TextPrimary}"/>
+                        <TextBlock Text="Employee Profile" FontWeight="Bold" FontSize="14" Margin="0,0,0,15" Foreground="{StaticResource BrandPrimary}"/>
 
                         <StackPanel Margin="0,0,0,15">
                             <TextBlock Text="Employee Name *" Style="{StaticResource FormLabel}"/>
-                            <TextBox Text="{Binding FormData.EmployeeName, UpdateSourceTrigger=PropertyChanged}"/>
+                            <TextBox Text="{Binding FormData.EmployeeName, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
                         </StackPanel>
 
-                        <StackPanel Margin="0,0,0,15">
-                            <TextBlock Text="Position *" Style="{StaticResource FormLabel}"/>
-                            <TextBox Text="{Binding FormData.Position, UpdateSourceTrigger=PropertyChanged}"/>
-                        </StackPanel>
+                        <WrapPanel>
+                            <StackPanel Margin="0,0,20,15" Width="250">
+                                <TextBlock Text="Position *" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding FormData.Position, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
 
-                        <StackPanel Margin="0,0,0,25">
-                            <TextBlock Text="Department *" Style="{StaticResource FormLabel}"/>
-                            <TextBox Text="{Binding FormData.Department, UpdateSourceTrigger=PropertyChanged}"/>
-                        </StackPanel>
+                            <StackPanel Margin="0,0,0,15" Width="200">
+                                <TextBlock Text="Department *" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding FormData.Department, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
 
-                        <TextBlock Text="Trip Details &amp; Options" FontWeight="Bold" FontSize="16" Margin="0,0,0,15" Foreground="{StaticResource TextPrimary}"/>
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock Text="Trip Configuration &amp; Signature" FontWeight="Bold" FontSize="14" Margin="0,0,0,15" Foreground="{StaticResource BrandPrimary}"/>
 
-                        <StackPanel Margin="0,0,0,15">
+                        <StackPanel Margin="0,0,0,20">
                             <TextBlock Text="OB Schedule (Date &amp; Time)" Style="{StaticResource FormLabel}"/>
                             <TextBox Text="{Binding FormData.ObSchedule, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
@@ -62,27 +71,27 @@
                                 <DatePicker SelectedDate="{Binding FormData.DateFiled}" Height="34" Padding="5"/>
                             </StackPanel>
 
-                            <StackPanel Margin="0,0,10,15" Width="190">
+                            <StackPanel Margin="0,0,10,15" Width="180">
                                 <TextBlock Text="Typed Signature" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding FormData.EmployeeSignature, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
-
-                            <TextBlock Text="- OR -" VerticalAlignment="Center" Margin="0,0,10,15" FontWeight="Bold" Foreground="{StaticResource TextSecondary}"/>
-
-                            <StackPanel Margin="0,0,0,15" Width="160">
-                                <TextBlock Text="Upload PNG Signature" Style="{StaticResource FormLabel}"/>
-                                <Button Command="{Binding BrowseSignatureCommand}" Content="Browse PNG..." Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,8" BorderThickness="0" Cursor="Hand"/>
-                            </StackPanel>
                         </WrapPanel>
 
+                        <TextBlock Text="— OR ATTACH IMAGE —" FontWeight="Bold" FontSize="11" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10"/>
+
+                        <StackPanel Margin="0,0,0,5" Width="180" HorizontalAlignment="Left">
+                            <Button Command="{Binding BrowseSignatureCommand}" Content="BROWSE PNG..." Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,8" BorderThickness="0" Cursor="Hand"/>
+                        </StackPanel>
                         <TextBlock Text="{Binding FormData.SignatureImagePath, StringFormat='Attached: {0}'}" FontSize="11" Foreground="{StaticResource BtnSuccess}" FontStyle="Italic" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                 </Border>
+
             </StackPanel>
         </ScrollViewer>
 
-        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource CardStyle}" Margin="0,0,0,15">
-            <StackPanel VerticalAlignment="Center">
+        <!-- Preview Pane -->
+        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource CardStyle}">
+            <StackPanel VerticalAlignment="Top">
                 <TextBlock Text="Live Preview" FontWeight="Bold" Foreground="{StaticResource TextSecondary}" HorizontalAlignment="Center" Margin="0,0,0,15"/>
                 <Image Source="{Binding LivePreviewImage}" Stretch="Uniform" MaxHeight="450" RenderOptions.BitmapScalingMode="HighQuality"/>
                 <TextBlock Text="Start typing to see live preview" Foreground="{StaticResource TextSecondary}" FontStyle="Italic" HorizontalAlignment="Center" Margin="0,15,0,0">
@@ -100,9 +109,10 @@
             </StackPanel>
         </Border>
 
-        <Grid Grid.Row="2" Grid.ColumnSpan="2">
+        <!-- Execution -->
+        <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,15,0,0">
             <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" VerticalAlignment="Center"/>
-            <Button Command="{Binding ExportCommand}" Content="GENERATE OB IMAGE" Style="{StaticResource DangerButton}" Padding="30,12" HorizontalAlignment="Right"/>
+            <Button Command="{Binding ExportCommand}" Content="🖼️ GENERATE OB IMAGE" FontSize="14" Style="{StaticResource DangerButton}" Padding="30,15" HorizontalAlignment="Right"/>
         </Grid>
     </Grid>
 </UserControl>

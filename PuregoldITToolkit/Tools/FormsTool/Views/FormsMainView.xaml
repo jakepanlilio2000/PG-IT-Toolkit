@@ -21,7 +21,7 @@
         <Style x:Key="SegmentedTab" TargetType="RadioButton">
             <Setter Property="Background" Value="{StaticResource BgApp}"/>
             <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
-            <Setter Property="Padding" Value="25,12"/>
+            <Setter Property="Padding" Value="20,12"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -55,18 +55,19 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="{StaticResource BgCard}" Padding="20,15,20,10" BorderBrush="{StaticResource BorderLight}" BorderThickness="0,0,0,1">
+        <Border Grid.Row="1" Background="{StaticResource BgCard}" Padding="20,15,20,10" BorderBrush="{StaticResource BorderLight}" BorderThickness="0,0,0,1">
             <StackPanel Orientation="Horizontal">
-                <RadioButton Content="INF (Item Not Found)" IsChecked="{Binding IsInfSelected}" Style="{StaticResource SegmentedTab}"/>
-                <RadioButton Content="OB (Official Business)" IsChecked="{Binding IsObSelected}" Style="{StaticResource SegmentedTab}"/>
-                <RadioButton Content="SSRF (System Service)" IsChecked="{Binding IsSsrfSelected}" Style="{StaticResource SegmentedTab}"/>
-                <RadioButton Content="TSRF (Tech Service)" IsChecked="{Binding IsTsrfSelected}" Style="{StaticResource SegmentedTab}"/>
+                <RadioButton Content="🛒 INF (Item Not Found)" IsChecked="{Binding IsInfSelected}" Style="{StaticResource SegmentedTab}"/>
+                <RadioButton Content="💼 OB (Official Business)" IsChecked="{Binding IsObSelected}" Style="{StaticResource SegmentedTab}"/>
+                <RadioButton Content="⚙️ SSRF (System Service)" IsChecked="{Binding IsSsrfSelected}" Style="{StaticResource SegmentedTab}"/>
+                <RadioButton Content="🔧 TSRF (Tech Service)" IsChecked="{Binding IsTsrfSelected}" Style="{StaticResource SegmentedTab}"/>
             </StackPanel>
         </Border>
 
-        <ContentControl Grid.Row="1" Content="{Binding CurrentViewModel}" Padding="15" />
+        <ContentControl Grid.Row="2" Content="{Binding CurrentViewModel}" Padding="15" />
     </Grid>
 </UserControl>

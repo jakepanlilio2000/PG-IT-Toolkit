@@ -109,8 +109,11 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
 
                     var globalSettings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
 
-                    DateTime targetDate = config.UseYesterday ? DateTime.Now.AddDays(-1) : DateTime.Now;
-                    logCallback($"[i] DATE MODE: Using {(config.UseYesterday ? "yesterday's" : "today's")} date.");
+                    // *** FIX: Enforce Manila Time (UTC+8) ***
+                    DateTime manilaTime = DateTime.UtcNow.AddHours(8);
+                    DateTime targetDate = config.UseYesterday ? manilaTime.AddDays(-1) : manilaTime;
+
+                    logCallback($"[i] DATE MODE: Using {(config.UseYesterday ? "yesterday's" : "today's")} date (Manila Time).");
 
                     string fileDate = targetDate.ToString("yyyyMMdd");
                     string emailDate = targetDate.ToString("MM-dd-yy");
@@ -204,7 +207,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                             <p>Masayang Araw!<br><br>
                               Please see attached POLLOG file for {config.StoreCode} - {config.StoreName}<br><br>
                               Store Manager: {config.StoreManager}<br>
-                              Store Offices: {config.StoreOfficer}</p>
+                              Store Officers: {config.StoreOfficer}</p>
                             <br/>
                             {globalSettings.SignatureHtml}
                           </body>
@@ -222,12 +225,15 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                         smtp.Send(mail);
                     }
                     logCallback("[+] Email successfully sent out over the network.");
+
                     logCallback("[*] Injecting copy into Thunderbird Local Sent folder...");
                     if (!string.IsNullOrWhiteSpace(globalSettings.ThunderbirdSentPath) && Directory.Exists(Path.GetDirectoryName(globalSettings.ThunderbirdSentPath)))
                     {
                         string boundary = "----=_Part_" + Guid.NewGuid().ToString("N");
                         StringBuilder mboxContent = new StringBuilder();
-                        mboxContent.Append($"From - {DateTime.Now.ToString("ddd MMM dd HH:mm:ss yyyy", System.Globalization.CultureInfo.InvariantCulture)}\n");
+
+                        // *** FIX: Time stamp also uses Manila Time ***
+                        mboxContent.Append($"From - {manilaTime.ToString("ddd MMM dd HH:mm:ss yyyy", System.Globalization.CultureInfo.InvariantCulture)}\n");
                         mboxContent.AppendLine($"From: {mail.From}");
                         mboxContent.AppendLine($"To: {mail.To}");
 
@@ -238,10 +244,11 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                         }
 
                         mboxContent.AppendLine($"Subject: {mail.Subject}");
-                        mboxContent.AppendLine($"Date: {DateTime.Now:R}");
+                        mboxContent.AppendLine($"Date: {manilaTime:R}");
                         mboxContent.AppendLine("MIME-Version: 1.0");
                         mboxContent.AppendLine($"Content-Type: multipart/mixed; boundary=\"{boundary}\"");
                         mboxContent.AppendLine();
+
                         mboxContent.AppendLine($"--{boundary}");
                         mboxContent.AppendLine("Content-Type: text/html; charset=utf-8");
                         mboxContent.AppendLine();
@@ -281,6 +288,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
             });
         }
 
+        // --- FULLY RESTORED MANUAL EJ SAVE LOGIC ---
         public async Task RunManualEjSaveAsync(EjSaveModel config, Action<string> logCallback)
         {
             await Task.Run(() =>
@@ -291,6 +299,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
 
                     logCallback("Scanning FTP Accounts for Store Directory...");
                     string targetFtpDir = GetFtpStoreDirectory(config.FtpServer, config.StoreCode, out NetworkCredential validCreds, logCallback);
+
                     if (string.IsNullOrEmpty(targetFtpDir) || validCreds == null)
                     {
                         logCallback($"\n[ERROR] Could not find folder containing '({config.StoreCode})' across any FTP accounts.");
@@ -299,6 +308,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
 
                     logCallback($"\nFound target FTP directory: {targetFtpDir}\nAuthenticated using FTP account: {validCreds.UserName}");
                     HashSet<string> cache = LoadCache();
+
                     logCallback("Scanning FTP for existing EJ Zips...");
                     HashSet<string> existingFtpFiles = GetFtpFiles(targetFtpDir, validCreds);
 
@@ -306,7 +316,9 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                     for (DateTime date = config.DateFrom.Date; date <= config.DateTo.Date; date = date.AddDays(1))
                     {
                         string dateStr = date.ToString("MMddyyyy");
-                        if (cache.Contains(dateStr) || existingFtpFiles.Contains($"{dateStr}_EJReceiptJournal.zip"))
+                        string expectedZip = $"{dateStr}_EJReceiptJournal.zip";
+
+                        if (cache.Contains(dateStr) || existingFtpFiles.Contains(expectedZip))
                         {
                             cache.Add(dateStr);
                             continue;
@@ -317,11 +329,69 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                     if (datesToProcess.Count == 0)
                     {
                         SaveCache(cache);
-                        logCallback("\nALL EJ FILES ARE UP TO DATE. No missing dates found.");
+                        logCallback("\n✅ ALL EJ FILES ARE UP TO DATE. No missing dates found.");
                         return;
                     }
 
-                    logCallback("\nMANUAL EJ SAVE COMPLETED.");
+                    // Process Missing Dates via SFTP -> Local Zip -> FTP
+                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+                    using (var sftp = new Renci.SshNet.SftpClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
+                    {
+                        logCallback($"\nConnecting to CONSO SFTP ({config.LiveServerIp})...");
+                        sftp.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
+                        sftp.Connect();
+
+                        foreach (var date in datesToProcess)
+                        {
+                            string dateStr = date.ToString("MMddyyyy");
+                            string remoteEjPath = $"/opt/purepos/ejreceipt/{dateStr}";
+                            string localTempDir = Path.Combine(desktopPath, $"TEMP_EJ_{dateStr}");
+                            string localZipFile = Path.Combine(desktopPath, $"{dateStr}_EJReceiptJournal.zip");
+
+                            logCallback($"\nProcessing missing date: {dateStr}");
+
+                            if (!sftp.Exists(remoteEjPath))
+                            {
+                                logCallback($"[WARNING] No EJ folder found on Conso for {dateStr}. Skipping.");
+                                continue;
+                            }
+
+                            // Download files from SFTP
+                            Directory.CreateDirectory(localTempDir);
+                            logCallback($"Downloading EJ files from Conso...");
+                            var files = sftp.ListDirectory(remoteEjPath).Where(f => !f.IsDirectory);
+                            foreach (var file in files)
+                            {
+                                using (var fileStream = File.OpenWrite(Path.Combine(localTempDir, file.Name)))
+                                {
+                                    sftp.DownloadFile(file.FullName, fileStream);
+                                }
+                            }
+
+                            // Create ZIP Archive
+                            logCallback($"Zipping files...");
+                            if (File.Exists(localZipFile)) File.Delete(localZipFile);
+                            System.IO.Compression.ZipFile.CreateFromDirectory(localTempDir, localZipFile);
+
+                            // Upload ZIP to FTP
+                            logCallback($"Uploading {dateStr}_EJReceiptJournal.zip to FTP...");
+                            UploadToFtp($"{targetFtpDir}/{Path.GetFileName(localZipFile)}", localZipFile, validCreds);
+
+                            // Clean up Desktop
+                            Directory.Delete(localTempDir, true);
+                            File.Delete(localZipFile);
+
+                            // Add to local success cache
+                            cache.Add(dateStr);
+                            SaveCache(cache);
+                            logCallback($"[SUCCESS] {dateStr} uploaded and cleaned up!");
+                        }
+
+                        sftp.Disconnect();
+                    }
+
+                    logCallback("\n✅ MANUAL EJ SAVE COMPLETED.");
                 }
                 catch (Exception ex)
                 {
@@ -330,10 +400,95 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
             });
         }
 
-        private string GetFtpStoreDirectory(string ftpIp, string storeCode, out NetworkCredential workingCreds, Action<string> logCallback) { workingCreds = null; return null; } // Placeholder
-        private HashSet<string> GetFtpFiles(string ftpDirUrl, NetworkCredential creds) { return new HashSet<string>(); }
-        private void UploadToFtp(string targetUrl, string localFilePath, NetworkCredential creds) { }
-        private HashSet<string> LoadCache() { return new HashSet<string>(); }
-        private void SaveCache(HashSet<string> cache) { }
+        // --- RESTORED FTP HELPER METHODS ---
+
+        private string GetFtpStoreDirectory(string ftpIp, string storeCode, out NetworkCredential workingCreds, Action<string> logCallback)
+        {
+            workingCreds = null;
+            string ftpUrl = $"ftp://{ftpIp}/PUREPOS_EJRECEIPT/";
+
+            foreach (var user in _ftpUsers)
+            {
+                try
+                {
+                    var creds = new NetworkCredential(user, _ftpPassword);
+                    FtpWebRequest request = (FtpWebRequest)WebRequest.Create(ftpUrl);
+                    request.Method = WebRequestMethods.Ftp.ListDirectory;
+                    request.Credentials = creds;
+                    request.Timeout = 3000;
+
+                    using (FtpWebResponse response = (FtpWebResponse)request.GetResponse())
+                    using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                    {
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            if (line.Contains($"({storeCode})"))
+                            {
+                                workingCreds = creds;
+                                string folderName = Path.GetFileName(line); // Safely extracts folder name if path is absolute
+                                return $"{ftpUrl}{folderName}";
+                            }
+                        }
+                    }
+                }
+                catch (WebException)
+                {
+                    // Silently catch and move to the next FTP user account
+                }
+            }
+            return null;
+        }
+
+        private HashSet<string> GetFtpFiles(string ftpDirUrl, NetworkCredential creds)
+        {
+            var files = new HashSet<string>();
+            try
+            {
+                FtpWebRequest request = (FtpWebRequest)WebRequest.Create(ftpDirUrl);
+                request.Method = WebRequestMethods.Ftp.ListDirectory;
+                request.Credentials = creds;
+
+                using (FtpWebResponse response = (FtpWebResponse)request.GetResponse())
+                using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                {
+                    string line;
+                    while ((line = reader.ReadLine()) != null)
+                    {
+                        files.Add(Path.GetFileName(line));
+                    }
+                }
+            }
+            catch { }
+            return files;
+        }
+
+        private void UploadToFtp(string targetUrl, string localFilePath, NetworkCredential creds)
+        {
+            FtpWebRequest request = (FtpWebRequest)WebRequest.Create(targetUrl);
+            request.Method = WebRequestMethods.Ftp.UploadFile;
+            request.Credentials = creds;
+            request.UseBinary = true;
+
+            byte[] fileContents = File.ReadAllBytes(localFilePath);
+            request.ContentLength = fileContents.Length;
+
+            using (Stream requestStream = request.GetRequestStream())
+            {
+                requestStream.Write(fileContents, 0, fileContents.Length);
+            }
+        }
+
+        private HashSet<string> LoadCache()
+        {
+            if (!File.Exists(_cacheFile)) return new HashSet<string>();
+            try { return JsonSerializer.Deserialize<HashSet<string>>(File.ReadAllText(_cacheFile)); }
+            catch { return new HashSet<string>(); }
+        }
+
+        private void SaveCache(HashSet<string> cache)
+        {
+            File.WriteAllText(_cacheFile, JsonSerializer.Serialize(cache));
+        }
     }
 }

@@ -4,6 +4,7 @@ using PuregoldITToolkit.Tools.PureposTool.Interfaces;
 using PuregoldITToolkit.Tools.PureposTool.Models;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -19,7 +20,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         public EodModel EodData { get; } = new EodModel();
 
         // CLI Properties
-        private string _cliTargetIp = "***.***.***.51";
+        private string _cliTargetIp = "192.92.92.51";
         private string _cliUsername = "cashier";
         private string _cliPassword = "cashier";
         private string _cliCommand = "ls -la";
@@ -29,14 +30,48 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         public string CliPassword { get => _cliPassword; set => SetProperty(ref _cliPassword, value); }
         public string CliCommand { get => _cliCommand; set => SetProperty(ref _cliCommand, value); }
 
+        // Scripts Dropdown
+        public ObservableCollection<string> AvailableScripts { get; } = new ObservableCollection<string>
+        {
+            "mysql_backup.sh",
+            "crm_ftp_transfer.sh",
+            "permission.sh",
+            "transfer_previous_day_ftp_lftp.sh",
+            "ftp_transfer_purepos.sh",
+            "ftp_transfer_nontrade_purepos.sh",
+            "eis_ftp_transfer_purepos.sh",
+            "pull_ejreceipt_from_pos_to_conso.sh",
+            "eis_directory.sh",
+            "crm_directory.sh",
+            "ftp_upload.sh",
+            "pricelist_transfer.sh",
+            "generate_regular_price.sh",
+            "default_ftp_transfer_nontrade_purepos.sh",
+            "directory_creation.sh"
+        };
+
+        private string _selectedScript;
+        public string SelectedScript
+        {
+            get => _selectedScript;
+            set
+            {
+                if (SetProperty(ref _selectedScript, value) && !string.IsNullOrEmpty(value))
+                {
+                    CliCommand = $"sh /opt/purepos/scripts/{value}";
+                }
+            }
+        }
+
         private string _cliOutput = "Ready to execute...\n";
         public string CliOutput { get => _cliOutput; set => SetProperty(ref _cliOutput, value); }
 
+        // EOD Preview Properties
         public string EodPreviewTo { get; private set; }
         public string EodPreviewCc { get; private set; }
         public string EodPreviewSubject { get; private set; }
         public string EodPreviewBody { get; private set; }
-        public string EodPreviewAttachment { get; private set; } 
+        public string EodPreviewAttachment { get; private set; }
 
         private bool _isBusy;
         public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
@@ -63,6 +98,8 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             RunAllPosCliCommand = new AsyncRelayCommand(ExecuteAllPosCliAsync);
             RunConsoCliCommand = new AsyncRelayCommand(ExecuteConsoCliAsync);
             OpenPuttyCommand = new RelayCommand(ExecutePutty);
+
+            // Subscribe to EOD Changes to update Live Preview in real-time
             EodData.PropertyChanged += (s, e) => UpdateEodPreview();
             UpdateEodPreview();
         }
@@ -74,11 +111,13 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             EodPreviewTo = EodData.TestModeEmail ? settings.SmtpUser : "AllITDataControllersMMS@puregold.com.ph";
             EodPreviewCc = EodData.TestModeEmail ? "" : "jymendoza@puregold.com.ph, allITzone11@puregold.com.ph";
 
-            DateTime targetDate = EodData.UseYesterday ? DateTime.Now.AddDays(-1) : DateTime.Now;
+            // Enforce Manila Time (UTC+8)
+            DateTime manilaTime = DateTime.UtcNow.AddHours(8);
+            DateTime targetDate = EodData.UseYesterday ? manilaTime.AddDays(-1) : manilaTime;
 
             EodPreviewSubject = $"{EodData.StoreCode} - {EodData.StoreName} - EOD File Purepos POLLOG {targetDate:MM-dd-yy}";
             EodPreviewAttachment = $"📎 Attached: {EodData.StoreCode}_{targetDate:yyyyMMdd}.zip";
-            EodPreviewBody = $"Masayang Araw!\n\nPlease see attached POLLOG file for {EodData.StoreCode} - {EodData.StoreName}\n\nStore Manager: {EodData.StoreManager}\nStore Officers: {EodData.StoreOfficer}\n\n[HTML Signature attached internally]";
+            EodPreviewBody = $"Masayang Araw!\n\nPlease see attached POLLOG file for {EodData.StoreCode} - {EodData.StoreName}\n\nStore Manager: {EodData.StoreManager}\nStore Offices: {EodData.StoreOfficer}\n\n[HTML Signature attached internally]";
 
             OnPropertyChanged(nameof(EodPreviewTo));
             OnPropertyChanged(nameof(EodPreviewCc));
