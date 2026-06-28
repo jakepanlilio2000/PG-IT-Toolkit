@@ -93,64 +93,62 @@ namespace PuregoldITToolkit.Tools.SodChecker.Services
                     string Ymd = row.TargetDate.ToString("yyyyMMdd");
                     string mdy = row.TargetDate.ToString("MMddyy");
                     string mdY_Prev = row.TargetDate.AddDays(-2).ToString("MMddyyyy");
-
-                    // Mark skipped columns if in Targeted Mode
-                    if (targetCol != "ALL")
-                    {
-                        row.EjStatus.State = targetCol == "EJ" ? ScanState.Missing : ScanState.Skipped;
-                        row.PollogStatus.State = targetCol == "Pollog" ? ScanState.Missing : ScanState.Skipped;
-                        row.CrmStatus.State = targetCol == "CRM" ? ScanState.Missing : ScanState.Skipped;
-                        row.PromoStatus.State = targetCol == "Promo" ? ScanState.Missing : ScanState.Skipped;
-                        row.BirStatus.State = targetCol == "BIR" ? ScanState.Missing : ScanState.Skipped;
-                        row.NonTradeStatus.State = targetCol == "NonTrade" ? ScanState.Missing : ScanState.Skipped;
-                        row.DosStatus.State = targetCol == "DOS Log" ? ScanState.Missing : ScanState.Skipped;
-                        row.MobilePriceStatus.State = targetCol == "Mob Price" ? ScanState.Missing : ScanState.Skipped;
-                        row.PlusKuPriceStatus.State = targetCol == "PlusKu" ? ScanState.Missing : ScanState.Skipped;
-                        row.RegPriceStatus.State = targetCol == "Reg Price" ? ScanState.Missing : ScanState.Skipped;
-                        row.Sis98Status.State = targetCol == "SIS98" ? ScanState.Missing : ScanState.Skipped;
-                        row.ShelftagStatus.State = targetCol == "Shelftag" ? ScanState.Missing : ScanState.Skipped;
-                        row.KioskStatus.State = targetCol == "Kiosk" ? ScanState.Missing : ScanState.Skipped;
-                    }
-
                     if (hasMain)
                     {
-                        if (targetCol == "ALL" || targetCol == "CRM") row.CrmStatus = CheckFile(mainSession, $"/toho/CRM_DAILY_UPDATES_FROM_STORES/automated/{sc}_{Ymd}_crm.zip");
-                        if (targetCol == "ALL" || targetCol == "Promo") row.PromoStatus = CheckFile(mainSession, $"/toho/PROMO_AVAILMENT_REPORT/automated/{sc}_{Ymd}.zip");
-                        if (targetCol == "ALL" || targetCol == "BIR") row.BirStatus = CheckBirFile(mainSession, $"/toho/Anahaw-BIR-EIS/EIS_{sc}_{Ymd}.txt");
+                        if ((targetCol == "ALL" || targetCol == "CRM") && row.CrmStatus.State != ScanState.Ok)
+                            row.CrmStatus = CheckFile(mainSession, $"/toho/CRM_DAILY_UPDATES_FROM_STORES/automated/{sc}_{Ymd}_crm.zip");
 
-                        if (ejMap.TryGetValue(sc, out string ejFolder) && (targetCol == "ALL" || targetCol == "EJ"))
+                        if ((targetCol == "ALL" || targetCol == "Promo") && row.PromoStatus.State != ScanState.Ok)
+                            row.PromoStatus = CheckFile(mainSession, $"/toho/PROMO_AVAILMENT_REPORT/automated/{sc}_{Ymd}.zip");
+
+                        if ((targetCol == "ALL" || targetCol == "BIR") && row.BirStatus.State != ScanState.Ok)
+                            row.BirStatus = CheckBirFile(mainSession, $"/toho/Anahaw-BIR-EIS/EIS_{sc}_{Ymd}.txt");
+
+                        if (ejMap.TryGetValue(sc, out string ejFolder) && (targetCol == "ALL" || targetCol == "EJ") && row.EjStatus.State != ScanState.Ok)
                             row.EjStatus = CheckFile(mainSession, $"/PUREPOS_EJRECEIPT/{ejFolder}/{mdY_Prev}_EJReceiptJournal.zip");
 
                         if (tohoMap.TryGetValue(sc, out string tohoFolder))
                         {
                             string baseToho = $"/toho/{tohoFolder}/";
-                            if (targetCol == "ALL" || targetCol == "Pollog") row.PollogStatus = CheckFile(mainSession, $"{baseToho}Pollog/{sc}_{mdy}.zip");
-                            if (targetCol == "ALL" || targetCol == "Mob Price") row.MobilePriceStatus = CheckFile(mainSession, $"{baseToho}Puregoldpos_Pricelist/mobile/{sc}_pricelistma_{Ymd}.zip");
-                            if (targetCol == "ALL" || targetCol == "PlusKu") row.PlusKuPriceStatus = CheckFile(mainSession, $"{baseToho}Puregoldpos_Pricelist/plusku/{sc}_pricelistplusku_{Ymd}.zip");
-                            if (targetCol == "ALL" || targetCol == "Reg Price") row.RegPriceStatus = CheckFile(mainSession, $"{baseToho}Puregoldpos_Pricelist/regular/{sc}_pricelistreg_{Ymd}.zip");
+
+                            if ((targetCol == "ALL" || targetCol == "Pollog") && row.PollogStatus.State != ScanState.Ok)
+                                row.PollogStatus = CheckFile(mainSession, $"{baseToho}Pollog/{sc}_{mdy}.zip");
+
+                            if ((targetCol == "ALL" || targetCol == "Mob Price") && row.MobilePriceStatus.State != ScanState.Ok)
+                                row.MobilePriceStatus = CheckFile(mainSession, $"{baseToho}Puregoldpos_Pricelist/mobile/{sc}_pricelistma_{Ymd}.zip");
+
+                            if ((targetCol == "ALL" || targetCol == "PlusKu") && row.PlusKuPriceStatus.State != ScanState.Ok)
+                                row.PlusKuPriceStatus = CheckFile(mainSession, $"{baseToho}Puregoldpos_Pricelist/plusku/{sc}_pricelistplusku_{Ymd}.zip");
+
+                            if ((targetCol == "ALL" || targetCol == "Reg Price") && row.RegPriceStatus.State != ScanState.Ok)
+                                row.RegPriceStatus = CheckFile(mainSession, $"{baseToho}Puregoldpos_Pricelist/regular/{sc}_pricelistreg_{Ymd}.zip");
 
                             string updatePath = $"{baseToho}UPDATE_STATUS/";
-                            if (targetCol == "ALL" || targetCol == "SIS98") row.Sis98Status = CheckStatusLog(mainSession, updatePath, "sis98_auto_update_", Ymd, "Start Updating Process");
-                            if (targetCol == "ALL" || targetCol == "Shelftag") row.ShelftagStatus = CheckStatusLog(mainSession, updatePath, "Shelftag_auto_update_", Ymd, "TOTAL BULK INSERT COUNT");
-                            if (targetCol == "ALL" || targetCol == "Kiosk") row.KioskStatus = CheckStatusLog(mainSession, updatePath, "kiosk_auto_update_", Ymd, "PROCESS COMPLETED!");
+
+                            if ((targetCol == "ALL" || targetCol == "SIS98") && row.Sis98Status.State != ScanState.Ok)
+                                row.Sis98Status = CheckStatusLog(mainSession, updatePath, "sis98_auto_update_", Ymd, "Start Updating Process");
+
+                            if ((targetCol == "ALL" || targetCol == "Shelftag") && row.ShelftagStatus.State != ScanState.Ok)
+                                row.ShelftagStatus = CheckStatusLog(mainSession, updatePath, "Shelftag_auto_update_", Ymd, "TOTAL BULK INSERT COUNT");
+
+                            if ((targetCol == "ALL" || targetCol == "Kiosk") && row.KioskStatus.State != ScanState.Ok)
+                                row.KioskStatus = CheckStatusLog(mainSession, updatePath, "kiosk_auto_update_", Ymd, "PROCESS COMPLETED!");
                         }
                     }
 
                     if (hasOut)
                     {
-                        if (targetCol == "ALL" || targetCol == "NonTrade")
+                        if ((targetCol == "ALL" || targetCol == "NonTrade") && row.NonTradeStatus.State != ScanState.Ok)
                         {
                             row.NonTradeStatus = CheckFile(outSession, $"/outbound_ftp/sales_log/{sc}_NonTrade_{Ymd}.dat");
 
-                            // Check for EMPTY_ file if the main one is missing
                             if (row.NonTradeStatus.State == ScanState.Missing && CheckFile(outSession, $"/outbound_ftp/sales_log/EMPTY_{sc}_NonTrade_{Ymd}.dat").State == ScanState.Ok)
                             {
                                 row.NonTradeStatus.State = ScanState.Empty;
-                                // Line removed here!
                             }
                         }
 
-                        if (targetCol == "ALL" || targetCol == "DOS Log")
+                        if ((targetCol == "ALL" || targetCol == "DOS Log") && row.DosStatus.State != ScanState.Ok)
                         {
                             row.DosStatus = CheckFile(outSession, $"/outbound_ftp/sales_log/{sc}/{sc}_{Ymd}.dos");
                         }
@@ -163,14 +161,12 @@ namespace PuregoldITToolkit.Tools.SodChecker.Services
             });
         }
 
-        // --- WINSCP HELPER METHODS ---
 
         private Session ConnectToMainFtp()
         {
             var session = new Session();
             var users = new List<string>();
 
-            // Replicating f.php users logic
             for (int i = 1; i <= 12; i++) users.Add($"ftp{i}@puregold");
             users.Add("ftp1a@puregold");
             users.Add("ftp1b@puregold");
@@ -292,8 +288,6 @@ namespace PuregoldITToolkit.Tools.SodChecker.Services
             catch { }
             return new FileCheckStatus { State = ScanState.Missing };
         }
-
-        // Cache Storage DTOs to avoid serializing WPF elements
         private class CacheColumnDto
         {
             public int State { get; set; }
@@ -313,12 +307,10 @@ namespace PuregoldITToolkit.Tools.SodChecker.Services
             return Path.Combine(cacheDir, $"cache_{date:yyyyMMdd}.json");
         }
 
-        // 1. Core Cache Loader Routine
         public async Task LoadCachedDataAsync(IEnumerable<SodStoreResult> rows)
         {
             await Task.Run(() =>
             {
-                // Group rows by target date to open cache files efficiently
                 var rowsByDate = rows.GroupBy(r => r.TargetDate.Date);
 
                 foreach (var dateGroup in rowsByDate)
@@ -352,7 +344,7 @@ namespace PuregoldITToolkit.Tools.SodChecker.Services
                             }
                         }
                     }
-                    catch { /* Handle corrupted cache silently */ }
+                    catch { }
                 }
             });
         }
@@ -367,7 +359,6 @@ namespace PuregoldITToolkit.Tools.SodChecker.Services
             }
         }
 
-        // 2. Core Cache Saver Routine (Call this inside ScanRowsAsync after completion)
         private void SaveRowsToCache(IEnumerable<SodStoreResult> rows, string targetCol)
         {
             var rowsByDate = rows.GroupBy(r => r.TargetDate.Date);
@@ -377,7 +368,6 @@ namespace PuregoldITToolkit.Tools.SodChecker.Services
                 string cachePath = GetCacheFilePath(dateGroup.Key);
                 var cacheMap = new Dictionary<string, CacheStoreDto>();
 
-                // Load existing cache to preserve non-scanned columns
                 if (File.Exists(cachePath))
                 {
                     try
@@ -396,7 +386,6 @@ namespace PuregoldITToolkit.Tools.SodChecker.Services
                         cacheMap[row.TargetStoreCode] = storeDto;
                     }
 
-                    // Update only processed or valid columns
                     UpdateColumnCache(storeDto, "EJ", row.EjStatus, targetCol);
                     UpdateColumnCache(storeDto, "Pollog", row.PollogStatus, targetCol);
                     UpdateColumnCache(storeDto, "CRM", row.CrmStatus, targetCol);
@@ -423,7 +412,6 @@ namespace PuregoldITToolkit.Tools.SodChecker.Services
 
         private void UpdateColumnCache(CacheStoreDto storeDto, string colKey, FileCheckStatus status, string targetCol)
         {
-            // Skip updating cache if the column was explicitly skipped in targeted scanning mode
             if (targetCol != "ALL" && targetCol != colKey) return;
 
             storeDto.Columns[colKey] = new CacheColumnDto

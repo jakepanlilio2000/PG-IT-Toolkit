@@ -69,6 +69,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Core\Converters\InverseBoolConverter.cs" />
+    <Compile Include="Core\Helpers\PasswordHelper.cs" />
     <Compile Include="Services\ToolRegistryService.cs" />
     <Compile Include="Tools\EJConsolidatorTool.cs" />
     <Compile Include="Tools\EJConsolidator\Interfaces\IEJConsolidatorService.cs" />

@@ -21,8 +21,8 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
 
         // CLI Properties
         private string _cliTargetIp = "192.92.92.51";
-        private string _cliUsername = "cashier";
-        private string _cliPassword = "cashier";
+        private string _cliUsername;
+        private string _cliPassword;
         private string _cliCommand = "ls -la";
 
         public string CliTargetIp { get => _cliTargetIp; set => SetProperty(ref _cliTargetIp, value); }
@@ -99,7 +99,10 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             RunConsoCliCommand = new AsyncRelayCommand(ExecuteConsoCliAsync);
             OpenPuttyCommand = new RelayCommand(ExecutePutty);
 
-            // Subscribe to EOD Changes to update Live Preview in real-time
+            var settings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
+            CliUsername = settings.PosUsername;
+            CliPassword = settings.PosPassword;
+
             EodData.PropertyChanged += (s, e) => UpdateEodPreview();
             UpdateEodPreview();
         }
@@ -134,6 +137,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         private async Task ExecuteEodAsync()
         {
             IsBusy = true;
+            EodData.SaveCache();
             await _service.RunEodGeneratorAsync(EodData, AppendLog);
             IsBusy = false;
         }

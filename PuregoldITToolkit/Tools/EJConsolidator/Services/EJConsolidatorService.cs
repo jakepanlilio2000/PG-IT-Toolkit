@@ -1,6 +1,6 @@
 ﻿using PuregoldITToolkit.Tools.EJConsolidator.Interfaces;
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
-using PuregoldITToolkit.Tools.SettingsTool.ViewModels; // Imports global settings
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
 using System.IO;
 using System.IO.Compression;
@@ -164,9 +164,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             bool connected = false;
             Exception lastException = null;
 
-            // Fetch FTP Server dynamically from Global Settings
-            var globalSettings = SettingsViewModel.GetCurrentSettings();
-            string ftpHost = !string.IsNullOrWhiteSpace(globalSettings.DefaultFtpServer) ? globalSettings.DefaultFtpServer : "192.168.200.177";
+            string ftpHost = "192.168.200.177";
 
             using (Session session = new Session())
             {
@@ -247,7 +245,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
         {
             try
             {
-                // Fetch CONSO credentials dynamically from Global Settings
                 var globalSettings = SettingsViewModel.GetCurrentSettings();
 
                 SessionOptions fallbackOptions = new SessionOptions

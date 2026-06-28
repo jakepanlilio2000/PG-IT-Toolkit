@@ -65,22 +65,21 @@
 
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbAutoPerm, Converter={StaticResource BoolToVis}}">
                 <StackPanel>
-                    <TextBlock Text="Auto Permission Batch Execution" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,5"/>
+                    <Grid Margin="0,0,0,5">
+                        <TextBlock Text="Auto Permission Batch Execution" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" VerticalAlignment="Center"/>
+                        <Border Background="{StaticResource BtnSuccess}" CornerRadius="4" Padding="8,4" HorizontalAlignment="Right">
+                            <TextBlock Text="🌐 Uses Global Live Server IP" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                        </Border>
+                    </Grid>
                     <TextBlock Text="Instantly triggers 'permission.sh' across all POS lanes and the CONSO server simultaneously to resolve local access issues." TextWrapping="Wrap" FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20"/>
 
                     <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
                         <StackPanel>
-                            <TextBlock Text="Network Topology (Uses Global Credentials)" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
-                            <WrapPanel>
-                                <StackPanel Margin="0,0,25,0" Width="160">
-                                    <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
-                                    <TextBox Text="{Binding PermissionData.LiveServerIp}" FontWeight="Bold"/>
-                                </StackPanel>
-                                <StackPanel Width="110">
-                                    <TextBlock Text="Total POS Lanes" Style="{StaticResource FormLabel}"/>
-                                    <TextBox Text="{Binding PermissionData.TotalLanes}"/>
-                                </StackPanel>
-                            </WrapPanel>
+                            <TextBlock Text="Configuration" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
+                            <StackPanel Width="150" HorizontalAlignment="Left">
+                                <TextBlock Text="Total POS Lanes" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding PermissionData.TotalLanes}" FontSize="14" FontWeight="Bold"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
@@ -91,38 +90,27 @@
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbManualEj, Converter={StaticResource BoolToVis}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
                     <StackPanel>
-                        <TextBlock Text="Manual EJ Archive Synchronization" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,5"/>
+                        <Grid Margin="0,0,0,5">
+                            <TextBlock Text="Manual EJ Synchronization" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" VerticalAlignment="Center"/>
+                            <Border Background="{StaticResource BtnSuccess}" CornerRadius="4" Padding="8,4" HorizontalAlignment="Right">
+                                <TextBlock Text="🌐 Uses Global FTP &amp; SFTP IPs" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                        </Grid>
                         <TextBlock Text="Detects missing EJ files on the Main FTP (.177) and securely bridges the missing archives from the local Conso server via SFTP." TextWrapping="Wrap" FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20"/>
-
-                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
-                            <StackPanel>
-                                <TextBlock Text="1. Store &amp; Network Configuration" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
-                                <WrapPanel>
-                                    <StackPanel Margin="0,0,20,0" Width="90">
-                                        <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding EjData.StoreCode}" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,20,0" Width="130">
-                                        <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding EjData.LiveServerIp}"/>
-                                    </StackPanel>
-                                    <StackPanel Width="130">
-                                        <TextBlock Text="FTP Server" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding EjData.FtpServer}"/>
-                                    </StackPanel>
-                                </WrapPanel>
-                            </StackPanel>
-                        </Border>
 
                         <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
                             <StackPanel>
-                                <TextBlock Text="2. Scan Range" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
+                                <TextBlock Text="Scan Parameters" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
                                 <WrapPanel>
-                                    <StackPanel Margin="0,0,20,0" Width="160">
+                                    <StackPanel Margin="0,0,20,15" Width="100">
+                                        <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EjData.StoreCode}" FontWeight="Bold" FontSize="14"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,20,15" Width="150">
                                         <TextBlock Text="From Date" Style="{StaticResource FormLabel}"/>
                                         <DatePicker SelectedDate="{Binding EjData.DateFrom}" Height="34" Padding="5"/>
                                     </StackPanel>
-                                    <StackPanel Width="160">
+                                    <StackPanel Width="150" Margin="0,0,0,15">
                                         <TextBlock Text="To Date" Style="{StaticResource FormLabel}"/>
                                         <DatePicker SelectedDate="{Binding EjData.DateTo}" Height="34" Padding="5"/>
                                     </StackPanel>
@@ -138,7 +126,12 @@
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbCli, Converter={StaticResource BoolToVis}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
                     <StackPanel>
-                        <TextBlock Text="Remote Shell &amp; Batch Execution" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,5"/>
+                        <Grid Margin="0,0,0,5">
+                            <TextBlock Text="Remote Shell &amp; Batch Execution" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" VerticalAlignment="Center"/>
+                            <Border Background="{StaticResource BtnSuccess}" CornerRadius="4" Padding="8,4" HorizontalAlignment="Right">
+                                <TextBlock Text="🔒 Uses Global POS Passwords" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                        </Grid>
                         <TextBlock Text="Run scripts or raw SSH commands directly on POS lanes or Conso servers without needing manual Putty sessions." TextWrapping="Wrap" FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20"/>
 
                         <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
@@ -148,7 +141,7 @@
                                 <TextBlock Text="Ready Scripts on CONSO (/opt/purepos/scripts/)" Style="{StaticResource FormLabel}"/>
                                 <WrapPanel Margin="0,0,0,15">
                                     <ComboBox ItemsSource="{Binding AvailableScripts}" SelectedItem="{Binding SelectedScript}" Width="350" Height="34" Padding="5" Margin="0,0,10,0"/>
-                                    <TextBlock Text="* Select to auto-fill the command below." Foreground="{StaticResource TextSecondary}" FontStyle="Italic" VerticalAlignment="Center" FontSize="11"/>
+                                    <TextBlock Text="* Select to auto-fill." Foreground="{StaticResource TextSecondary}" FontStyle="Italic" VerticalAlignment="Center" FontSize="11"/>
                                 </WrapPanel>
 
                                 <TextBlock Text="Command to Execute" Style="{StaticResource FormLabel}"/>
@@ -162,18 +155,11 @@
                             <StackPanel>
                                 <TextBlock Text="A. Specific Machine Target" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,12" FontSize="13"/>
                                 <WrapPanel Margin="0,0,0,15">
-                                    <StackPanel Margin="0,0,15,10" Width="130">
-                                        <TextBlock Text="IP Address" Style="{StaticResource FormLabel}"/>
+                                    <StackPanel Margin="0,0,15,0" Width="150">
+                                        <TextBlock Text="Specific IP Address" Style="{StaticResource FormLabel}"/>
                                         <TextBox Text="{Binding CliTargetIp}"/>
                                     </StackPanel>
-                                    <StackPanel Margin="0,0,15,10" Width="110">
-                                        <TextBlock Text="Username" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding CliUsername}"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,0,10" Width="110">
-                                        <TextBlock Text="Password" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding CliPassword}"/>
-                                    </StackPanel>
+                                    <TextBlock Text="* Will execute using Global POS username and password." VerticalAlignment="Center" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="0,15,0,0"/>
                                 </WrapPanel>
 
                                 <StackPanel Orientation="Horizontal">
@@ -186,7 +172,7 @@
                         <Border Background="{StaticResource BgApp}" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Padding="15">
                             <StackPanel>
                                 <TextBlock Text="B. Batch Execution Targets" FontWeight="Bold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5" FontSize="13"/>
-                                <TextBlock Text="Automatically uses the IP Prefix and CONSO logic from the 'Auto Permission' tab configuration." FontSize="11" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,15"/>
+                                <TextBlock Text="Automatically uses the IP Prefix and CONSO logic from Global Settings." FontSize="11" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,15"/>
 
                                 <StackPanel Orientation="Horizontal">
                                     <Button Command="{Binding RunConsoCliCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="EXECUTE ON CONSO" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,10" BorderThickness="0" Cursor="Hand" Margin="0,0,10,0"/>
@@ -194,7 +180,6 @@
                                 </StackPanel>
                             </StackPanel>
                         </Border>
-
                     </StackPanel>
                 </ScrollViewer>
             </Border>
@@ -202,46 +187,39 @@
             <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbEod, Converter={StaticResource BoolToVis}}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
                     <StackPanel>
-                        <TextBlock Text="End-of-Day (EOD) POLLOG Broadcaster" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,5"/>
+                        <Grid Margin="0,0,0,5">
+                            <TextBlock Text="End-of-Day (EOD) Broadcaster" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" VerticalAlignment="Center"/>
+                            <Border Background="{StaticResource BtnSuccess}" CornerRadius="4" Padding="8,4" HorizontalAlignment="Right">
+                                <TextBlock Text="🌐 Uses Global Live Server IP" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                        </Grid>
                         <TextBlock Text="Automates the retrieval, compression, and distribution of daily POLLOG transaction files." TextWrapping="Wrap" FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20"/>
-
-                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
-                            <StackPanel>
-                                <TextBlock Text="1. Store Identity &amp; Target" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
-                                <WrapPanel>
-                                    <StackPanel Margin="0,0,15,12" Width="100">
-                                        <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding EodData.StoreCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,15,12" Width="160">
-                                        <TextBlock Text="Store Name" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding EodData.StoreName, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                    <StackPanel Margin="0,0,15,12" Width="130">
-                                        <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding EodData.LiveServerIp, UpdateSourceTrigger=PropertyChanged}"/>
-                                    </StackPanel>
-                                </WrapPanel>
-                            </StackPanel>
-                        </Border>
 
                         <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
                             <StackPanel>
-                                <TextBlock Text="2. Email Metadata" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
+                                <TextBlock Text="1. Store Identity &amp; Target" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
                                 <WrapPanel>
-                                    <StackPanel Margin="0,0,15,12" Width="200">
+                                    <StackPanel Margin="0,0,20,12" Width="100">
+                                        <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EodData.StoreCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,20,12" Width="180">
+                                        <TextBlock Text="Store Name" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EodData.StoreName, UpdateSourceTrigger=PropertyChanged}"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,20,12" Width="200">
                                         <TextBlock Text="Store Manager" Style="{StaticResource FormLabel}"/>
                                         <TextBox Text="{Binding EodData.StoreManager, UpdateSourceTrigger=PropertyChanged}"/>
                                     </StackPanel>
                                     <StackPanel Margin="0,0,0,12" Width="250">
-                                        <TextBlock Text="Store Offices" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding EodData.StoreOffice, UpdateSourceTrigger=PropertyChanged}"/>
+                                        <TextBlock Text="Store Officers" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding EodData.StoreOfficer, UpdateSourceTrigger=PropertyChanged}"/>
                                     </StackPanel>
                                 </WrapPanel>
                             </StackPanel>
                         </Border>
 
-                        <TextBlock Text="3. Execution Toggles" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
+                        <TextBlock Text="2. Execution Toggles" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15" FontSize="14"/>
                         <WrapPanel Margin="0,0,0,20">
                             <CheckBox Content="Process YESTERDAY'S Date" IsChecked="{Binding EodData.UseYesterday}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,20,0" ToolTip="Uses UTC+8 Date - 1"/>
                             <CheckBox Content="Test Mode (Send to Self)" IsChecked="{Binding EodData.TestModeEmail}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,20,0"/>
@@ -260,13 +238,10 @@
                                 </Grid.RowDefinitions>
 
                                 <TextBlock Grid.Row="0" Text="Live Email Details Preview" Background="{StaticResource BrandPrimary}" Foreground="#FFFFFF" FontWeight="Bold" Padding="12,6" Margin="0,0,0,10"/>
-
                                 <TextBlock Grid.Row="1" Text="{Binding EodPreviewTo, StringFormat='To: {0}'}" Foreground="#666666" FontWeight="SemiBold" Padding="12,0" TextWrapping="Wrap"/>
                                 <TextBlock Grid.Row="2" Text="{Binding EodPreviewCc, StringFormat='Cc: {0}'}" Foreground="#666666" FontWeight="SemiBold" Padding="12,4" TextWrapping="Wrap"/>
                                 <TextBlock Grid.Row="3" Text="{Binding EodPreviewSubject, StringFormat='Subject: {0}'}" Foreground="#000000" FontWeight="Bold" Padding="12,0" TextWrapping="Wrap"/>
-
                                 <TextBlock Grid.Row="4" Text="{Binding EodPreviewAttachment}" Foreground="#00529B" FontWeight="SemiBold" Padding="12,8" Margin="0,0,0,5"/>
-
                                 <TextBox Grid.Row="5" Text="{Binding EodPreviewBody, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Background="#FFFFFF" Foreground="#000000" FontFamily="Calibri, Arial" FontSize="14" Padding="12" BorderBrush="#CCCCCC" BorderThickness="0,1,0,0"/>
                             </Grid>
                         </Border>

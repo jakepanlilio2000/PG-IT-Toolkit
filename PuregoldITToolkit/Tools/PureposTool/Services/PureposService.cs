@@ -41,7 +41,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                 string posIp = $"{ipPrefix}{50 + lane}";
                 tasks.Add(Task.Run(() =>
                 {
-                    ExecuteSshCommandSync(posIp, "cashier", "cashier", "sh /opt/purepos/scripts/permission.sh", logCallback);
+                    ExecuteSshCommandSync(posIp, globalSettings.PosUsername, globalSettings.PosPassword, "sh /opt/purepos/scripts/permission.sh", logCallback);
                 }));
             }
 
@@ -406,12 +406,13 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
         {
             workingCreds = null;
             string ftpUrl = $"ftp://{ftpIp}/PUREPOS_EJRECEIPT/";
+            var globalSettings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
 
             foreach (var user in _ftpUsers)
             {
                 try
                 {
-                    var creds = new NetworkCredential(user, _ftpPassword);
+                    var creds = new NetworkCredential(user, globalSettings.FtpPassword);
                     FtpWebRequest request = (FtpWebRequest)WebRequest.Create(ftpUrl);
                     request.Method = WebRequestMethods.Ftp.ListDirectory;
                     request.Credentials = creds;
@@ -426,16 +427,13 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                             if (line.Contains($"({storeCode})"))
                             {
                                 workingCreds = creds;
-                                string folderName = Path.GetFileName(line); // Safely extracts folder name if path is absolute
+                                string folderName = Path.GetFileName(line);
                                 return $"{ftpUrl}{folderName}";
                             }
                         }
                     }
                 }
-                catch (WebException)
-                {
-                    // Silently catch and move to the next FTP user account
-                }
+                catch (WebException) { }
             }
             return null;
         }

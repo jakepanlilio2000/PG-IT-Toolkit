@@ -1,5 +1,8 @@
 ﻿using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
+using System;
+using System.IO;
+using System.Text.Json;
 
 namespace PuregoldITToolkit.Tools.PureposTool.Models
 {
@@ -28,6 +31,38 @@ namespace PuregoldITToolkit.Tools.PureposTool.Models
             var settings = SettingsViewModel.GetCurrentSettings();
             LiveServerIp = settings.DefaultLiveServerIp;
             StoreCode = settings.DefaultStoreCode;
+
+            // Load saved entries when the tool opens
+            LoadCache();
+        }
+
+        public void SaveCache()
+        {
+            try
+            {
+                var cacheFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EodInputCache.json");
+                var data = new { StoreName, StoreManager, StoreOfficer };
+                File.WriteAllText(cacheFile, JsonSerializer.Serialize(data));
+            }
+            catch { /* Silently fail if there's a permission issue writing the file */ }
+        }
+
+        private void LoadCache()
+        {
+            var cacheFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EodInputCache.json");
+            if (File.Exists(cacheFile))
+            {
+                try
+                {
+                    var json = File.ReadAllText(cacheFile);
+                    var data = JsonSerializer.Deserialize<JsonElement>(json);
+
+                    if (data.TryGetProperty("StoreName", out var sn)) StoreName = sn.GetString();
+                    if (data.TryGetProperty("StoreManager", out var sm)) StoreManager = sm.GetString();
+                    if (data.TryGetProperty("StoreOfficer", out var so)) StoreOfficer = so.GetString();
+                }
+                catch { /* Fallback to default values if JSON is corrupted */ }
+            }
         }
     }
 }
