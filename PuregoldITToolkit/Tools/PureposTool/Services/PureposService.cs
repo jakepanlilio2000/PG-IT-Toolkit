@@ -25,7 +25,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
             "puregold/ftp6", "puregold/ftp7", "puregold/ftp8", "puregold/ftp9",
             "puregold/ftp10", "puregold/ftp11"
         };
-        private readonly string _ftpPassword = "pw@1234";
 
         public async Task RunAutoPermissionAsync(AutoPermissionModel config, Action<string> logCallback)
         {
@@ -54,26 +53,38 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
             logCallback("\n✅ AUTO PERMISSION COMPLETED SUCCESSFULLY.");
         }
 
+        // UPDATED: Captures Standard Error and Exit Status
         private void ExecuteSshCommandSync(string host, string username, string password, string command, Action<string> logCallback)
         {
             try
             {
                 using (var client = new SshClient(host, username, password))
                 {
-                    client.ConnectionInfo.Timeout = TimeSpan.FromSeconds(5);
+                    client.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
                     client.Connect();
                     var cmd = client.CreateCommand(command);
                     string result = cmd.Execute();
-                    logCallback($"[SUCCESS] {host}: {result.Trim()}");
+                    string error = cmd.Error;
+
+                    if (cmd.ExitStatus == 0)
+                    {
+                        logCallback($"[SUCCESS] {host}:\n{result.Trim()}\n{error.Trim()}".Trim());
+                    }
+                    else
+                    {
+                        logCallback($"[ERROR] {host} (Exit {cmd.ExitStatus}):\n{error.Trim()}\n{result.Trim()}".Trim());
+                    }
+
                     client.Disconnect();
                 }
             }
             catch (Exception ex)
             {
-                logCallback($"[ERROR] {host}: {ex.Message}");
+                logCallback($"[FAILED] {host}: {ex.Message}");
             }
         }
 
+        // UPDATED: Captures Standard Error and Exit Status
         public async Task<string> RunSshCommandAsync(string host, string username, string password, string command)
         {
             return await Task.Run(() =>
@@ -82,17 +93,24 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                 {
                     using (var client = new SshClient(host, username, password))
                     {
-                        client.ConnectionInfo.Timeout = TimeSpan.FromSeconds(5);
+                        client.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
                         client.Connect();
                         var cmd = client.CreateCommand(command);
                         string result = cmd.Execute();
+                        string error = cmd.Error;
                         client.Disconnect();
-                        return $"[SUCCESS {host}]:\n{result.Trim()}";
+
+                        if (cmd.ExitStatus != 0)
+                        {
+                            return $"[ERROR {host}] Exit Code {cmd.ExitStatus}:\n{error.Trim()}\n{result.Trim()}".Trim();
+                        }
+
+                        return $"[SUCCESS {host}]:\n{result.Trim()}\n{error.Trim()}".Trim();
                     }
                 }
                 catch (Exception ex)
                 {
-                    return $"[ERROR {host}]: {ex.Message}";
+                    return $"[FAILED {host}]: {ex.Message}";
                 }
             });
         }
@@ -109,7 +127,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
 
                     var globalSettings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
 
-                    // *** FIX: Enforce Manila Time (UTC+8) ***
                     DateTime manilaTime = DateTime.UtcNow.AddHours(8);
                     DateTime targetDate = config.UseYesterday ? manilaTime.AddDays(-1) : manilaTime;
 
@@ -216,7 +233,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                     mail.Body = htmlContent;
                     mail.Attachments.Add(new System.Net.Mail.Attachment(zipFilepath));
 
-                    logCallback($"[*] Sending email via SMTP ({globalSettings.SmtpServer})...");
+                    logCallback($"[*] Sending email via SMTP ({globalSettings.SmtpServer})....");
                     using (var smtp = new System.Net.Mail.SmtpClient(globalSettings.SmtpServer, globalSettings.SmtpPort))
                     {
                         smtp.Credentials = new System.Net.NetworkCredential(globalSettings.SmtpUser, globalSettings.SmtpPass);
@@ -232,7 +249,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                         string boundary = "----=_Part_" + Guid.NewGuid().ToString("N");
                         StringBuilder mboxContent = new StringBuilder();
 
-                        // *** FIX: Time stamp also uses Manila Time ***
                         mboxContent.Append($"From - {manilaTime.ToString("ddd MMM dd HH:mm:ss yyyy", System.Globalization.CultureInfo.InvariantCulture)}\n");
                         mboxContent.AppendLine($"From: {mail.From}");
                         mboxContent.AppendLine($"To: {mail.To}");
@@ -288,7 +304,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
             });
         }
 
-        // --- FULLY RESTORED MANUAL EJ SAVE LOGIC ---
         public async Task RunManualEjSaveAsync(EjSaveModel config, Action<string> logCallback)
         {
             await Task.Run(() =>
@@ -333,7 +348,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                         return;
                     }
 
-                    // Process Missing Dates via SFTP -> Local Zip -> FTP
                     string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
                     using (var sftp = new Renci.SshNet.SftpClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
@@ -357,7 +371,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                                 continue;
                             }
 
-                            // Download files from SFTP
                             Directory.CreateDirectory(localTempDir);
                             logCallback($"Downloading EJ files from Conso...");
                             var files = sftp.ListDirectory(remoteEjPath).Where(f => !f.IsDirectory);
@@ -369,20 +382,16 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                                 }
                             }
 
-                            // Create ZIP Archive
                             logCallback($"Zipping files...");
                             if (File.Exists(localZipFile)) File.Delete(localZipFile);
                             System.IO.Compression.ZipFile.CreateFromDirectory(localTempDir, localZipFile);
 
-                            // Upload ZIP to FTP
                             logCallback($"Uploading {dateStr}_EJReceiptJournal.zip to FTP...");
                             UploadToFtp($"{targetFtpDir}/{Path.GetFileName(localZipFile)}", localZipFile, validCreds);
 
-                            // Clean up Desktop
                             Directory.Delete(localTempDir, true);
                             File.Delete(localZipFile);
 
-                            // Add to local success cache
                             cache.Add(dateStr);
                             SaveCache(cache);
                             logCallback($"[SUCCESS] {dateStr} uploaded and cleaned up!");
@@ -399,8 +408,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                 }
             });
         }
-
-        // --- RESTORED FTP HELPER METHODS ---
 
         private string GetFtpStoreDirectory(string ftpIp, string storeCode, out NetworkCredential workingCreds, Action<string> logCallback)
         {

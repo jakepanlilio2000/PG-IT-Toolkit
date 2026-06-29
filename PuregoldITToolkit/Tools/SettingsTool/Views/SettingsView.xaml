@@ -17,11 +17,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,15">
-            <TextBlock Text="Global Settings &amp; Configurations" FontSize="24" FontWeight="Light" Foreground="{StaticResource TextPrimary}"/>
-            <TextBlock Text="Centralized credentials and parameters used securely across all toolkits" FontSize="13" Foreground="{StaticResource TextSecondary}" Margin="0,2,0,0"/>
-        </StackPanel>
-
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
             <StackPanel>
 
@@ -75,7 +70,7 @@
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="Default FTP Server IP" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding SettingsData.DefaultFtpServer, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBox IsEnabled="False" Text="{Binding SettingsData.DefaultFtpServer, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </WrapPanel>
                     </StackPanel>
@@ -87,29 +82,29 @@
                         <WrapPanel Margin="0,0,0,15">
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="POS SSH Username" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding SettingsData.PosUsername, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBox IsEnabled="False" Text="{Binding SettingsData.PosUsername, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="POS SSH Password" Style="{StaticResource FormLabel}"/>
-                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.PosPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <PasswordBox IsEnabled="False" helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.PosPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="Primary FTP Password" Style="{StaticResource FormLabel}"/>
-                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.FtpPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <PasswordBox IsEnabled="False" helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.FtpPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </WrapPanel>
                         <WrapPanel Margin="0,0,0,10">
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="Outbound FTP IP (.84)" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding SettingsData.OutboundFtpIp, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBox IsEnabled="False" Text="{Binding SettingsData.OutboundFtpIp, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="Outbound FTP User" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding SettingsData.OutboundFtpUser, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBox IsEnabled="False"  Text="{Binding SettingsData.OutboundFtpUser, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="Outbound FTP Password" Style="{StaticResource FormLabel}"/>
-                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.OutboundFtpPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <PasswordBox IsEnabled="False" helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.OutboundFtpPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </WrapPanel>
                     </StackPanel>
@@ -121,11 +116,11 @@
                         <WrapPanel Margin="0,0,0,15">
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="SMTP Server IP" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding SettingsData.SmtpServer, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBox IsEnabled="False" Text="{Binding SettingsData.SmtpServer, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="80">
                                 <TextBlock Text="SMTP Port" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding SettingsData.SmtpPort, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBox IsEnabled="False" Text="{Binding SettingsData.SmtpPort, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="250">
                                 <TextBlock Text="Sender Identity Name" Style="{StaticResource FormLabel}"/>

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -114,7 +115,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             EodPreviewTo = EodData.TestModeEmail ? settings.SmtpUser : "AllITDataControllersMMS@puregold.com.ph";
             EodPreviewCc = EodData.TestModeEmail ? "" : "jymendoza@puregold.com.ph, allITzone11@puregold.com.ph";
 
-            // Enforce Manila Time (UTC+8)
             DateTime manilaTime = DateTime.UtcNow.AddHours(8);
             DateTime targetDate = EodData.UseYesterday ? manilaTime.AddDays(-1) : manilaTime;
 
@@ -132,6 +132,36 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         private void AppendLog(string message)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() => { CliOutput += $"{message}\n"; });
+        }
+
+        // --- NEW: INTERACTIVE COMMAND HANDLER (NANO/VI/TOP) ---
+        private bool LaunchInteractiveTerminal(string ip, string user, string pass, string command)
+        {
+            string cmdLower = command.Trim().ToLower();
+            if (cmdLower.StartsWith("nano") || cmdLower.StartsWith("vi") || cmdLower.StartsWith("vim") || cmdLower.StartsWith("top") || cmdLower.StartsWith("htop"))
+            {
+                try
+                {
+                    // Create an ephemeral script to execute the interactive command 
+                    string tempScript = Path.Combine(Path.GetTempPath(), $"purepos_cmd_{Guid.NewGuid().ToString("N").Substring(0, 8)}.sh");
+                    File.WriteAllText(tempScript, command);
+
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "putty.exe",
+                        Arguments = $"-ssh {user}@{ip} -pw {pass} -t -m \"{tempScript}\"",
+                        UseShellExecute = true
+                    });
+                    AppendLog($"\n[INFO] Interactive editor '{command.Split(' ')[0]}' detected! Launched temporary Putty PTY window for {ip} so you can edit the file securely.");
+                    return true;
+                }
+                catch
+                {
+                    AppendLog("\n[ERROR] Tried to launch Putty for an interactive command, but failed. Make sure putty.exe is accessible in the app folder or system PATH.");
+                    return true;
+                }
+            }
+            return false;
         }
 
         private async Task ExecuteEodAsync()
@@ -163,8 +193,13 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         {
             IsBusy = true;
             AppendLog($"\n> Executing on {CliTargetIp}: {CliCommand}");
-            string result = await _service.RunSshCommandAsync(CliTargetIp, CliUsername, CliPassword, CliCommand);
-            AppendLog(result);
+
+            // Intercept interactive commands like Nano
+            if (!LaunchInteractiveTerminal(CliTargetIp, CliUsername, CliPassword, CliCommand))
+            {
+                string result = await _service.RunSshCommandAsync(CliTargetIp, CliUsername, CliPassword, CliCommand);
+                AppendLog(result);
+            }
             IsBusy = false;
         }
 
@@ -172,7 +207,21 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         {
             IsBusy = true;
             AppendLog($"\n> Executing on ALL POS LANES: {CliCommand}");
+
             string ipPrefix = PermissionData.LiveServerIp.Substring(0, PermissionData.LiveServerIp.LastIndexOf('.') + 1);
+
+            // Handle Nano on all lanes simultaneously
+            if (CliCommand.Trim().ToLower().StartsWith("nano") || CliCommand.Trim().ToLower().StartsWith("vi"))
+            {
+                AppendLog("[INFO] Interactive command detected on Batch Mode. Opening isolated Putty windows for all selected targets...");
+                for (int i = 1; i <= PermissionData.TotalLanes; i++)
+                {
+                    string posIp = $"{ipPrefix}{50 + i}";
+                    LaunchInteractiveTerminal(posIp, "cashier", "cashier", CliCommand);
+                }
+                IsBusy = false;
+                return;
+            }
 
             var tasks = new List<Task<string>>();
             for (int i = 1; i <= PermissionData.TotalLanes; i++)
@@ -193,8 +242,11 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
 
             var globalSettings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
 
-            string result = await _service.RunSshCommandAsync(PermissionData.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword, CliCommand);
-            AppendLog(result);
+            if (!LaunchInteractiveTerminal(PermissionData.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword, CliCommand))
+            {
+                string result = await _service.RunSshCommandAsync(PermissionData.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword, CliCommand);
+                AppendLog(result);
+            }
             IsBusy = false;
         }
 

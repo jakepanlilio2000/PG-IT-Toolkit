@@ -141,7 +141,7 @@
                                 <TextBlock Text="Ready Scripts on CONSO (/opt/purepos/scripts/)" Style="{StaticResource FormLabel}"/>
                                 <WrapPanel Margin="0,0,0,15">
                                     <ComboBox ItemsSource="{Binding AvailableScripts}" SelectedItem="{Binding SelectedScript}" Width="350" Height="34" Padding="5" Margin="0,0,10,0"/>
-                                    <TextBlock Text="* Select to auto-fill." Foreground="{StaticResource TextSecondary}" FontStyle="Italic" VerticalAlignment="Center" FontSize="11"/>
+                                    <TextBlock Text="* Interactive commands (nano, vi, top) will auto-launch in a visual Putty PTY window." Foreground="{StaticResource TextSecondary}" FontStyle="Italic" VerticalAlignment="Center" FontSize="11"/>
                                 </WrapPanel>
 
                                 <TextBlock Text="Command to Execute" Style="{StaticResource FormLabel}"/>
