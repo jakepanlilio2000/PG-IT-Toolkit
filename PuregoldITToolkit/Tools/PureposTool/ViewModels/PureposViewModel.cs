@@ -138,12 +138,18 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         private bool LaunchInteractiveTerminal(string ip, string user, string pass, string command)
         {
             string cmdLower = command.Trim().ToLower();
-            if (cmdLower.StartsWith("nano") || cmdLower.StartsWith("vi") || cmdLower.StartsWith("vim") || cmdLower.StartsWith("top") || cmdLower.StartsWith("htop"))
+
+            // Strip out 'sudo ' if it exists so we can accurately detect the base command
+            string baseCmd = cmdLower.StartsWith("sudo ") ? cmdLower.Substring(5).Trim() : cmdLower;
+
+            if (baseCmd.StartsWith("nano") || baseCmd.StartsWith("vi") || baseCmd.StartsWith("vim") || baseCmd.StartsWith("top") || baseCmd.StartsWith("htop"))
             {
                 try
                 {
                     // Create an ephemeral script to execute the interactive command 
                     string tempScript = Path.Combine(Path.GetTempPath(), $"purepos_cmd_{Guid.NewGuid().ToString("N").Substring(0, 8)}.sh");
+
+                    // Write the EXACT original command (including sudo) to the script
                     File.WriteAllText(tempScript, command);
 
                     Process.Start(new ProcessStartInfo
@@ -152,7 +158,8 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
                         Arguments = $"-ssh {user}@{ip} -pw {pass} -t -m \"{tempScript}\"",
                         UseShellExecute = true
                     });
-                    AppendLog($"\n[INFO] Interactive editor '{command.Split(' ')[0]}' detected! Launched temporary Putty PTY window for {ip} so you can edit the file securely.");
+
+                    AppendLog($"\n[INFO] Interactive editor detected! Launched temporary Putty PTY window for {ip} so you can edit the file securely.");
                     return true;
                 }
                 catch
@@ -194,7 +201,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             IsBusy = true;
             AppendLog($"\n> Executing on {CliTargetIp}: {CliCommand}");
 
-            // Intercept interactive commands like Nano
             if (!LaunchInteractiveTerminal(CliTargetIp, CliUsername, CliPassword, CliCommand))
             {
                 string result = await _service.RunSshCommandAsync(CliTargetIp, CliUsername, CliPassword, CliCommand);
@@ -210,14 +216,16 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
 
             string ipPrefix = PermissionData.LiveServerIp.Substring(0, PermissionData.LiveServerIp.LastIndexOf('.') + 1);
 
-            // Handle Nano on all lanes simultaneously
-            if (CliCommand.Trim().ToLower().StartsWith("nano") || CliCommand.Trim().ToLower().StartsWith("vi"))
+            string cmdLower = CliCommand.Trim().ToLower();
+            string baseCmd = cmdLower.StartsWith("sudo ") ? cmdLower.Substring(5).Trim() : cmdLower;
+
+            if (baseCmd.StartsWith("nano") || baseCmd.StartsWith("vi") || baseCmd.StartsWith("vim") || baseCmd.StartsWith("top") || baseCmd.StartsWith("htop"))
             {
-                AppendLog("[INFO] Interactive command detected on Batch Mode. Opening isolated Putty windows for all selected targets...");
+                AppendLog("[INFO] Interactive command detected in Batch Mode. Opening isolated Putty windows for all targets...");
                 for (int i = 1; i <= PermissionData.TotalLanes; i++)
                 {
                     string posIp = $"{ipPrefix}{50 + i}";
-                    LaunchInteractiveTerminal(posIp, "cashier", "cashier", CliCommand);
+                    LaunchInteractiveTerminal(posIp, CliUsername, CliPassword, CliCommand);
                 }
                 IsBusy = false;
                 return;
@@ -227,14 +235,13 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             for (int i = 1; i <= PermissionData.TotalLanes; i++)
             {
                 string posIp = $"{ipPrefix}{50 + i}";
-                tasks.Add(_service.RunSshCommandAsync(posIp, "cashier", "cashier", CliCommand));
+                tasks.Add(_service.RunSshCommandAsync(posIp, CliUsername, CliPassword, CliCommand));
             }
 
             var results = await Task.WhenAll(tasks);
             foreach (var res in results) AppendLog(res);
             IsBusy = false;
         }
-
         private async Task ExecuteConsoCliAsync()
         {
             IsBusy = true;
