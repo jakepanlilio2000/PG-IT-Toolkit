@@ -6,8 +6,8 @@
     xmlns:ejVm="clr-namespace:PuregoldITToolkit.Tools.EJConsolidator.ViewModels"
     xmlns:formsV="clr-namespace:PuregoldITToolkit.Tools.FormsTool.Views"
     xmlns:formsVm="clr-namespace:PuregoldITToolkit.Tools.FormsTool.ViewModels"
-    xmlns:pimsV="clr-namespace:PuregoldITToolkit.Tools.PimsVendorTool.Views"
-    xmlns:pimsVm="clr-namespace:PuregoldITToolkit.Tools.PimsVendorTool.ViewModels"
+    xmlns:pimsV="clr-namespace:PuregoldITToolkit.Tools.PimsManagerTool.Views"
+    xmlns:pimsVm="clr-namespace:PuregoldITToolkit.Tools.PimsManagerTool.ViewModels"
     xmlns:posV="clr-namespace:PuregoldITToolkit.Tools.PureposTool.Views"
     xmlns:posVm="clr-namespace:PuregoldITToolkit.Tools.PureposTool.ViewModels"
     xmlns:sdV="clr-namespace:PuregoldITToolkit.Tools.ServiceDeskTool.Views"
@@ -60,8 +60,8 @@
         <DataTemplate DataType="{x:Type formsVm:FormsMainViewModel}">
             <formsV:FormsMainView />
         </DataTemplate>
-        <DataTemplate DataType="{x:Type pimsVm:VendorManagerViewModel}">
-            <pimsV:VendorManagerView />
+        <DataTemplate DataType="{x:Type pimsVm:PimsManagerViewModel}">
+            <pimsV:PimsManagerView />
         </DataTemplate>
         <DataTemplate DataType="{x:Type posVm:PureposViewModel}">
             <posV:PureposView />

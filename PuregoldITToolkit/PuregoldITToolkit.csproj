@@ -110,12 +110,12 @@
       <DependentUpon>TsrfView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Tools\PimsVendorTool.cs" />
-    <Compile Include="Tools\PimsVendorTool\Interfaces\IVendorRepository.cs" />
-    <Compile Include="Tools\PimsVendorTool\Models\VendorModel.cs" />
-    <Compile Include="Tools\PimsVendorTool\Services\VendorRepository.cs" />
-    <Compile Include="Tools\PimsVendorTool\ViewModels\VendorManagerViewModel.cs" />
-    <Compile Include="Tools\PimsVendorTool\Views\VendorManagerView.xaml.cs">
-      <DependentUpon>VendorManagerView.xaml</DependentUpon>
+    <Compile Include="Tools\PimsManagerTool\Interfaces\IPimsRepository.cs" />
+    <Compile Include="Tools\PimsManagerTool\Models\VendorModel.cs" />
+    <Compile Include="Tools\PimsManagerTool\Services\PimsRepository.cs" />
+    <Compile Include="Tools\PimsManagerTool\ViewModels\PimsManagerViewModel.cs" />
+    <Compile Include="Tools\PimsManagerTool\Views\PimsManagerView.xaml.cs">
+      <DependentUpon>PimsManagerView.xaml</DependentUpon>
     </Compile>
     <Compile Include="Tools\PureposTool.cs" />
     <Compile Include="Tools\PureposTool\Interfaces\IPureposService.cs" />
@@ -180,7 +180,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Tools\PimsVendorTool\Views\VendorManagerView.xaml">
+    <Page Include="Tools\PimsManagerTool\Views\PimsManagerView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

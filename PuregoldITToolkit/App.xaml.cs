@@ -1,14 +1,14 @@
 ﻿using PuregoldITToolkit.Services;
-// --- Tool Namespaces ---
 using PuregoldITToolkit.Tools.EJConsolidator;
 using PuregoldITToolkit.Tools.EJConsolidator.Services;
 using PuregoldITToolkit.Tools.EJConsolidator.ViewModels;
 using PuregoldITToolkit.Tools.FormsTool;
 using PuregoldITToolkit.Tools.FormsTool.Services;
 using PuregoldITToolkit.Tools.FormsTool.ViewModels;
-using PuregoldITToolkit.Tools.PimsVendorTool;
-using PuregoldITToolkit.Tools.PimsVendorTool.Services;
-using PuregoldITToolkit.Tools.PimsVendorTool.ViewModels;
+using PuregoldITToolkit.Tools.PimsManagerTool; // Updated namespace
+using PuregoldITToolkit.Tools.PimsManagerTool.Services;
+using PuregoldITToolkit.Tools.PimsManagerTool.ViewModels;
+using PuregoldITToolkit.Tools.PureposTool; // Adjusted to singular to match standard
 using PuregoldITToolkit.Tools.PureposTool.Services;
 using PuregoldITToolkit.Tools.PureposTool.ViewModels;
 using PuregoldITToolkit.Tools.PureposTools;
@@ -60,12 +60,12 @@ namespace PuregoldITToolkit
             var formsMainVm = new FormsMainViewModel(infVm, obVm, ssrfVm, tsrfVm);
             var formsTool = new FormsTool(formsMainVm);
 
-            // --- PIMS Vendor Tool ---
-            var vendorRepo = new VendorRepository();
-            var vendorVm = new VendorManagerViewModel(vendorRepo);
-            var vendorTool = new PimsVendorTool(vendorVm);
+            // --- PIMS Manager Tool (Updated naming) ---
+            var pimsRepo = new PimsRepository();
+            var pimsVm = new PimsManagerViewModel(pimsRepo);
+            var pimsTool = new PimsManagerTool(pimsVm);
 
-            // --- Purepos Tool ---
+            // --- PurePOS Tool ---
             var pureposService = new PureposService();
             var pureposVm = new PureposViewModel(pureposService);
             var pureposTool = new PureposTool(pureposVm);
@@ -80,19 +80,16 @@ namespace PuregoldITToolkit
             var settingsVm = new SettingsViewModel(settingsService);
             var settingsTool = new SettingsTool(settingsVm);
 
-
-
             // ==========================================
             // 3. REGISTER TOOLS TO THE SIDEBAR
             // ==========================================
             registryService.RegisterTool(ejTool);
             registryService.RegisterTool(sodTool);
             registryService.RegisterTool(formsTool);
-            registryService.RegisterTool(vendorTool);
+            registryService.RegisterTool(pimsTool); // Registered the updated tool
             registryService.RegisterTool(pureposTool);
             registryService.RegisterTool(sdTool);
             registryService.RegisterTool(settingsTool);
-
 
             // ==========================================
             // 4. INITIALIZE SHELL AND SHOW

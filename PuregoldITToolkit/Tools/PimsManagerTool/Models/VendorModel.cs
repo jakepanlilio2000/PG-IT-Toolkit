@@ -1,6 +1,6 @@
 ﻿using PuregoldITToolkit.Core.Base;
 
-namespace PuregoldITToolkit.Tools.PimsVendorTool.Models
+namespace PuregoldITToolkit.Tools.PimsManagerTool.Models
 {
     public class VendorModel : ViewModelBase
     {

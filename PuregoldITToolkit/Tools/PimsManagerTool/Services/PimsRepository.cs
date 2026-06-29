@@ -1,13 +1,13 @@
-﻿using PuregoldITToolkit.Tools.PimsVendorTool.Interfaces;
-using PuregoldITToolkit.Tools.PimsVendorTool.Models;
+﻿using PuregoldITToolkit.Tools.PimsManagerTool.Interfaces;
+using PuregoldITToolkit.Tools.PimsManagerTool.Models;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 
-namespace PuregoldITToolkit.Tools.PimsVendorTool.Services
+namespace PuregoldITToolkit.Tools.PimsManagerTool.Services
 {
-    public class VendorRepository : IVendorRepository
+    public class PimsRepository : IPimsRepository
     {
         private string _connectionString;
 
@@ -27,7 +27,6 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.Services
                 {
                     await conn.OpenAsync();
 
-                    // Search condition
                     string whereClause = string.IsNullOrWhiteSpace(searchQuery) ? "" : "WHERE [VENDORCD] LIKE @Search OR [VENDOR] LIKE @Search OR [SORT] LIKE @Search";
 
                     string countQuery = $"SELECT COUNT(*) FROM [PGBIS].[dbo].[DIM_VENDORS] {whereClause}";
@@ -112,6 +111,29 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.Services
             catch (SqlException ex) { return (false, GetFriendlySqlErrorMessage(ex)); }
             catch (Exception ex) { return (false, $"Unexpected Error: {ex.Message}"); }
         }
+        public async Task<(bool Success, string ErrorMessage)> ResetEmployeeSalePromoAsync()
+        {
+            string query = @"
+                USE [FreeItemsDB];
+                DELETE FROM [dbo].[TBLPROMOMASTER] WHERE [CPROMOID] = '8888888888';
+                INSERT INTO [dbo].[TBLPROMOMASTER] 
+                    ([CPROMOID], [CPROMODESCRIPTION], [CSUPPLIERID], [DDATEFROM], [DDATETO], [IALLOCQTY], [CSTSNO])
+                VALUES 
+                    ('8888888888', 'SALE TO EMPLOYEE', 101, '1/1/1900', '12/31/2078', 99999999, 0);";
+
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(_connectionString))
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    await conn.OpenAsync();
+                    await cmd.ExecuteNonQueryAsync();
+                    return (true, string.Empty);
+                }
+            }
+            catch (SqlException ex) { return (false, GetFriendlySqlErrorMessage(ex)); }
+            catch (Exception ex) { return (false, $"Unexpected Error: {ex.Message}"); }
+        }
 
         private async Task<(bool Success, string ErrorMessage)> ExecuteQueryAsync(string query, VendorModel vendor)
         {
@@ -143,7 +165,7 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.Services
                 case 53:
                 case 2:
                 case -2: return "Connection Error: Cannot reach the SQL Server. Check IP Address or Network connection.";
-                case 208: return "Database Error: The table [DIM_VENDORS] was not found in the [PGBIS] database.";
+                case 208: return "Database Error: A required table was not found in the target database.";
                 default: return $"SQL Error ({ex.Number}): {ex.Message}";
             }
         }

@@ -1,18 +1,18 @@
 ﻿using CommunityToolkit.Mvvm.Input;
 using PuregoldITToolkit.Core.Base;
-using PuregoldITToolkit.Tools.PimsVendorTool.Interfaces;
-using PuregoldITToolkit.Tools.PimsVendorTool.Models;
-using PuregoldITToolkit.Tools.SettingsTool.ViewModels; // Added for global settings access
+using PuregoldITToolkit.Tools.PimsManagerTool.Interfaces;
+using PuregoldITToolkit.Tools.PimsManagerTool.Models;
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
-namespace PuregoldITToolkit.Tools.PimsVendorTool.ViewModels
+namespace PuregoldITToolkit.Tools.PimsManagerTool.ViewModels
 {
-    public class VendorManagerViewModel : ViewModelBase
+    public class PimsManagerViewModel : ViewModelBase
     {
-        private readonly IVendorRepository _repository;
+        private readonly IPimsRepository _repository;
 
         public ObservableCollection<VendorModel> VendorsList { get; } = new ObservableCollection<VendorModel>();
 
@@ -68,7 +68,9 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.ViewModels
         public ICommand FirstPageCommand { get; }
         public ICommand LastPageCommand { get; }
 
-        public VendorManagerViewModel(IVendorRepository repository)
+        public ICommand FixEmployeePromoCommand { get; }
+
+        public PimsManagerViewModel(IPimsRepository repository)
         {
             _repository = repository;
 
@@ -82,6 +84,8 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.ViewModels
             PrevPageCommand = new AsyncRelayCommand(async () => { if (CurrentPage > 1) { CurrentPage--; await LoadVendorsAsync(); } });
             FirstPageCommand = new AsyncRelayCommand(async () => { CurrentPage = 1; await LoadVendorsAsync(); });
             LastPageCommand = new AsyncRelayCommand(async () => { CurrentPage = TotalPages; await LoadVendorsAsync(); });
+
+            FixEmployeePromoCommand = new AsyncRelayCommand(ExecuteFixEmployeePromoAsync);
         }
 
         private void ApplyCredentials()
@@ -100,6 +104,22 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.ViewModels
                 }
             }
             IsEditMode = false;
+        }
+
+        private async Task ExecuteFixEmployeePromoAsync()
+        {
+            IsBusy = true;
+            ApplyCredentials();
+            StatusMessage = "Executing FreeItemsDB Sale Promo script...";
+
+            var result = await _repository.ResetEmployeeSalePromoAsync();
+
+            if (result.Success)
+                StatusMessage = "SUCCESS: Employee Sale Promo (8888888888) has been reset in FreeItemsDB.";
+            else
+                StatusMessage = result.ErrorMessage;
+
+            IsBusy = false;
         }
 
         private async Task LoadVendorsAsync()

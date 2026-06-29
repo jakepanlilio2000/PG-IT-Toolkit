@@ -1,10 +1,10 @@
-﻿using PuregoldITToolkit.Tools.PimsVendorTool.Models;
+﻿using PuregoldITToolkit.Tools.PimsManagerTool.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace PuregoldITToolkit.Tools.PimsVendorTool.Interfaces
+namespace PuregoldITToolkit.Tools.PimsManagerTool.Interfaces
 {
-    public interface IVendorRepository
+    public interface IPimsRepository
     {
         void SetCredentials(string server, string database, string username, string password);
 
@@ -13,5 +13,7 @@ namespace PuregoldITToolkit.Tools.PimsVendorTool.Interfaces
         Task<(bool Success, string ErrorMessage)> InsertVendorAsync(VendorModel vendor);
         Task<(bool Success, string ErrorMessage)> UpdateVendorAsync(VendorModel vendor);
         Task<(bool Success, string ErrorMessage)> DeleteVendorAsync(string vendorCd);
+
+        Task<(bool Success, string ErrorMessage)> ResetEmployeeSalePromoAsync();
     }
 }
