@@ -45,7 +45,7 @@
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="SQL Password" Style="{StaticResource FormLabel}"/>
-                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.PimsSqlPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#FFF5F5F5"/>
+                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.PimsSqlPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </WrapPanel>
                     </StackPanel>
@@ -61,7 +61,7 @@
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="CONSO / SFTP Password" Style="{StaticResource FormLabel}"/>
-                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.ConsoPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#FFF5F5F5"/>
+                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.ConsoPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="100">
                                 <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
@@ -91,7 +91,11 @@
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="POS SSH Password" Style="{StaticResource FormLabel}"/>
-                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.PosPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#FFF5F5F5"/>
+                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.PosPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,15,12" Width="180">
+                                <TextBlock Text="Primary FTP Password" Style="{StaticResource FormLabel}"/>
+                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.FtpPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </WrapPanel>
                         <WrapPanel Margin="0,0,0,10">
@@ -105,7 +109,7 @@
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="180">
                                 <TextBlock Text="Outbound FTP Password" Style="{StaticResource FormLabel}"/>
-                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.OutboundFtpPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#FFF5F5F5"/>
+                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.OutboundFtpPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </WrapPanel>
                     </StackPanel>
@@ -135,7 +139,7 @@
                             </StackPanel>
                             <StackPanel Margin="0,0,15,12" Width="220">
                                 <TextBlock Text="SMTP Password" Style="{StaticResource FormLabel}"/>
-                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.SmtpPass, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Background="#FFF5F5F5"/>
+                                <PasswordBox helpers:PasswordHelper.Attach="True" helpers:PasswordHelper.Password="{Binding SettingsData.SmtpPass, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
                         </WrapPanel>
                         <StackPanel Margin="0,0,15,12">

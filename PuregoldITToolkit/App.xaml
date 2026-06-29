@@ -16,27 +16,16 @@
     xmlns:sodVm="clr-namespace:PuregoldITToolkit.Tools.SodChecker.ViewModels"
     xmlns:setV="clr-namespace:PuregoldITToolkit.Tools.SettingsTool.Views"
     xmlns:setVm="clr-namespace:PuregoldITToolkit.Tools.SettingsTool.ViewModels"
-    
     >
 
     <Application.Resources>
 
-        <!--  ==========================================  -->
-        <!--  1. GLOBAL COLOR PALETTE  -->
-        <!--  ==========================================  -->
         <SolidColorBrush x:Key="BrandPrimary" Color="#C41E3A" />
-        <!--  Puregold Red  -->
         <SolidColorBrush x:Key="BrandPrimaryDark" Color="#A01830" />
         <SolidColorBrush x:Key="BrandAccent" Color="#FFD700" />
-        <!--  Puregold Gold  -->
-
         <SolidColorBrush x:Key="BgApp" Color="#F5F6FA" />
-        <!--  Main Canvas Background  -->
         <SolidColorBrush x:Key="BgCard" Color="#FFFFFF" />
-        <!--  Content Surfaces  -->
         <SolidColorBrush x:Key="BgHighlight" Color="#E8F4F8" />
-        <!--  Informational panels  -->
-
         <SolidColorBrush x:Key="TextPrimary" Color="#2C3E50" />
         <SolidColorBrush x:Key="TextSecondary" Color="#7F8FA6" />
 
@@ -48,9 +37,6 @@
         <SolidColorBrush x:Key="BtnWarning" Color="#E67E22" />
         <SolidColorBrush x:Key="BtnAction" Color="#2980B9" />
 
-        <!--  ==========================================  -->
-        <!--  2. GLOBAL VIEW MAPPINGS  -->
-        <!--  ==========================================  -->
         <DataTemplate DataType="{x:Type ejVm:EJConsolidatorViewModel}">
             <ejV:EJConsolidatorView />
         </DataTemplate>
@@ -73,11 +59,6 @@
             <setV:SettingsView />
         </DataTemplate>
 
-        <!--  ==========================================  -->
-        <!--  3. UI COMPONENTS & STYLES  -->
-        <!--  ==========================================  -->
-
-        <!--  Card Container Style  -->
         <Style x:Key="CardStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource BgCard}" />
             <Setter Property="BorderBrush" Value="{StaticResource BorderLight}" />
@@ -557,7 +538,6 @@
             </Setter>
         </Style>
 
-        <!--  Standard TextBox  -->
         <Style TargetType="TextBox">
             <Setter Property="Padding" Value="8" />
             <Setter Property="FontSize" Value="14" />
@@ -565,7 +545,6 @@
             <Setter Property="BorderBrush" Value="{StaticResource BorderLight}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Background" Value="{StaticResource BgCard}" />
-            <!--  Performance styling  -->
             <Setter Property="SnapsToDevicePixels" Value="True" />
             <Style.Triggers>
                 <Trigger Property="IsFocused" Value="True">
@@ -574,7 +553,21 @@
             </Style.Triggers>
         </Style>
 
-        <!--  Standard Primary Button (Blue)  -->
+        <Style TargetType="PasswordBox">
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLight}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="{StaticResource BgCard}" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource BorderFocus}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="Button">
             <Setter Property="Padding" Value="20,10" />
             <Setter Property="FontWeight" Value="Bold" />
@@ -604,7 +597,6 @@
             </Setter>
         </Style>
 
-        <!--  Specific Button Variants  -->
         <Style
             x:Key="SuccessButton"
             BasedOn="{StaticResource {x:Type Button}}"
@@ -624,7 +616,6 @@
             <Setter Property="Background" Value="{StaticResource BtnWarning}" />
         </Style>
 
-        <!--  Sidebar Navigation Item  -->
         <Style x:Key="SidebarMenuItem" TargetType="ListBoxItem">
             <Setter Property="Padding" Value="15,12" />
             <Setter Property="Margin" Value="10,4" />
@@ -652,7 +643,6 @@
             </Setter>
         </Style>
 
-        <!--  Sidebar Navigation Text Triggers  -->
         <Style x:Key="SidebarTextPrimary" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#FFFFFF" />
             <Setter Property="FontSize" Value="14" />
