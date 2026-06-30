@@ -5,10 +5,9 @@ using PuregoldITToolkit.Tools.EJConsolidator.ViewModels;
 using PuregoldITToolkit.Tools.FormsTool;
 using PuregoldITToolkit.Tools.FormsTool.Services;
 using PuregoldITToolkit.Tools.FormsTool.ViewModels;
-using PuregoldITToolkit.Tools.PimsManagerTool; // Updated namespace
+using PuregoldITToolkit.Tools.PimsManagerTool;
 using PuregoldITToolkit.Tools.PimsManagerTool.Services;
 using PuregoldITToolkit.Tools.PimsManagerTool.ViewModels;
-using PuregoldITToolkit.Tools.PureposTool; // Adjusted to singular to match standard
 using PuregoldITToolkit.Tools.PureposTool.Services;
 using PuregoldITToolkit.Tools.PureposTool.ViewModels;
 using PuregoldITToolkit.Tools.PureposTools;
@@ -23,6 +22,9 @@ using PuregoldITToolkit.Tools.SodChecker.Services;
 using PuregoldITToolkit.Tools.SodChecker.ViewModels;
 using PuregoldITToolkit.ViewModels;
 using PuregoldITToolkit.Views;
+using System;
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 
 namespace PuregoldITToolkit
@@ -32,6 +34,30 @@ namespace PuregoldITToolkit
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            bool isNonIt = false;
+            string authFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "nonIT.json");
+
+            if (File.Exists(authFile))
+            {
+                try
+                {
+                    string json = File.ReadAllText(authFile);
+                    using (JsonDocument doc = JsonDocument.Parse(json))
+                    {
+                        if (doc.RootElement.TryGetProperty("IsNonIT", out JsonElement val))
+                        {
+                            isNonIt = val.GetBoolean();
+                        }
+                    }
+                }
+                catch { } 
+            }
+            else
+            {
+                
+                File.WriteAllText(authFile, "{\n  \"IsNonIT\": false\n}");
+            }
+
 
             // 1. Initialize Core Services
             var registryService = new ToolRegistryService();
@@ -60,12 +86,12 @@ namespace PuregoldITToolkit
             var formsMainVm = new FormsMainViewModel(infVm, obVm, ssrfVm, tsrfVm);
             var formsTool = new FormsTool(formsMainVm);
 
-            // --- PIMS Manager Tool (Updated naming) ---
+            // --- PIMS Manager Tool ---
             var pimsRepo = new PimsRepository();
             var pimsVm = new PimsManagerViewModel(pimsRepo);
             var pimsTool = new PimsManagerTool(pimsVm);
 
-            // --- PurePOS Tool ---
+            // --- Purepos Tool ---
             var pureposService = new PureposService();
             var pureposVm = new PureposViewModel(pureposService);
             var pureposTool = new PureposTool(pureposVm);
@@ -80,20 +106,25 @@ namespace PuregoldITToolkit
             var settingsVm = new SettingsViewModel(settingsService);
             var settingsTool = new SettingsTool(settingsVm);
 
-            // ==========================================
-            // 3. REGISTER TOOLS TO THE SIDEBAR
-            // ==========================================
-            registryService.RegisterTool(ejTool);
-            registryService.RegisterTool(sodTool);
-            registryService.RegisterTool(formsTool);
-            registryService.RegisterTool(pimsTool); // Registered the updated tool
-            registryService.RegisterTool(pureposTool);
-            registryService.RegisterTool(sdTool);
-            registryService.RegisterTool(settingsTool);
 
             // ==========================================
-            // 4. INITIALIZE SHELL AND SHOW
+            //  REGISTER TOOLS TO THE SIDEBAR
             // ==========================================
+
+            // Universally accessible tools
+            registryService.RegisterTool(ejTool);
+
+            // Restricted tools (Only visible to IT)
+            if (!isNonIt)
+            {
+                registryService.RegisterTool(sodTool);
+                registryService.RegisterTool(formsTool);
+                registryService.RegisterTool(pimsTool);
+                registryService.RegisterTool(sdTool);
+                registryService.RegisterTool(settingsTool);
+                registryService.RegisterTool(pureposTool);
+            }
+
             var mainViewModel = new MainViewModel(registryService);
             var mainWindow = new MainWindow
             {
