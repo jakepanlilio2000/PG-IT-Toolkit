@@ -51,8 +51,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
 
         private async Task UpdatePreviewAsync()
         {
-            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "OBFormTemplate.png");
-            LivePreviewImage = await _exportService.GenerateObPreviewAsync(FormData, templatePath);
+            LivePreviewImage = await _exportService.GenerateObPreviewAsync(FormData, "OBFormTemplate.png");
         }
 
         private void BrowseSignature()
@@ -83,22 +82,13 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
             StatusMessage = "Stamping image template...";
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             string folderPath = Path.Combine(desktopPath, "Puregold_Forms_Output");
-
             if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
-
-            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "OBFormTemplate.png");
-
-            if (!File.Exists(templatePath))
-            {
-                StatusMessage = "Error: OBFormTemplate.png not found in application folder.";
-                return;
-            }
 
             string cleanName = FormData.EmployeeName.Replace(" ", "_");
             string fileName = $"OB_Form_{cleanName}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
             string fullPath = Path.Combine(folderPath, fileName);
 
-            bool success = await _exportService.ExportObToImageAsync(FormData, templatePath, fullPath);
+            bool success = await _exportService.ExportObToImageAsync(FormData, "OBFormTemplate.png", fullPath);
 
             if (success)
             {

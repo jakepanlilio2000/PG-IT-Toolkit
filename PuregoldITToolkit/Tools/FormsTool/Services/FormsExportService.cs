@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -25,6 +26,27 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
 {
     public class FormsExportService : IFormsExportService
     {
+        // --- NEW: Helper to load images directly from the compiled .exe ---
+        private System.Windows.Media.Imaging.BitmapImage LoadEmbeddedTemplate(string templateName)
+        {
+            string resourceName = $"PuregoldITToolkit.Assets.{templateName}";
+            var assembly = Assembly.GetExecutingAssembly();
+
+            using (Stream stream = assembly.GetManifestResourceStream(resourceName))
+            {
+                if (stream == null)
+                    throw new Exception($"Embedded Resource '{resourceName}' not found. Ensure the image is in the 'Assets' folder and Build Action is set to 'Embedded Resource'.");
+
+                var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                bitmap.BeginInit();
+                bitmap.StreamSource = stream;
+                bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                bitmap.Freeze(); // Freezes memory so it can be passed safely to UI threads
+                return bitmap;
+            }
+        }
+
         public async Task<bool> ExportInfToEmailAsync(IEnumerable<InfEntryModel> entries, string infType, string storeCode, string storeName, string toAddresses, string ccAddresses, string signatureHtml, IEnumerable<string> screenshotPaths)
         {
             if (entries == null || !entries.Any()) return false;
@@ -151,21 +173,18 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
             });
         }
 
-        public async Task<System.Windows.Media.ImageSource> GenerateObPreviewAsync(ObModel data, string templatePath)
+        public async Task<System.Windows.Media.ImageSource> GenerateObPreviewAsync(ObModel data, string templateName)
         {
-            if (!File.Exists(templatePath)) return null;
-            return await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => DrawObImage(data, templatePath));
+            return await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => DrawObImage(data, templateName));
         }
 
-        public async Task<bool> ExportObToImageAsync(ObModel data, string templatePath, string outputPath)
+        public async Task<bool> ExportObToImageAsync(ObModel data, string templateName, string outputPath)
         {
             try
             {
-                if (!File.Exists(templatePath)) return false;
-
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    var rtb = DrawObImage(data, templatePath);
+                    var rtb = DrawObImage(data, templateName);
 
                     System.Windows.Media.Imaging.PngBitmapEncoder encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
                     encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
@@ -176,7 +195,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                     }
                 });
 
-                Process.Start(outputPath);
+                Process.Start(new ProcessStartInfo { FileName = outputPath, UseShellExecute = true });
                 return true;
             }
             catch (Exception ex)
@@ -186,14 +205,10 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
             }
         }
 
-        // --- SHARED OB DRAWING ENGINE USING YOUR COORDINATES ---
-        private System.Windows.Media.Imaging.RenderTargetBitmap DrawObImage(ObModel data, string templatePath)
+        private System.Windows.Media.Imaging.RenderTargetBitmap DrawObImage(ObModel data, string templateName)
         {
-            System.Windows.Media.Imaging.BitmapImage bitmapTemplate = new System.Windows.Media.Imaging.BitmapImage();
-            bitmapTemplate.BeginInit();
-            bitmapTemplate.UriSource = new Uri(templatePath, UriKind.Absolute);
-            bitmapTemplate.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-            bitmapTemplate.EndInit();
+            // Load embedded template
+            System.Windows.Media.Imaging.BitmapImage bitmapTemplate = LoadEmbeddedTemplate(templateName);
 
             System.Windows.Media.DrawingVisual visual = new System.Windows.Media.DrawingVisual();
             using (System.Windows.Media.DrawingContext dc = visual.RenderOpen())
@@ -222,7 +237,6 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                     dc.DrawText(ft, new System.Windows.Point(x, y));
                 }
 
-                // Your Adjusted coordinates for 757x521 image
                 DrawText(data.EmployeeName, 55, 52, regularFont, fontSize);
 
                 if (data.DateFiled.HasValue)
@@ -260,28 +274,20 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                 System.Windows.Media.PixelFormats.Pbgra32);
 
             rtb.Render(visual);
-            rtb.Freeze(); 
+            rtb.Freeze();
             return rtb;
         }
 
-
-        public async Task<System.Windows.Media.ImageSource> GenerateTsrfPreviewAsync(TsrfModel data, string templatePath)
+        public async Task<System.Windows.Media.ImageSource> GenerateTsrfPreviewAsync(TsrfModel data, string templateName)
         {
-            if (!File.Exists(templatePath)) return null;
-
             return await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                return DrawTsrfImage(data, templatePath);
+                return DrawTsrfImage(data, templateName);
             });
         }
 
-        // -------------------------------------------------------------
-        // SSRF BATCH PRINTING LOGIC
-        // -------------------------------------------------------------
-        public async Task<bool> PrintSsrfBatchAsync(SsrfModel data, string templatePath)
+        public async Task<bool> PrintSsrfBatchAsync(SsrfModel data, string templateName)
         {
-            if (!File.Exists(templatePath)) return false;
-
             return await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 try
@@ -307,7 +313,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                     for (int i = 0; i < data.PrintQuantity; i++)
                     {
                         string ssrfString = padWidth > 0 ? $"{prefix}{(currentNumber + i).ToString(new string('0', padWidth))}" : prefix;
-                        var rtb = DrawSsrfPage(data, ssrfString, templatePath);
+                        var rtb = DrawSsrfPage(data, ssrfString, templateName);
 
                         System.Windows.Controls.Image img = new System.Windows.Controls.Image { Source = rtb, Width = 816, Height = 1056 };
                         System.Windows.Documents.FixedPage page = new System.Windows.Documents.FixedPage { Width = 816, Height = 1056 };
@@ -329,23 +335,18 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
             });
         }
 
-        public async Task<System.Windows.Media.ImageSource> GenerateSsrfPreviewAsync(SsrfModel data, string templatePath)
+        public async Task<System.Windows.Media.ImageSource> GenerateSsrfPreviewAsync(SsrfModel data, string templateName)
         {
-            if (!File.Exists(templatePath)) return null;
-
             return await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                return DrawSsrfPage(data, data.BaseSsrfNumber ?? "", templatePath);
+                return DrawSsrfPage(data, data.BaseSsrfNumber ?? "", templateName);
             });
         }
 
-        private System.Windows.Media.Imaging.RenderTargetBitmap DrawSsrfPage(SsrfModel data, string ssrfNo, string templatePath)
+        private System.Windows.Media.Imaging.RenderTargetBitmap DrawSsrfPage(SsrfModel data, string ssrfNo, string templateName)
         {
-            System.Windows.Media.Imaging.BitmapImage bitmapTemplate = new System.Windows.Media.Imaging.BitmapImage();
-            bitmapTemplate.BeginInit();
-            bitmapTemplate.UriSource = new Uri(templatePath, UriKind.Absolute);
-            bitmapTemplate.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-            bitmapTemplate.EndInit();
+            // Load embedded template
+            System.Windows.Media.Imaging.BitmapImage bitmapTemplate = LoadEmbeddedTemplate(templateName);
 
             System.Windows.Media.DrawingVisual visual = new System.Windows.Media.DrawingVisual();
             using (System.Windows.Media.DrawingContext dc = visual.RenderOpen())
@@ -377,15 +378,14 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
             rtb.Freeze();
             return rtb;
         }
-        public async Task<bool> ExportTsrfToImageAsync(TsrfModel data, string templatePath, string outputPath)
+
+        public async Task<bool> ExportTsrfToImageAsync(TsrfModel data, string templateName, string outputPath)
         {
             try
             {
-                if (!File.Exists(templatePath)) return false;
-
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    var rtb = DrawTsrfImage(data, templatePath);
+                    var rtb = DrawTsrfImage(data, templateName);
 
                     System.Windows.Media.Imaging.PngBitmapEncoder encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
                     encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
@@ -396,7 +396,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                     }
                 });
 
-                Process.Start(outputPath);
+                Process.Start(new ProcessStartInfo { FileName = outputPath, UseShellExecute = true });
                 return true;
             }
             catch (Exception ex)
@@ -406,26 +406,20 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
             }
         }
 
-        // --- SHARED DRAWING ENGINE WITH FIXED COORDINATES ---
-        private System.Windows.Media.Imaging.RenderTargetBitmap DrawTsrfImage(TsrfModel data, string templatePath)
+        private System.Windows.Media.Imaging.RenderTargetBitmap DrawTsrfImage(TsrfModel data, string templateName)
         {
-            System.Windows.Media.Imaging.BitmapImage bitmapTemplate = new System.Windows.Media.Imaging.BitmapImage();
-            bitmapTemplate.BeginInit();
-            bitmapTemplate.UriSource = new Uri(templatePath, UriKind.Absolute);
-            bitmapTemplate.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-            bitmapTemplate.EndInit();
+            // Load embedded template
+            System.Windows.Media.Imaging.BitmapImage bitmapTemplate = LoadEmbeddedTemplate(templateName);
 
             System.Windows.Media.DrawingVisual visual = new System.Windows.Media.DrawingVisual();
             using (System.Windows.Media.DrawingContext dc = visual.RenderOpen())
             {
                 dc.DrawImage(bitmapTemplate, new System.Windows.Rect(0, 0, bitmapTemplate.PixelWidth, bitmapTemplate.PixelHeight));
 
-                // Using Times New Roman to perfectly match the TSRF style
                 System.Windows.Media.Typeface regularFont = new System.Windows.Media.Typeface(new System.Windows.Media.FontFamily("Times New Roman"), System.Windows.FontStyles.Normal, System.Windows.FontWeights.Normal, System.Windows.FontStretches.Normal);
                 System.Windows.Media.Typeface boldFont = new System.Windows.Media.Typeface(new System.Windows.Media.FontFamily("Times New Roman"), System.Windows.FontStyles.Normal, System.Windows.FontWeights.Bold, System.Windows.FontStretches.Normal);
                 System.Windows.Media.Brush textBrush = System.Windows.Media.Brushes.Black;
 
-                // Auto-Centering Helper
                 void DrawText(string text, double x, double y, double size, System.Windows.Media.Typeface tf, bool center = false)
                 {
                     if (string.IsNullOrEmpty(text)) return;
@@ -437,7 +431,6 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                     dc.DrawText(ft, new System.Windows.Point(finalX, y));
                 }
 
-                // Multi-line Wrapper Helper
                 void DrawWrappedText(string text, double x, double y, double maxWidth, double size)
                 {
                     if (string.IsNullOrEmpty(text)) return;
@@ -448,10 +441,9 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                     dc.DrawText(ft, new System.Windows.Point(x, y));
                 }
 
-                double fSize = 16; // ~10pt Font
-                double fSmall = 10.5; // ~8pt Font for positions
+                double fSize = 16;
+                double fSmall = 10.5;
 
-                // Fixed Headers based on Target Image
                 DrawText(data.Company, 385, 42, fSize, boldFont);
                 DrawText(data.Others, 520, 116, fSize, boldFont);
                 DrawText(data.RequestingDept, 120, 152, fSize, boldFont);
@@ -461,25 +453,20 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
 
                 DrawText(data.TsrfNumber, 650, 152, fSize, boldFont, center: true);
 
-                // Fixed Multiline Boxes (Added X offsets to match template)
                 DrawWrappedText(data.AssetDescription, 20, 210, 230, fSize);
                 DrawWrappedText(data.ProblemDetails, 290, 210, 230, fSize);
                 DrawWrappedText(data.Remarks, 530, 210, 230, fSize);
                 DrawWrappedText(data.ActionTaken, 130, 325, 600, fSize);
 
-                // Fixed Signatures (X is the Center Point)
                 double sigY_Name = 375;
                 double sigY_Pos = 390;
 
-                // Requester
                 DrawText(data.RequesterName, 150, sigY_Name, fSize, boldFont, center: true);
                 DrawText(data.RequesterPosition, 150, sigY_Pos, fSmall, regularFont, center: true);
 
-                // Performed By
                 DrawText(data.PerformedByName, 580, sigY_Name, fSize, boldFont, center: true);
                 DrawText(data.PerformedByPosition, 580, sigY_Pos, fSmall, regularFont, center: true);
 
-                // Noted By (Bottom Row)
                 double notedY_Name = 421;
                 double notedY_Pos = 435;
 
@@ -500,7 +487,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                 bitmapTemplate.PixelWidth, bitmapTemplate.PixelHeight, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
 
             rtb.Render(visual);
-            rtb.Freeze(); // Freezes memory so it can be passed safely to UI
+            rtb.Freeze();
             return rtb;
         }
     }

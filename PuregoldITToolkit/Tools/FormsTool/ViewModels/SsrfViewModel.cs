@@ -47,8 +47,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
 
         private async Task UpdatePreviewAsync()
         {
-            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SSRF_Template.jpg");
-            LivePreviewImage = await _exportService.GenerateSsrfPreviewAsync(FormData, templatePath);
+            LivePreviewImage = await _exportService.GenerateSsrfPreviewAsync(FormData, "SSRF_Template.jpg");
         }
 
         private async Task PrintBatchAsync()
@@ -66,15 +65,8 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
             }
 
             StatusMessage = "Preparing Batch Print Job...";
-            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "SSRF_Template.jpg");
 
-            if (!File.Exists(templatePath))
-            {
-                StatusMessage = "Error: SSRF_Template.jpg not found in application folder.";
-                return;
-            }
-
-            bool success = await _exportService.PrintSsrfBatchAsync(FormData, templatePath);
+            bool success = await _exportService.PrintSsrfBatchAsync(FormData, "SSRF_Template.jpg");
 
             if (success)
                 StatusMessage = $"Success! Sent {FormData.PrintQuantity} copies to printer.";

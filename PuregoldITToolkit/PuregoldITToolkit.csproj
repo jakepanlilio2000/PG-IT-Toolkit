@@ -44,7 +44,6 @@
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Drawing.Common, Version=10.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL" />
     <Reference Include="System.Drawing.Design" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
@@ -70,6 +69,7 @@
     </ApplicationDefinition>
     <Compile Include="Core\Converters\InverseBoolConverter.cs" />
     <Compile Include="Core\Helpers\PasswordHelper.cs" />
+    <Compile Include="Core\Helpers\ResourceHelper.cs" />
     <Compile Include="Services\ToolRegistryService.cs" />
     <Compile Include="Tools\EJConsolidatorTool.cs" />
     <Compile Include="Tools\EJConsolidator\Interfaces\IEJConsolidatorService.cs" />
@@ -246,15 +246,9 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="OBFormTemplate.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="SSRF_Template.jpg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="TSRF.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <EmbeddedResource Include="Assets\OBFormTemplate.png" />
+    <EmbeddedResource Include="Assets\SSRF_Template.jpg" />
+    <EmbeddedResource Include="Assets\TSRF.png" />
     <Content Include="WinSCP.exe">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

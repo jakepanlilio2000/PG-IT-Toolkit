@@ -52,8 +52,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
 
         private async Task UpdatePreviewAsync()
         {
-            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TSRF.png");
-            LivePreviewImage = await _exportService.GenerateTsrfPreviewAsync(FormData, templatePath);
+            LivePreviewImage = await _exportService.GenerateTsrfPreviewAsync(FormData, "TSRF.png");
         }
 
         private async Task ExportDataAsync()
@@ -72,12 +71,11 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
             string folderPath = Path.Combine(desktopPath, "Puregold_Forms_Output");
             if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
-            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TSRF.png");
             string cleanName = FormData.TsrfNumber ?? "UNTITLED";
             string fileName = $"TSRF_Form_{cleanName}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
             string fullPath = Path.Combine(folderPath, fileName);
 
-            bool success = await _exportService.ExportTsrfToImageAsync(FormData, templatePath, fullPath);
+            bool success = await _exportService.ExportTsrfToImageAsync(FormData, "TSRF.png", fullPath);
 
             if (success) StatusMessage = "Success! Saved to Desktop\\Puregold_Forms_Output";
             else StatusMessage = "Error generating final image.";
