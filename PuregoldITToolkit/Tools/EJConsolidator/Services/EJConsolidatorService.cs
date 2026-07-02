@@ -120,13 +120,14 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                     pctProgress?.Report((int)((double)currentDateIndex / totalDates * 100));
                 }
 
-                if (options.GenerateScReport && scReports.Any())
+                // ALWAYS generate reports if toggled, even if the result is empty
+                if (options.GenerateScReport)
                 {
                     textProgress?.Report("Generating SC Excel Reports...");
                     ExportExcelReports(scReports.ToList(), "senior", options, sodPath);
                 }
 
-                if (options.GeneratePwdReport && pwdReports.Any())
+                if (options.GeneratePwdReport)
                 {
                     textProgress?.Report("Generating PWD Excel Reports...");
                     ExportExcelReports(pwdReports.ToList(), "pwd", options, sodPath);
@@ -245,8 +246,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 row.Name = Regex.Match(block, @"Name:\s*([^\n\r]+)").Groups[1].Value.Trim();
 
                 // FIX: Strictly match line starting with "TIN:" to avoid catching "VAT REG TIN:"
-                //var tinMatch = Regex.Match(block, @"(?m)^TIN:\s*(.*)$");
-                string tinRaw =  "";
+                string tinRaw = "";
                 row.Tin = string.IsNullOrWhiteSpace(tinRaw) ? "" : tinRaw;
 
                 string idPattern = isSc ? @"OSCA No:\s*([^\n\r]+)" : @"PWD No:\s*([^\n\r]+)";
@@ -263,52 +263,74 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
 
         private void ExportExcelReports(List<ReportRow> allRows, string typeName, EJFilterOptions options, string outputDir)
         {
-            var groupedByPos = allRows.GroupBy(r => r.Terminal).OrderBy(g => g.Key);
-
-            foreach (var posGroup in groupedByPos)
+            // 1. Identify which terminals to generate reports for.
+            // If data exists, use the distinct terminals found. 
+            // If completely empty, we must still generate reports based on the requested PosLanes (or default to "1" to "6" if empty).
+            List<string> terminals;
+            if (allRows != null && allRows.Any())
             {
-                var distinctDates = posGroup.Select(r => r.Date.Date).Distinct().OrderBy(d => d).ToList();
-                var dateChunks = ChunkBy(distinctDates, options.ReportChunkDays);
+                terminals = allRows.Select(r => r.Terminal).Distinct().OrderBy(t => t).ToList();
+            }
+            else
+            {
+                if (options.PosLanes != null && options.PosLanes.Any())
+                {
+                    // Strip leading zeros if the user entered "001", "002"
+                    terminals = options.PosLanes.Select(l => int.TryParse(l, out int num) ? num.ToString() : l).OrderBy(t => t).ToList();
+                }
+                else
+                {
+                    // Default to lanes 1-6 if no specific lanes were targeted and no data was found
+                    terminals = new List<string> { "1", "2", "3", "4", "5", "6" };
+                }
+            }
+
+            // 2. We MUST partition based on the STRICT REQUESTED DATES, not just the dates that had data.
+            var requestedDates = options.TargetDates.Select(d => d.Date).Distinct().OrderBy(d => d).ToList();
+            var dateChunks = ChunkBy(requestedDates, options.ReportChunkDays);
+
+            foreach (var term in terminals)
+            {
+                var termRows = allRows?.Where(r => r.Terminal == term).ToList() ?? new List<ReportRow>();
+
+                // 3. Establish Metadata for the headers. 
+                // Try to find a row from this terminal. If none, try any row. If completely empty, use defaults.
+                var metadataRow = termRows.FirstOrDefault() ?? allRows?.FirstOrDefault() ?? new ReportRow
+                {
+                    Terminal = term,
+                    Address = "SAVER'S BLDG. MAC ARTHUR HIGHWAY DOLORES CITY OF SAN FERNANDO",
+                    VatRegTin = "VAT REG TIN: 201-277-095-00135",
+                    SerialNumber = "UNKNOWN",
+                    MinNumber = "UNKNOWN"
+                };
 
                 foreach (var chunk in dateChunks)
                 {
                     DateTime minDate = chunk.Min();
                     DateTime maxDate = chunk.Max();
-                    var chunkRows = posGroup.Where(r => r.Date.Date >= minDate && r.Date.Date <= maxDate).OrderBy(r => r.Date).ToList();
 
-                    if (!chunkRows.Any()) continue;
+                    var chunkRows = termRows.Where(r => r.Date.Date >= minDate && r.Date.Date <= maxDate).OrderBy(r => r.Date).ToList();
 
                     string dateRangeStr = $"{minDate:MMdd}-{maxDate:MMdd}";
-                    string fileName = $"{options.StoreCode}_{posGroup.Key}_{dateRangeStr}_{typeName}_report.xls";
+
+                    // Format: StoreCode_POS#_MMDD-MMDD_*_report.xls
+                    string fileName = $"{options.StoreCode}_{term}_{dateRangeStr}_{typeName}_report.xls";
                     string filePath = Path.Combine(outputDir, fileName);
 
-                    GenerateHtmlExcelFile(chunkRows, typeName, options, filePath);
+                    // Generate the file even if chunkRows is empty, passing the secure metadata
+                    GenerateHtmlExcelFile(chunkRows, metadataRow, typeName, options, filePath);
                 }
             }
         }
 
-        private void GenerateHtmlExcelFile(List<ReportRow> rows, string typeName, EJFilterOptions options, string outputPath)
+        private void GenerateHtmlExcelFile(List<ReportRow> rows, ReportRow metadataRow, string typeName, EJFilterOptions options, string outputPath)
         {
-            var first = rows.First();
             var html = new StringBuilder();
 
             html.AppendLine("<html xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\" xmlns=\"http://www.w3.org/TR/REC-html40\">");
             html.AppendLine("<head>");
             html.AppendLine("<meta charset=\"utf-8\">");
-            html.AppendLine("<!--[if gte mso 9]>");
-            html.AppendLine("<xml>");
-            html.AppendLine("<x:ExcelWorkbook>");
-            html.AppendLine("<x:ExcelWorksheets>");
-            html.AppendLine("<x:ExcelWorksheet>");
-            html.AppendLine("<x:Name>Report</x:Name>");
-            html.AppendLine("<x:WorksheetOptions>");
-            html.AppendLine("<x:DisplayGridlines/>");
-            html.AppendLine("</x:WorksheetOptions>");
-            html.AppendLine("</x:ExcelWorksheet>");
-            html.AppendLine("</x:ExcelWorksheets>");
-            html.AppendLine("</x:ExcelWorkbook>");
-            html.AppendLine("</xml>");
-            html.AppendLine("<![endif]-->");
+            html.AppendLine("");
 
             html.AppendLine("<style>");
             html.AppendLine("body, table, td, th { font-family: Calibri; font-size: 11pt; }");
@@ -322,8 +344,13 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             html.AppendLine("<body>");
 
             string storeNameDisplay = string.IsNullOrWhiteSpace(options.StoreName) ? "PUREGOLD JR - SAN FERNANDO" : options.StoreName;
-            string terminalDisplay = int.TryParse(first.Terminal, out int termNum) ? termNum.ToString() : first.Terminal;
+            string terminalDisplay = int.TryParse(metadataRow.Terminal, out int termNum) ? termNum.ToString() : metadataRow.Terminal;
             string userIdDisplay = string.IsNullOrWhiteSpace(options.ReportUserId) ? "87113" : options.ReportUserId;
+
+            string address = metadataRow.Address ?? "";
+            string vatRegTin = metadataRow.VatRegTin ?? "";
+            string serialNumber = metadataRow.SerialNumber ?? "";
+            string minNumber = metadataRow.MinNumber ?? "";
 
             html.AppendLine("<table cellpadding=\"0\" cellspacing=\"0\">");
 
@@ -343,16 +370,15 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
 
             html.AppendLine("<tr><td colspan=\"11\" class=\"b\">PUREGOLD PRICE CLUB INC.</td></tr>");
             html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">STORE CODE : {options.StoreCode} {storeNameDisplay}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">{first.Address}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">{first.VatRegTin}</td></tr>");
+            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">{address}</td></tr>");
+            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">{vatRegTin}</td></tr>");
             html.AppendLine("<tr><td colspan=\"11\" class=\"b\">PUREGOLD pos V.1.0.0</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">SERIAL# {first.SerialNumber}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">MIN# {first.MinNumber}</td></tr>");
+            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">SERIAL# {serialNumber}</td></tr>");
+            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">MIN# {minNumber}</td></tr>");
             html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">Terminal# {terminalDisplay}</td></tr>");
             html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">DATE GENERATED : {DateTime.Now:MM/dd/yyyy HH:mm:ss} | USER : {userIdDisplay}</td></tr>");
 
             html.AppendLine("<tr><td colspan=\"11\" style=\"height: 10px;\"></td></tr>");
-
 
             string titleStyle = "font-family: Calibri; font-size: 16pt; font-weight: bold; border: .5pt solid black; text-align: center; vertical-align: middle;";
             string title = typeName == "senior" ? "Senior Citizen Sales Book/Report" : "Persons with Disability Sales Book/Report";
@@ -407,6 +433,9 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
 
         private List<List<T>> ChunkBy<T>(List<T> source, int chunkSize)
         {
+            if (chunkSize <= 0) chunkSize = 1; // Prevent DivideByZeroException
+            if (!source.Any()) return new List<List<T>>();
+
             return source.Select((x, i) => new { Index = i, Value = x })
                          .GroupBy(x => x.Index / chunkSize)
                          .Select(x => x.Select(v => v.Value).ToList())
