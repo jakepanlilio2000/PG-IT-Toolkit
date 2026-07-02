@@ -97,11 +97,6 @@
                                 <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding StoreCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold" FontSize="14"/>
                             </StackPanel>
-                            <!-- NEW: Store Name Input -->
-                            <StackPanel Margin="0,0,25,0" Width="250">
-                                <TextBlock Text="Store Name / Description" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding StoreName, UpdateSourceTrigger=PropertyChanged}" FontSize="14"/>
-                            </StackPanel>
                             <StackPanel Margin="0,0,25,0" Width="120">
                                 <TextBlock Text="Total POS Lanes" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding TotalPosCount, UpdateSourceTrigger=PropertyChanged}" FontSize="14"/>
@@ -148,10 +143,9 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 3. SMART CONTENT FILTERS & AUTOMATED REPORTS -->
                 <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsModeConsolidator, Converter={StaticResource BoolToVis}}">
                     <StackPanel>
-                        <TextBlock Text="3. Smart Content Filters &amp; Reports" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
+                        <TextBlock Text="3. Smart Content Filters" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
 
                         <TextBlock Text="Quick Receipt Type Toggles" Foreground="{StaticResource TextSecondary}" FontWeight="SemiBold" Margin="0,0,0,8" FontSize="12"/>
                         <WrapPanel Margin="0,0,0,15">
@@ -161,30 +155,6 @@
                             <ToggleButton Content="X-Read / Z-Read Only" IsChecked="{Binding XReadZReadOnly}" Style="{StaticResource TileToggleStyle}" />
                             <ToggleButton Content="Combine Output into Single File" IsChecked="{Binding MergeAllIntoOneFile}" Style="{StaticResource TileToggleStyle}" />
                         </WrapPanel>
-
-                        <!-- Automated Reports -->
-                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
-                            <StackPanel>
-                                <TextBlock Text="Automated Report Generation (Excel / .xls)" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,12" FontSize="13"/>
-                                <WrapPanel Margin="0,0,0,15">
-                                    <CheckBox Content="Generate SC (Senior Citizen) Report" IsChecked="{Binding GenerateScReport}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,25,0"/>
-                                    <CheckBox Content="Generate PWD Report" IsChecked="{Binding GeneratePwdReport}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,25,0"/>
-                                </WrapPanel>
-
-                                <!-- NEW: Report User ID & Chunk Size -->
-                                <WrapPanel Margin="0,0,0,15">
-                                    <StackPanel Margin="0,0,25,0" Width="150">
-                                        <TextBlock Text="Report User ID" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding ReportUserId, UpdateSourceTrigger=PropertyChanged}" FontSize="14"/>
-                                    </StackPanel>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="Export Date Partition (Chunk Size):" Style="{StaticResource FormLabel}"/>
-                                        <TextBox Text="{Binding ReportChunkDays, UpdateSourceTrigger=PropertyChanged}" Width="50" TextAlignment="Center" FontWeight="Bold"/>
-                                        <TextBlock Text="Days per .xls file" Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                                    </StackPanel>
-                                </WrapPanel>
-                            </StackPanel>
-                        </Border>
 
                         <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15">
                             <StackPanel>

@@ -11,6 +11,9 @@ using PuregoldITToolkit.Tools.PimsManagerTool.ViewModels;
 using PuregoldITToolkit.Tools.PureposTool.Services;
 using PuregoldITToolkit.Tools.PureposTool.ViewModels;
 using PuregoldITToolkit.Tools.PureposTools;
+using PuregoldITToolkit.Tools.ScPwdReportTool;
+using PuregoldITToolkit.Tools.ScPwdReportTool.Services;
+using PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels;
 using PuregoldITToolkit.Tools.ServiceDeskTool;
 using PuregoldITToolkit.Tools.ServiceDeskTool.Services;
 using PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels;
@@ -34,97 +37,86 @@ namespace PuregoldITToolkit
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-            bool isNonIt = false;
-            string authFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "nonIT.json");
 
-            if (File.Exists(authFile))
-            {
-                try
-                {
-                    string json = File.ReadAllText(authFile);
-                    using (JsonDocument doc = JsonDocument.Parse(json))
-                    {
-                        if (doc.RootElement.TryGetProperty("IsNonIT", out JsonElement val))
-                        {
-                            isNonIt = val.GetBoolean();
-                        }
-                    }
-                }
-                catch { } 
-            }
-            else
-            {
-                
-                File.WriteAllText(authFile, "{\n  \"IsNonIT\": false\n}");
-            }
+            // 1. Initialize the License Manager FIRST
+            LicenseManager.Initialize();
 
-
-            // 1. Initialize Core Services
+            // 2. Initialize Core Services
             var registryService = new ToolRegistryService();
 
             // ==========================================
-            // 2. INITIALIZE TOOLS & DEPENDENCIES
+            // 3. SELECTIVE TOOL LOADING
             // ==========================================
 
-            // --- EJ Consolidator ---
-            var receiptFilterService = new ReceiptFilterService();
-            var ejConsolidatorService = new EJConsolidatorService(receiptFilterService);
-            var ejViewModel = new EJConsolidatorViewModel(ejConsolidatorService);
-            var ejTool = new EJConsolidatorTool(ejViewModel);
-
-            // --- SOD Checker ---
-            var sodService = new SodCheckerService();
-            var sodViewModel = new SodCheckerViewModel(sodService);
-            var sodTool = new SodCheckerTool(sodViewModel);
-
-            // --- Forms Tool ---
-            var formsExportService = new FormsExportService();
-            var infVm = new InfViewModel(formsExportService);
-            var obVm = new ObViewModel(formsExportService);
-            var ssrfVm = new SsrfViewModel(formsExportService);
-            var tsrfVm = new TsrfViewModel(formsExportService);
-            var formsMainVm = new FormsMainViewModel(infVm, obVm, ssrfVm, tsrfVm);
-            var formsTool = new FormsTool(formsMainVm);
-
-            // --- PIMS Manager Tool ---
-            var pimsRepo = new PimsRepository();
-            var pimsVm = new PimsManagerViewModel(pimsRepo);
-            var pimsTool = new PimsManagerTool(pimsVm);
-
-            // --- Purepos Tool ---
-            var pureposService = new PureposService();
-            var pureposVm = new PureposViewModel(pureposService);
-            var pureposTool = new PureposTool(pureposVm);
-
-            // --- Service Desk Tool ---
-            var sdService = new ServiceDeskService();
-            var sdVm = new ServiceDeskViewModel(sdService);
-            var sdTool = new ServiceDeskTool(sdVm);
-
-            // --- Settings Tool ---
-            var settingsService = new SettingsService();
-            var settingsVm = new SettingsViewModel(settingsService);
-            var settingsTool = new SettingsTool(settingsVm);
-
-
-            // ==========================================
-            //  REGISTER TOOLS TO THE SIDEBAR
-            // ==========================================
-
-            // Universally accessible tools
-            registryService.RegisterTool(ejTool);
-
-            // Restricted tools (Only visible to IT)
-            if (!isNonIt)
+            // --- 1. EJ Consolidator ---
+            if (LicenseManager.IsEnabled("EJConsolidator"))
             {
-                registryService.RegisterTool(sodTool);
-                registryService.RegisterTool(formsTool);
-                registryService.RegisterTool(pimsTool);
-                registryService.RegisterTool(sdTool);
-                registryService.RegisterTool(settingsTool);
-                registryService.RegisterTool(pureposTool);
+                var receiptFilterService = new ReceiptFilterService();
+                var ejConsolidatorService = new EJConsolidatorService(receiptFilterService);
+                var ejViewModel = new EJConsolidatorViewModel(ejConsolidatorService);
+
+                registryService.RegisterTool(new EJConsolidatorTool(ejViewModel));
             }
 
+            // --- SC/PWD Reports ---
+            if (LicenseManager.IsEnabled("ScPwdReports"))
+            {
+                var scPwdReportService = new ScPwdReportService();
+                var scPwdViewModel = new ScPwdReportViewModel(scPwdReportService);
+                registryService.RegisterTool(new ScPwdReportTool(scPwdViewModel));
+            }
+
+            // --- 2. SOD Checker ---
+            if (LicenseManager.IsEnabled("SODChecker"))
+            {
+                var sodService = new SodCheckerService();
+                var sodViewModel = new SodCheckerViewModel(sodService);
+                registryService.RegisterTool(new SodCheckerTool(sodViewModel));
+            }
+
+            // --- 3. Puregold Forms ---
+            if (LicenseManager.IsEnabled("PuregoldForms"))
+            {
+                var formsExportService = new FormsExportService();
+                var infVm = new InfViewModel(formsExportService);
+                var obVm = new ObViewModel(formsExportService);
+                var ssrfVm = new SsrfViewModel(formsExportService);
+                var tsrfVm = new TsrfViewModel(formsExportService);
+                var formsMainVm = new FormsMainViewModel(infVm, obVm, ssrfVm, tsrfVm);
+                registryService.RegisterTool(new FormsTool(formsMainVm));
+            }
+
+            // --- 4. PIMS Manager ---
+            if (LicenseManager.IsEnabled("PIMSManager"))
+            {
+                var pimsRepo = new PimsRepository();
+                var pimsVm = new PimsManagerViewModel(pimsRepo);
+                registryService.RegisterTool(new PimsManagerTool(pimsVm));
+            }
+
+            // --- 5. Service Desk Utilities ---
+            if (LicenseManager.IsEnabled("ServiceDeskUtilities"))
+            {
+                var sdService = new ServiceDeskService();
+                var sdVm = new ServiceDeskViewModel(sdService);
+                registryService.RegisterTool(new ServiceDeskTool(sdVm));
+            }
+
+            // --- Optional: Purepos & Settings (Add if you still need them) ---
+            if (LicenseManager.IsEnabled("PureposTool"))
+            {
+                var pureposService = new PureposService();
+                var pureposVm = new PureposViewModel(pureposService);
+                registryService.RegisterTool(new PureposTool(pureposVm));
+            }
+
+                var settingsService = new SettingsService();
+                var settingsVm = new SettingsViewModel(settingsService);
+                registryService.RegisterTool(new SettingsTool(settingsVm));
+
+            // ==========================================
+            // 4. STARTUP MAIN WINDOW
+            // ==========================================
             var mainViewModel = new MainViewModel(registryService);
             var mainWindow = new MainWindow
             {

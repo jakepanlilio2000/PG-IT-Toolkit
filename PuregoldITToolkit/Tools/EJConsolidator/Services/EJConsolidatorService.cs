@@ -2,7 +2,6 @@
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
 using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -22,36 +21,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             _filterService = filterService;
         }
 
-        private class ReportRow
-        {
-            public DateTime Date { get; set; }
-            public string Name { get; set; }
-            public string IdNo { get; set; }
-            public string Tin { get; set; }
-            public string Invoice { get; set; }
-            public decimal Sales { get; set; }
-            public decimal Vat { get; set; }
-            public decimal Exempt { get; set; }
-            public decimal Discount5 { get; set; }
-            public decimal NetSales { get; set; }
-
-            public string Terminal { get; set; }
-            public string SerialNumber { get; set; }
-            public string MinNumber { get; set; }
-            public string Cashier { get; set; }
-            public string Address { get; set; }
-            public string VatRegTin { get; set; }
-        }
-
-        // Helper to safely parse decimals regardless of commas or culture settings
-        private decimal ParseDecimal(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return 0;
-            input = input.Replace(",", "").Trim();
-            decimal.TryParse(input, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal result);
-            return result;
-        }
-
         public async Task<int> ProcessConsolidationAsync(EJFilterOptions options, IProgress<string> textProgress, IProgress<int> pctProgress)
         {
             int totalProcessedReceipts = 0;
@@ -67,9 +36,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
 
             string cacheRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EJ_Cache", options.StoreCode);
             Directory.CreateDirectory(cacheRoot);
-
-            var scReports = new System.Collections.Concurrent.ConcurrentBag<ReportRow>();
-            var pwdReports = new System.Collections.Concurrent.ConcurrentBag<ReportRow>();
 
             await Task.Run(() =>
             {
@@ -113,32 +79,18 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         if (!options.IsModeTrxFinder && !options.MergeAllIntoOneFile && File.Exists(dailyFile)) File.Delete(dailyFile);
 
                         textProgress?.Report($"  Merging and Filtering {dateStr}...");
-                        totalProcessedReceipts += MergeAndFilterFiles(dateCacheDir, sodPath, masterFile, trxFile, dateStr, options, scReports, pwdReports, textProgress);
+                        totalProcessedReceipts += MergeAndFilterFiles(dateCacheDir, sodPath, masterFile, trxFile, dateStr, options, textProgress);
                     }
 
                     currentDateIndex++;
                     pctProgress?.Report((int)((double)currentDateIndex / totalDates * 100));
-                }
-
-                // ALWAYS generate reports if toggled, even if the result is empty
-                if (options.GenerateScReport)
-                {
-                    textProgress?.Report("Generating SC Excel Reports...");
-                    ExportExcelReports(scReports.ToList(), "senior", options, sodPath);
-                }
-
-                if (options.GeneratePwdReport)
-                {
-                    textProgress?.Report("Generating PWD Excel Reports...");
-                    ExportExcelReports(pwdReports.ToList(), "pwd", options, sodPath);
                 }
             });
 
             return totalProcessedReceipts;
         }
 
-        private int MergeAndFilterFiles(string sourceDir, string sodPath, string masterFile, string trxFile, string dateStr, EJFilterOptions options,
-            System.Collections.Concurrent.ConcurrentBag<ReportRow> scReports, System.Collections.Concurrent.ConcurrentBag<ReportRow> pwdReports, IProgress<string> progress)
+        private int MergeAndFilterFiles(string sourceDir, string sodPath, string masterFile, string trxFile, string dateStr, EJFilterOptions options, IProgress<string> progress)
         {
             var txtFiles = Directory.GetFiles(sourceDir, "*.txt", SearchOption.AllDirectories);
             if (txtFiles.Length == 0) return 0;
@@ -152,7 +104,8 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
 
                 if (options.IsModeTrxFinder && !string.IsNullOrWhiteSpace(options.TargetTrxNumber))
                 {
-                    if (fileContent.IndexOf(options.TargetTrxNumber.Trim(), StringComparison.OrdinalIgnoreCase) < 0) return;
+                    if (fileContent.IndexOf(options.TargetTrxNumber.Trim(), StringComparison.OrdinalIgnoreCase) < 0)
+                        return;
                 }
 
                 var blocks = Regex.Split(fileContent, @"(?=Puregold Price Club|SECOND RECEIPT)", RegexOptions.IgnoreCase);
@@ -161,28 +114,18 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 foreach (var block in blocks)
                 {
                     if (string.IsNullOrWhiteSpace(block)) continue;
-
                     if (_filterService.IsMatch(block, options))
                     {
-                        string cleanedBlock = Regex.Replace(block, @"^\[EXTRACTED DATA\].*$", "", RegexOptions.Multiline | RegexOptions.IgnoreCase).Trim();
-                        filteredReceipts.Add(cleanedBlock + Environment.NewLine);
-                    }
+                        string cardMatch = Regex.Match(block, @"(?i)Member Card Number:\s*.*?(\d{4})\b").Groups[1].Value;
+                        string memberMatch = Regex.Match(block, @"(?i)Member Name:\s*([^\n\r]+)").Groups[1].Value.Trim();
+                        string amountMatch = Regex.Match(block, @"(?i)Total(?: Amt Due)?\s*(?:Php)?\s*([\d,.]+)").Groups[1].Value.Trim();
 
-                    // Report Parsers (Ignore 2nd Receipt)
-                    if ((options.GenerateScReport || options.GeneratePwdReport) && block.IndexOf("SECOND RECEIPT", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        bool isSc = block.Contains("OSCA No:");
-                        bool isPwd = block.Contains("PWD No:");
+                        string cardText = string.IsNullOrEmpty(cardMatch) ? "N/A" : $"****{cardMatch}";
+                        string memberText = string.IsNullOrEmpty(memberMatch) ? "N/A" : memberMatch;
+                        string amountText = string.IsNullOrEmpty(amountMatch) ? "0.00" : amountMatch;
 
-                        if ((isSc && options.GenerateScReport) || (isPwd && options.GeneratePwdReport))
-                        {
-                            var row = ParseReportRow(block, isSc);
-                            if (row != null)
-                            {
-                                if (isSc) scReports.Add(row);
-                                else pwdReports.Add(row);
-                            }
-                        }
+                        // CRITICAL FIX: Add the matched block to the collection so it gets written to the file
+                        filteredReceipts.Add(block);
                     }
                 }
             });
@@ -213,235 +156,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             return finalReceiptList.Count;
         }
 
-        private ReportRow ParseReportRow(string block, bool isSc)
-        {
-            try
-            {
-                var row = new ReportRow();
-
-                string dateRaw = Regex.Match(block, @"Trans\. Date:\s*(\d{4}-\d{2}-\d{2})").Groups[1].Value;
-                if (DateTime.TryParse(dateRaw, out DateTime dt)) row.Date = dt; else return null;
-
-                row.Invoice = Regex.Match(block, @"INVOICE#\s*([\d\-]+)").Groups[1].Value.Trim();
-                var invParts = row.Invoice.Split('-');
-                row.Terminal = invParts.Length >= 2 ? invParts[1] : "000";
-
-                row.SerialNumber = Regex.Match(block, @"S/N:([A-Z0-9]+)").Groups[1].Value.Trim();
-                row.MinNumber = Regex.Match(block, @"MIN:(\d+)").Groups[1].Value.Trim();
-                row.Cashier = Regex.Match(block, @"Cashier:\s*([A-Z\s]+)").Groups[1].Value.Trim();
-
-                // Use robust decimal parsing
-                row.Sales = ParseDecimal(Regex.Match(block, @"Subtotal\s+([\d,\.]+)").Groups[1].Value);
-                row.Vat = ParseDecimal(Regex.Match(block, @"VAT\s*\(12%\)\s+([\d,\.]+)").Groups[1].Value);
-                row.Exempt = ParseDecimal(Regex.Match(block, @"VAT Exempt Sale\s*\(E\)\s+([\d,\.]+)").Groups[1].Value);
-
-                // Net Sales: Match "Total Amt Due Php X" or "Total Php X"
-                var netMatch = Regex.Match(block, @"Total\s+(?:Amt\s+Due\s+)?Php\s+([\d,\.]+)");
-                if (!netMatch.Success) netMatch = Regex.Match(block, @"Total\s+Php\s+([\d,\.]+)");
-                row.NetSales = ParseDecimal(netMatch.Groups[1].Value);
-
-                string discPattern = isSc ? @"SC Discount Applied:\s*([\d,\.]+)" : @"PWD Discount Applied:\s*([\d,\.]+)";
-                row.Discount5 = ParseDecimal(Regex.Match(block, discPattern).Groups[1].Value);
-
-                row.Name = Regex.Match(block, @"Name:\s*([^\n\r]+)").Groups[1].Value.Trim();
-
-                // FIX: Strictly match line starting with "TIN:" to avoid catching "VAT REG TIN:"
-                string tinRaw = "";
-                row.Tin = string.IsNullOrWhiteSpace(tinRaw) ? "" : tinRaw;
-
-                string idPattern = isSc ? @"OSCA No:\s*([^\n\r]+)" : @"PWD No:\s*([^\n\r]+)";
-                row.IdNo = Regex.Match(block, idPattern).Groups[1].Value.Trim();
-
-                var addressMatch = Regex.Match(block, @"Puregold Price Club, Inc\.?(.*?)(?:VAT REG TIN)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-                row.Address = addressMatch.Success ? Regex.Replace(addressMatch.Groups[1].Value, @"\s+", " ").Trim() : "SAVER'S BLDG. MAC ARTHUR HIGHWAY DOLORES CITY OF SAN FERNANDO";
-                row.VatRegTin = Regex.Match(block, @"([\d\-]+)").Groups[1].Value.Trim();
-
-                return row;
-            }
-            catch { return null; }
-        }
-
-        private void ExportExcelReports(List<ReportRow> allRows, string typeName, EJFilterOptions options, string outputDir)
-        {
-            // 1. Identify which terminals to generate reports for.
-            // If data exists, use the distinct terminals found. 
-            // If completely empty, we must still generate reports based on the requested PosLanes (or default to "1" to "6" if empty).
-            List<string> terminals;
-            if (allRows != null && allRows.Any())
-            {
-                terminals = allRows.Select(r => r.Terminal).Distinct().OrderBy(t => t).ToList();
-            }
-            else
-            {
-                if (options.PosLanes != null && options.PosLanes.Any())
-                {
-                    // Strip leading zeros if the user entered "001", "002"
-                    terminals = options.PosLanes.Select(l => int.TryParse(l, out int num) ? num.ToString() : l).OrderBy(t => t).ToList();
-                }
-                else
-                {
-                    // Default to lanes 1-6 if no specific lanes were targeted and no data was found
-                    terminals = new List<string> { "1", "2", "3", "4", "5", "6" };
-                }
-            }
-
-            // 2. We MUST partition based on the STRICT REQUESTED DATES, not just the dates that had data.
-            var requestedDates = options.TargetDates.Select(d => d.Date).Distinct().OrderBy(d => d).ToList();
-            var dateChunks = ChunkBy(requestedDates, options.ReportChunkDays);
-
-            foreach (var term in terminals)
-            {
-                var termRows = allRows?.Where(r => r.Terminal == term).ToList() ?? new List<ReportRow>();
-
-                // 3. Establish Metadata for the headers. 
-                // Try to find a row from this terminal. If none, try any row. If completely empty, use defaults.
-                var metadataRow = termRows.FirstOrDefault() ?? allRows?.FirstOrDefault() ?? new ReportRow
-                {
-                    Terminal = term,
-                    Address = "SAVER'S BLDG. MAC ARTHUR HIGHWAY DOLORES CITY OF SAN FERNANDO",
-                    VatRegTin = "VAT REG TIN: 201-277-095-00135",
-                    SerialNumber = "UNKNOWN",
-                    MinNumber = "UNKNOWN"
-                };
-
-                foreach (var chunk in dateChunks)
-                {
-                    DateTime minDate = chunk.Min();
-                    DateTime maxDate = chunk.Max();
-
-                    var chunkRows = termRows.Where(r => r.Date.Date >= minDate && r.Date.Date <= maxDate).OrderBy(r => r.Date).ToList();
-
-                    string dateRangeStr = $"{minDate:MMdd}-{maxDate:MMdd}";
-
-                    // Format: StoreCode_POS#_MMDD-MMDD_*_report.xls
-                    string fileName = $"{options.StoreCode}_{term}_{dateRangeStr}_{typeName}_report.xls";
-                    string filePath = Path.Combine(outputDir, fileName);
-
-                    // Generate the file even if chunkRows is empty, passing the secure metadata
-                    GenerateHtmlExcelFile(chunkRows, metadataRow, typeName, options, filePath);
-                }
-            }
-        }
-
-        private void GenerateHtmlExcelFile(List<ReportRow> rows, ReportRow metadataRow, string typeName, EJFilterOptions options, string outputPath)
-        {
-            var html = new StringBuilder();
-
-            html.AppendLine("<html xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\" xmlns=\"http://www.w3.org/TR/REC-html40\">");
-            html.AppendLine("<head>");
-            html.AppendLine("<meta charset=\"utf-8\">");
-            html.AppendLine("");
-
-            html.AppendLine("<style>");
-            html.AppendLine("body, table, td, th { font-family: Calibri; font-size: 11pt; }");
-            html.AppendLine("table { border-collapse: collapse; }");
-            html.AppendLine(".b { font-weight: bold; }");
-            html.AppendLine(".c { text-align: center; vertical-align: middle; }");
-            html.AppendLine(".r { text-align: right; }");
-            html.AppendLine("</style>");
-
-            html.AppendLine("</head>");
-            html.AppendLine("<body>");
-
-            string storeNameDisplay = string.IsNullOrWhiteSpace(options.StoreName) ? "PUREGOLD JR - SAN FERNANDO" : options.StoreName;
-            string terminalDisplay = int.TryParse(metadataRow.Terminal, out int termNum) ? termNum.ToString() : metadataRow.Terminal;
-            string userIdDisplay = string.IsNullOrWhiteSpace(options.ReportUserId) ? "87113" : options.ReportUserId;
-
-            string address = metadataRow.Address ?? "";
-            string vatRegTin = metadataRow.VatRegTin ?? "";
-            string serialNumber = metadataRow.SerialNumber ?? "";
-            string minNumber = metadataRow.MinNumber ?? "";
-
-            html.AppendLine("<table cellpadding=\"0\" cellspacing=\"0\">");
-
-            html.AppendLine("<colgroup>");
-            html.AppendLine("<col width=\"64\" />");  // A: Date (Width 8)
-            html.AppendLine("<col width=\"152\" />"); // B: Name (Width 19)
-            html.AppendLine("<col width=\"152\" />"); // C: ID (Width 19)
-            html.AppendLine("<col width=\"152\" />"); // D: TIN (Width 19)
-            html.AppendLine("<col width=\"152\" />"); // E: SI/OR (Width 19)
-            html.AppendLine("<col width=\"152\" />"); // F: Sales (Width 19)
-            html.AppendLine("<col width=\"152\" />"); // G: VAT Amount (Width 19)
-            html.AppendLine("<col width=\"152\" />"); // H: VAT Exempt (Width 19)
-            html.AppendLine("<col width=\"152\" />"); // I: Discount 5% (Width 19)
-            html.AppendLine("<col width=\"64\" />");  // J: Discount 20% (Width 8)
-            html.AppendLine("<col width=\"152\" />"); // K: Net Sales (Width 19)
-            html.AppendLine("</colgroup>");
-
-            html.AppendLine("<tr><td colspan=\"11\" class=\"b\">PUREGOLD PRICE CLUB INC.</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">STORE CODE : {options.StoreCode} {storeNameDisplay}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">{address}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">{vatRegTin}</td></tr>");
-            html.AppendLine("<tr><td colspan=\"11\" class=\"b\">PUREGOLD pos V.1.0.0</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">SERIAL# {serialNumber}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">MIN# {minNumber}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">Terminal# {terminalDisplay}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">DATE GENERATED : {DateTime.Now:MM/dd/yyyy HH:mm:ss} | USER : {userIdDisplay}</td></tr>");
-
-            html.AppendLine("<tr><td colspan=\"11\" style=\"height: 10px;\"></td></tr>");
-
-            string titleStyle = "font-family: Calibri; font-size: 16pt; font-weight: bold; border: .5pt solid black; text-align: center; vertical-align: middle;";
-            string title = typeName == "senior" ? "Senior Citizen Sales Book/Report" : "Persons with Disability Sales Book/Report";
-            html.AppendLine($"<tr><td colspan=\"11\" align=\"center\" valign=\"middle\" style=\"{titleStyle}\">{title}</td></tr>");
-            string baseHeaderStyle = "font-family: Calibri; font-size: 11pt; font-weight: bold; border: .5pt solid black; text-align: center; vertical-align: middle;";
-
-            string personType = typeName == "senior" ? "Senior Citizen (SC)" : "Person with Disability (PWD)";
-            string idType = typeName == "senior" ? "OSCA ID No./ SC ID No." : "PWD ID No.";
-            string tinType = typeName == "senior" ? "SC TIN" : "PWD TIN";
-
-            html.AppendLine("<tr>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #A5A5A5;\" rowspan=\"2\">Date</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #00FFFF;\" rowspan=\"2\">Name of {personType}</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\" rowspan=\"2\">{idType}</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #9999FF;\" rowspan=\"2\">{tinType}</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\" rowspan=\"2\">SI/OR Number</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #99FF99;\" rowspan=\"2\">Sales (inclusive of VAT)</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FF9933;\" rowspan=\"2\">VAT Amount</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #CCCCFF;\" rowspan=\"2\">VAT Exempt Sales</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\" colspan=\"2\">Discount</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #A5A5A5;\" rowspan=\"2\">Net Sales</td>");
-            html.AppendLine("</tr>");
-
-            html.AppendLine("<tr>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\">5%</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\">20%</td>");
-            html.AppendLine("</tr>");
-
-            foreach (var r in rows)
-            {
-                html.AppendLine("<tr>");
-                html.AppendLine($"<td class=\"c\">{r.Date:MM/dd/yyyy}</td>");
-                html.AppendLine($"<td>{r.Name}</td>");
-                html.AppendLine($"<td class=\"c\" style=\"mso-number-format:'\\@'\">{r.IdNo}</td>");
-                html.AppendLine($"<td class=\"c\" style=\"mso-number-format:'\\@'\">{r.Tin}</td>");
-                html.AppendLine($"<td class=\"c\" style=\"mso-number-format:'\\@'\">{r.Invoice}</td>");
-                html.AppendLine($"<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">{r.Sales:F2}</td>");
-                html.AppendLine($"<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">{r.Vat:F2}</td>");
-                html.AppendLine($"<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">{r.Exempt:F2}</td>");
-                html.AppendLine($"<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">{r.Discount5:F2}</td>");
-                html.AppendLine("<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">0.00</td>");
-                html.AppendLine($"<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">{r.NetSales:F2}</td>");
-                html.AppendLine("</tr>");
-            }
-
-            html.AppendLine("</table>");
-            html.AppendLine("</body>");
-            html.AppendLine("</html>");
-
-            File.WriteAllText(outputPath, html.ToString(), Encoding.UTF8);
-        }
-
-        private List<List<T>> ChunkBy<T>(List<T> source, int chunkSize)
-        {
-            if (chunkSize <= 0) chunkSize = 1; // Prevent DivideByZeroException
-            if (!source.Any()) return new List<List<T>>();
-
-            return source.Select((x, i) => new { Index = i, Value = x })
-                         .GroupBy(x => x.Index / chunkSize)
-                         .Select(x => x.Select(v => v.Value).ToList())
-                         .ToList();
-        }
-
         private bool DownloadFromPrimaryFtp(EJFilterOptions options, string dateStr, string tempDir, IProgress<string> progress)
         {
             bool connected = false;
@@ -454,21 +168,38 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 {
                     try
                     {
-                        session.Open(new SessionOptions { Protocol = Protocol.Ftp, HostName = ftpHost, UserName = $"ftp{i}@puregold", Password = "pw@1234" });
-                        connected = true; break;
+                        session.Open(new SessionOptions
+                        {
+                            Protocol = Protocol.Ftp,
+                            HostName = ftpHost,
+                            UserName = $"ftp{i}@puregold",
+                            Password = "pw@1234"
+                        });
+                        connected = true;
+                        break;
                     }
                     catch (Exception ex) { lastException = ex; }
                 }
 
-                if (!connected) { progress?.Report($"  [Failed] Primary FTP Connection Error: {lastException?.Message}"); return false; }
+                if (!connected)
+                {
+                    progress?.Report($"  [Failed] Primary FTP Connection Error: {lastException?.Message}");
+                    return false;
+                }
 
                 try
                 {
                     var files = session.ListDirectory("/PUREPOS_EJRECEIPT/").Files;
                     string targetFolder = files.FirstOrDefault(f => f.Name.StartsWith($"({options.StoreCode})"))?.Name;
-                    if (string.IsNullOrEmpty(targetFolder)) return false;
+
+                    if (string.IsNullOrEmpty(targetFolder))
+                    {
+                        progress?.Report($"  [Missing] Store folder for ({options.StoreCode}) not found on Primary FTP.");
+                        return false;
+                    }
 
                     string remoteZip = $"/PUREPOS_EJRECEIPT/{targetFolder}/{dateStr}_EJReceiptJournal.zip";
+
                     if (session.FileExists(remoteZip))
                     {
                         progress?.Report($"  Found Primary ZIP: {dateStr}_EJReceiptJournal.zip");
@@ -480,6 +211,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         ExtractZipSafe(localZip, innerDir, progress);
 
                         bool processedAny = false;
+
                         var innerZips = Directory.GetFiles(innerDir, "*.zip", SearchOption.AllDirectories);
                         foreach (var zip in innerZips)
                         {
@@ -493,6 +225,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                             bool keep = options.PosLanes.Count == 0 || options.PosLanes.Any(lane => Regex.IsMatch(Path.GetFileName(txt), $@"(?i)_0*{lane}\.txt$"));
                             if (keep) { File.Copy(txt, Path.Combine(tempDir, Path.GetFileName(txt)), true); processedAny = true; }
                         }
+
                         return processedAny;
                     }
                 }
@@ -506,6 +239,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             try
             {
                 var globalSettings = SettingsViewModel.GetCurrentSettings();
+
                 SessionOptions fallbackOptions = new SessionOptions
                 {
                     Protocol = Protocol.Sftp,
@@ -518,7 +252,9 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 using (Session session = new Session())
                 {
                     session.Open(fallbackOptions);
+
                     string doneZipPath = $"/opt/purepos/ejreceipt/done/{dateStr}_EJReceiptJournal.zip";
+
                     if (session.FileExists(doneZipPath))
                     {
                         progress?.Report($"  Found Consolidated ZIP: {doneZipPath}");
@@ -530,6 +266,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         ExtractZipSafe(localZipPath, innerDir, progress);
 
                         bool processedAny = false;
+
                         var innerZips = Directory.GetFiles(innerDir, "*.zip", SearchOption.AllDirectories);
                         foreach (var zip in innerZips)
                         {
@@ -543,31 +280,47 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                             bool keep = options.PosLanes.Count == 0 || options.PosLanes.Any(lane => Regex.IsMatch(Path.GetFileName(txt), $@"(?i)_0*{lane}\.txt$"));
                             if (keep) { File.Copy(txt, Path.Combine(tempDir, Path.GetFileName(txt)), true); processedAny = true; }
                         }
+
                         if (processedAny) return true;
                     }
 
                     string targetFolder = $"/opt/purepos/ejreceipt/{dateStr}/";
+
                     if (session.FileExists(targetFolder))
                     {
-                        var files = session.ListDirectory(targetFolder).Files.Where(f => !f.IsDirectory && (f.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || f.Name.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)));
+                        progress?.Report($"  Found Date Folder: {targetFolder}");
+                        var files = session.ListDirectory(targetFolder).Files
+                            .Where(f => !f.IsDirectory && (f.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || f.Name.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)));
+
                         bool processedAny = false;
 
                         foreach (var file in files)
                         {
                             bool keep = options.PosLanes.Count == 0 || options.PosLanes.Any(lane => Regex.IsMatch(file.Name, $@"(?i)_0*{lane}\.(zip|txt)$"));
+
                             if (keep)
                             {
+                                progress?.Report($"  Downloading POS File: {file.Name}");
                                 string localFilePath = Path.Combine(tempDir, file.Name);
                                 session.GetFiles(targetFolder + file.Name, localFilePath).Check();
-                                if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) ExtractZipSafe(localFilePath, tempDir, progress);
+
+                                if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    ExtractZipSafe(localFilePath, tempDir, progress);
+                                }
                                 processedAny = true;
                             }
                         }
                         return processedAny;
                     }
+
+                    progress?.Report($"  No folders or files found for {dateStr} in Fallback Server.");
                 }
             }
-            catch (Exception ex) { progress?.Report($"  [Failed] Fallback Connection Error: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                progress?.Report($"  [Failed] Fallback Connection Error: {ex.Message}");
+            }
             return false;
         }
 

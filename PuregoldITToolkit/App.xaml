@@ -16,6 +16,8 @@
     xmlns:sodVm="clr-namespace:PuregoldITToolkit.Tools.SodChecker.ViewModels"
     xmlns:setV="clr-namespace:PuregoldITToolkit.Tools.SettingsTool.Views"
     xmlns:setVm="clr-namespace:PuregoldITToolkit.Tools.SettingsTool.ViewModels"
+    xmlns:scV="clr-namespace:PuregoldITToolkit.Tools.ScPwdReportTool.Views"
+    xmlns:scVm="clr-namespace:PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels"
     >
 
     <Application.Resources>
@@ -58,6 +60,9 @@
         <DataTemplate DataType="{x:Type setVm:SettingsViewModel}">
             <setV:SettingsView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type scVm:ScPwdReportViewModel}">
+            <scV:ScPwdReportView />
+        </DataTemplate>
 
         <Style x:Key="CardStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource BgCard}" />
@@ -66,6 +71,14 @@
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="20" />
             <Setter Property="Margin" Value="0,0,0,15" />
+        </Style>
+
+
+        <Style x:Key="FormLabel" TargetType="TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
         </Style>
 
         <Style TargetType="TabControl">

@@ -4,8 +4,8 @@ using PuregoldITToolkit.Tools.EJConsolidator.Interfaces;
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
 using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -13,73 +13,65 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
 {
     public class EJConsolidatorViewModel : ViewModelBase
     {
-        private readonly IEJConsolidatorService _service;
+        private readonly IEJConsolidatorService _consolidatorService;
 
-        private string _storeCode;
-        private string _storeName; // NEW
-        private string _liveServerIp;
-        private string _totalPosCount = "6";
-        private DateTime _startDate = DateTime.Today;
-        private DateTime _endDate = DateTime.Today;
-
+        // Modes
         private bool _isModeConsolidator = true;
-        private bool _isModeTrxFinder;
-        private string _posLanes;
-        private string _targetTrxNumber;
+        private bool _isModeTrxFinder = false;
 
+        public bool IsModeConsolidator { get => _isModeConsolidator; set { if (SetProperty(ref _isModeConsolidator, value) && value) IsModeTrxFinder = false; } }
+        public bool IsModeTrxFinder { get => _isModeTrxFinder; set { if (SetProperty(ref _isModeTrxFinder, value) && value) IsModeConsolidator = false; } }
+
+        // Settings
+        private string _storeCode;
+        private string _targetTrxNumber;
+        private string _posLanes;
+        private string _liveServerIp;
+        private int _totalPosCount = 6;
+        private DateTime _startDate = DateTime.Now.AddDays(-2);
+        private DateTime _endDate = DateTime.Now;
+        private bool _mergeAllIntoOneFile;
+
+        // Filters
+        private string _specificCashier;
+        private string _specificBagger;
         private bool _secondReceiptOnly;
         private bool _gcashBarcodeOnly;
         private bool _hacsOnlineOnly;
         private bool _xReadZReadOnly;
-        private bool _mergeAllIntoOneFile;
 
-        private string _specificCashier;
-        private string _specificBagger;
-        private string _filterExactAmount;
-        private string _filterMemberName;
+        // Advanced Filters
         private string _filterCardLast4;
-        private string _filterProductOrSku;
+        private string _filterMemberName;
+        private string _filterExactAmount;
+        private string _filterProductOrSku; // NEW FILTER
 
-        // --- Excel Report Parameters ---
-        private bool _generateScReport;
-        private bool _generatePwdReport;
-        private int _reportChunkDays = 3;
-        private string _reportUserId; // NEW
-
+        // Status
         private string _statusMessage = "Ready.";
         private string _statusColor = "#7F8FA6";
-        private int _progressValue;
+        private int _progressValue = 0;
         private bool _isBusy;
 
         public string StoreCode { get => _storeCode; set => SetProperty(ref _storeCode, value); }
-        public string StoreName { get => _storeName; set => SetProperty(ref _storeName, value); } // NEW
-        public string LiveServerIp { get => _liveServerIp; set => SetProperty(ref _liveServerIp, value); }
-        public string TotalPosCount { get => _totalPosCount; set => SetProperty(ref _totalPosCount, value); }
-        public DateTime StartDate { get => _startDate; set { SetProperty(ref _startDate, value); if (EndDate < value) EndDate = value; } }
-        public DateTime EndDate { get => _endDate; set { SetProperty(ref _endDate, value); if (StartDate > value) StartDate = value; } }
-
-        public bool IsModeConsolidator { get => _isModeConsolidator; set => SetProperty(ref _isModeConsolidator, value); }
-        public bool IsModeTrxFinder { get => _isModeTrxFinder; set => SetProperty(ref _isModeTrxFinder, value); }
-        public string PosLanes { get => _posLanes; set => SetProperty(ref _posLanes, value); }
         public string TargetTrxNumber { get => _targetTrxNumber; set => SetProperty(ref _targetTrxNumber, value); }
-
-        public bool SecondReceiptOnly { get => _secondReceiptOnly; set => SetProperty(ref _secondReceiptOnly, value); }
-        public bool GcashBarcodeOnly { get => _gcashBarcodeOnly; set => SetProperty(ref _gcashBarcodeOnly, value); }
-        public bool HacsOnlineOnly { get => _hacsOnlineOnly; set => SetProperty(ref _hacsOnlineOnly, value); }
-        public bool XReadZReadOnly { get => _xReadZReadOnly; set => SetProperty(ref _xReadZReadOnly, value); }
+        public string PosLanes { get => _posLanes; set => SetProperty(ref _posLanes, value); }
+        public string LiveServerIp { get => _liveServerIp; set => SetProperty(ref _liveServerIp, value); }
+        public int TotalPosCount { get => _totalPosCount; set => SetProperty(ref _totalPosCount, value); }
+        public DateTime StartDate { get => _startDate; set => SetProperty(ref _startDate, value); }
+        public DateTime EndDate { get => _endDate; set => SetProperty(ref _endDate, value); }
         public bool MergeAllIntoOneFile { get => _mergeAllIntoOneFile; set => SetProperty(ref _mergeAllIntoOneFile, value); }
 
         public string SpecificCashier { get => _specificCashier; set => SetProperty(ref _specificCashier, value); }
         public string SpecificBagger { get => _specificBagger; set => SetProperty(ref _specificBagger, value); }
-        public string FilterExactAmount { get => _filterExactAmount; set => SetProperty(ref _filterExactAmount, value); }
-        public string FilterMemberName { get => _filterMemberName; set => SetProperty(ref _filterMemberName, value); }
-        public string FilterCardLast4 { get => _filterCardLast4; set => SetProperty(ref _filterCardLast4, value); }
-        public string FilterProductOrSku { get => _filterProductOrSku; set => SetProperty(ref _filterProductOrSku, value); }
+        public bool SecondReceiptOnly { get => _secondReceiptOnly; set => SetProperty(ref _secondReceiptOnly, value); }
+        public bool GcashBarcodeOnly { get => _gcashBarcodeOnly; set => SetProperty(ref _gcashBarcodeOnly, value); }
+        public bool HacsOnlineOnly { get => _hacsOnlineOnly; set => SetProperty(ref _hacsOnlineOnly, value); }
+        public bool XReadZReadOnly { get => _xReadZReadOnly; set => SetProperty(ref _xReadZReadOnly, value); }
 
-        public bool GenerateScReport { get => _generateScReport; set => SetProperty(ref _generateScReport, value); }
-        public bool GeneratePwdReport { get => _generatePwdReport; set => SetProperty(ref _generatePwdReport, value); }
-        public int ReportChunkDays { get => _reportChunkDays; set => SetProperty(ref _reportChunkDays, value); }
-        public string ReportUserId { get => _reportUserId; set => SetProperty(ref _reportUserId, value); } // NEW
+        public string FilterCardLast4 { get => _filterCardLast4; set => SetProperty(ref _filterCardLast4, value); }
+        public string FilterMemberName { get => _filterMemberName; set => SetProperty(ref _filterMemberName, value); }
+        public string FilterExactAmount { get => _filterExactAmount; set => SetProperty(ref _filterExactAmount, value); }
+        public string FilterProductOrSku { get => _filterProductOrSku; set => SetProperty(ref _filterProductOrSku, value); }
 
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
         public string StatusColor { get => _statusColor; set => SetProperty(ref _statusColor, value); }
@@ -88,78 +80,90 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
 
         public ICommand ProcessCommand { get; }
 
-        public EJConsolidatorViewModel(IEJConsolidatorService service)
+        public EJConsolidatorViewModel(IEJConsolidatorService consolidatorService)
         {
-            _service = service;
-            ProcessCommand = new AsyncRelayCommand(ExecuteProcessAsync);
+            _consolidatorService = consolidatorService;
+            ProcessCommand = new AsyncRelayCommand(ExecuteProcessAsync, () => !IsBusy);
 
-            var settings = SettingsViewModel.GetCurrentSettings();
-            StoreCode = settings.DefaultStoreCode;
-            LiveServerIp = settings.DefaultLiveServerIp;
+            var globalSettings = SettingsViewModel.GetCurrentSettings();
+            StoreCode = globalSettings.DefaultStoreCode;
+            LiveServerIp = globalSettings.DefaultLiveServerIp;
         }
 
         private async Task ExecuteProcessAsync()
         {
-            if (string.IsNullOrWhiteSpace(StoreCode)) { StatusMessage = "Store Code is required."; StatusColor = "#C0392B"; return; }
-            if (IsModeTrxFinder && string.IsNullOrWhiteSpace(TargetTrxNumber)) { StatusMessage = "Transaction Number is required."; StatusColor = "#C0392B"; return; }
+            if (string.IsNullOrWhiteSpace(StoreCode)) { SetStatus("Error: Store Code cannot be empty.", "#C41E3A"); return; }
+            if (string.IsNullOrWhiteSpace(LiveServerIp)) { SetStatus("Error: Live Server IP cannot be empty.", "#C41E3A"); return; }
+            if (TotalPosCount <= 0) { SetStatus("Error: Total POS Lanes must be greater than 0.", "#C41E3A"); return; }
+            if (StartDate.Date > EndDate.Date) { SetStatus("Error: Start Date cannot be later than End Date.", "#C41E3A"); return; }
+            if (IsModeTrxFinder && string.IsNullOrWhiteSpace(TargetTrxNumber)) { SetStatus("Error: Transaction Number is required in Finder Mode.", "#C41E3A"); return; }
 
             IsBusy = true;
             ProgressValue = 0;
-            StatusColor = "#3498DB";
-
-            var dates = new List<DateTime>();
-            for (DateTime dt = StartDate.Date; dt <= EndDate.Date; dt = dt.AddDays(1)) dates.Add(dt);
-
-            var lanes = new List<string>();
-            if (!string.IsNullOrWhiteSpace(PosLanes))
-                lanes = PosLanes.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(l => l.Trim()).ToList();
-
-            var options = new EJFilterOptions
-            {
-                StoreCode = StoreCode.Trim(),
-                StoreName = StoreName?.Trim(), // NEW
-                LiveServerIp = LiveServerIp?.Trim(),
-                TargetDates = dates,
-                PosLanes = lanes,
-                IsModeConsolidator = IsModeConsolidator,
-                IsModeTrxFinder = IsModeTrxFinder,
-                TargetTrxNumber = TargetTrxNumber?.Trim(),
-                SecondReceiptOnly = SecondReceiptOnly,
-                GcashBarcodeOnly = GcashBarcodeOnly,
-                HacsOnlineOnly = HacsOnlineOnly,
-                XReadZReadOnly = XReadZReadOnly,
-                MergeAllIntoOneFile = MergeAllIntoOneFile,
-                SpecificCashier = SpecificCashier?.Trim(),
-                SpecificBagger = SpecificBagger?.Trim(),
-                FilterExactAmount = FilterExactAmount?.Trim(),
-                FilterMemberName = FilterMemberName?.Trim(),
-                FilterCardLast4 = FilterCardLast4?.Trim(),
-                FilterProductOrSku = FilterProductOrSku?.Trim(),
-                GenerateScReport = GenerateScReport,
-                GeneratePwdReport = GeneratePwdReport,
-                ReportChunkDays = ReportChunkDays <= 0 ? 3 : ReportChunkDays,
-                ReportUserId = ReportUserId?.Trim() // NEW
-            };
+            SetStatus("Initializing Offline Cache & Extractor...", "#2980B9");
+            ((AsyncRelayCommand)ProcessCommand).NotifyCanExecuteChanged();
 
             try
             {
-                var textProgress = new Progress<string>(msg => StatusMessage = msg);
+                var options = new EJFilterOptions
+                {
+                    IsModeTrxFinder = this.IsModeTrxFinder,
+                    TargetTrxNumber = this.TargetTrxNumber?.Trim(),
+                    StoreCode = this.StoreCode.Trim(),
+                    LiveServerIp = this.LiveServerIp.Trim(),
+                    TotalPosCount = this.TotalPosCount,
+                    MergeAllIntoOneFile = this.MergeAllIntoOneFile,
+                    SpecificCashier = this.SpecificCashier?.Trim(),
+                    SpecificBagger = this.SpecificBagger?.Trim(),
+                    SecondReceiptOnly = this.SecondReceiptOnly,
+                    GcashBarcodeOnly = this.GcashBarcodeOnly,
+                    HacsOnlineOnly = this.HacsOnlineOnly,
+                    XReadZReadOnly = this.XReadZReadOnly,
+                    FilterCardLast4 = this.FilterCardLast4?.Trim(),
+                    FilterMemberName = this.FilterMemberName?.Trim(),
+                    FilterExactAmount = this.FilterExactAmount?.Trim(),
+                    FilterProductOrSku = this.FilterProductOrSku?.Trim() // Added mapping
+                };
+
+                for (var d = StartDate.Date; d <= EndDate.Date; d = d.AddDays(1)) options.TargetDates.Add(d);
+
+                if (!string.IsNullOrWhiteSpace(PosLanes))
+                {
+                    foreach (var lane in PosLanes.Split(','))
+                    {
+                        if (!string.IsNullOrWhiteSpace(lane)) options.PosLanes.Add(lane.Trim());
+                    }
+                }
+
+                var textProgress = new Progress<string>(msg => SetStatus(msg, "#2980B9"));
                 var pctProgress = new Progress<int>(pct => ProgressValue = pct);
 
-                int totalFound = await _service.ProcessConsolidationAsync(options, textProgress, pctProgress);
+                int resultCount = await _consolidatorService.ProcessConsolidationAsync(options, textProgress, pctProgress);
 
-                StatusMessage = $"Process Complete! Successfully saved {totalFound} records to Desktop/SOD_Output.";
-                StatusColor = "#27AE60";
+                if (resultCount > 0)
+                {
+                    SetStatus($"Process Completed! {resultCount} matching blocks saved to Desktop\\SOD_Output.", "#27AE60");
+                }
+                else
+                {
+                    SetStatus("Process finished, but NO receipts matched your filters.", "#E67E22");
+                }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Fatal Error: {ex.Message}";
-                StatusColor = "#C0392B";
+                SetStatus($"Critical Error: {ex.Message}", "#C41E3A");
             }
             finally
             {
                 IsBusy = false;
+                ((AsyncRelayCommand)ProcessCommand).NotifyCanExecuteChanged();
             }
+        }
+
+        private void SetStatus(string message, string hexColor)
+        {
+            StatusMessage = message;
+            StatusColor = hexColor;
         }
     }
 }

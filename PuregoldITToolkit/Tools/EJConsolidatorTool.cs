@@ -8,7 +8,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator
     {
         public string ToolName => "EJ Consolidator";
         public string Description => "Extract, filter, and merge POS electronic journals.";
-        public string IconResourceKey => "ReceiptIcon"; // For future icon integration
+        public string IconResourceKey => "ReceiptIcon"; 
 
         public ViewModelBase ToolViewModel { get; }
 
