@@ -215,8 +215,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         var innerZips = Directory.GetFiles(innerDir, "*.zip", SearchOption.AllDirectories);
                         foreach (var zip in innerZips)
                         {
-                            bool keep = options.PosLanes.Count == 0 || options.PosLanes.Any(lane => Regex.IsMatch(Path.GetFileName(zip), $@"(?i)_0*{lane}\.zip$"));
-                            if (keep) { ExtractZipSafe(zip, tempDir, progress); processedAny = true; }
+                           
                         }
 
                         var txtFiles = Directory.GetFiles(innerDir, "*.txt", SearchOption.AllDirectories);

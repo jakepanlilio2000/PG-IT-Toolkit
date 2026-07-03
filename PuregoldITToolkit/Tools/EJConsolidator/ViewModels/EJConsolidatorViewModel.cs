@@ -4,8 +4,6 @@ using PuregoldITToolkit.Tools.EJConsolidator.Interfaces;
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
 using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
-using System.Net;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -39,18 +37,25 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
         private bool _gcashBarcodeOnly;
         private bool _hacsOnlineOnly;
         private bool _xReadZReadOnly;
+        private bool _seniorCitizenOnly;
+        private bool _pwdOnly;
+        private string _filterScPwdId;
 
         // Advanced Filters
         private string _filterCardLast4;
         private string _filterMemberName;
         private string _filterExactAmount;
-        private string _filterProductOrSku; // NEW FILTER
+        private string _filterProductOrSku;
 
         // Status
         private string _statusMessage = "Ready.";
         private string _statusColor = "#7F8FA6";
         private int _progressValue = 0;
         private bool _isBusy;
+
+        public bool SeniorCitizenOnly { get => _seniorCitizenOnly; set => SetProperty(ref _seniorCitizenOnly, value); }
+        public bool PwdOnly { get => _pwdOnly; set => SetProperty(ref _pwdOnly, value); }
+        public string FilterScPwdId { get => _filterScPwdId; set => SetProperty(ref _filterScPwdId, value); }
 
         public string StoreCode { get => _storeCode; set => SetProperty(ref _storeCode, value); }
         public string TargetTrxNumber { get => _targetTrxNumber; set => SetProperty(ref _targetTrxNumber, value); }
@@ -122,7 +127,10 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                     FilterCardLast4 = this.FilterCardLast4?.Trim(),
                     FilterMemberName = this.FilterMemberName?.Trim(),
                     FilterExactAmount = this.FilterExactAmount?.Trim(),
-                    FilterProductOrSku = this.FilterProductOrSku?.Trim() // Added mapping
+                    FilterProductOrSku = this.FilterProductOrSku?.Trim(),
+                    SeniorCitizenOnly = this.SeniorCitizenOnly,
+                    PwdOnly = this.PwdOnly,
+                    FilterScPwdId = this.FilterScPwdId?.Trim()
                 };
 
                 for (var d = StartDate.Date; d <= EndDate.Date; d = d.AddDays(1)) options.TargetDates.Add(d);

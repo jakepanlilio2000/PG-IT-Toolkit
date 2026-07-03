@@ -8,7 +8,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Models
         // Modes
         public bool IsModeTrxFinder { get; set; }
         public string TargetTrxNumber { get; set; }
-
         public string StoreCode { get; set; }
         public List<DateTime> TargetDates { get; set; } = new List<DateTime>();
         public List<string> PosLanes { get; set; } = new List<string>();
@@ -25,11 +24,14 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Models
         public bool GcashBarcodeOnly { get; set; }
         public bool HacsOnlineOnly { get; set; }
         public bool XReadZReadOnly { get; set; }
+        public bool SeniorCitizenOnly { get; set; }
+        public bool PwdOnly { get; set; }
+
         public string FilterCardLast4 { get; set; }
         public string FilterMemberName { get; set; }
         public string FilterExactAmount { get; set; }
-
         public string FilterProductOrSku { get; set; }
-    }
 
+        public string FilterScPwdId { get; set; }
+    }
 }

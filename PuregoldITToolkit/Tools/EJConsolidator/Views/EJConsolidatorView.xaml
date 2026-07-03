@@ -153,6 +153,8 @@
                             <ToggleButton Content="GCash Barcodes Only" IsChecked="{Binding GcashBarcodeOnly}" Style="{StaticResource TileToggleStyle}" />
                             <ToggleButton Content="HACS Online Only" IsChecked="{Binding HacsOnlineOnly}" Style="{StaticResource TileToggleStyle}" />
                             <ToggleButton Content="X-Read / Z-Read Only" IsChecked="{Binding XReadZReadOnly}" Style="{StaticResource TileToggleStyle}" />
+                            <ToggleButton Content="Senior Citizen Only" IsChecked="{Binding SeniorCitizenOnly}" Style="{StaticResource TileToggleStyle}" />
+                            <ToggleButton Content="PWD Only" IsChecked="{Binding PwdOnly}" Style="{StaticResource TileToggleStyle}" />
                             <ToggleButton Content="Combine Output into Single File" IsChecked="{Binding MergeAllIntoOneFile}" Style="{StaticResource TileToggleStyle}" />
                         </WrapPanel>
 
@@ -177,12 +179,18 @@
                                         <TextBox Text="{Binding FilterExactAmount}"/>
                                     </StackPanel>
                                     <StackPanel Margin="0,0,20,12" Width="200">
-                                        <TextBlock Text="Member Name" Style="{StaticResource FormLabel}"/>
+                                        <!-- Updated Label -->
+                                        <TextBlock Text="Member / SC/PWD Name" Style="{StaticResource FormLabel}"/>
                                         <TextBox Text="{Binding FilterMemberName}"/>
                                     </StackPanel>
                                     <StackPanel Margin="0,0,20,12" Width="120">
                                         <TextBlock Text="Card (Last 4)" Style="{StaticResource FormLabel}"/>
                                         <TextBox Text="{Binding FilterCardLast4}"/>
+                                    </StackPanel>
+                                    <!-- NEW FILTER -->
+                                    <StackPanel Margin="0,0,20,12" Width="150">
+                                        <TextBlock Text="SC/PWD ID No." Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding FilterScPwdId}"/>
                                     </StackPanel>
                                     <StackPanel Margin="0,0,0,12" Width="220">
                                         <TextBlock Text="SKU / UPC / Item Name" Style="{StaticResource FormLabel}"/>

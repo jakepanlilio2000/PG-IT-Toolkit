@@ -43,6 +43,26 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
             return result;
         }
 
+        private string ExtractTerminal(string block)
+        {
+            var match = Regex.Match(block, @"INVOICE#\s*\d{3}-(\d{3})-\d+");
+            if (match.Success) return match.Groups[1].Value;
+
+            match = Regex.Match(block, @"ST:\s*\d{3}\s*\|\s*Rg:\s*(\d{3})");
+            if (match.Success) return match.Groups[1].Value;
+
+            match = Regex.Match(block, @"Store\s*#:\s*\d{3}\s*/\s*Terminal\s*#:\s*(\d{3})");
+            if (match.Success) return match.Groups[1].Value;
+
+            match = Regex.Match(block, @"TERMINAL\s*#:\s*(\d{3})");
+            if (match.Success) return match.Groups[1].Value;
+
+            match = Regex.Match(block, @"(?:Trans(?:action)?|Tr)\s*#[:\s]*\d{3}(\d{3})\d+");
+            if (match.Success) return match.Groups[1].Value;
+
+            return "001"; // Fallback to 001 instead of 000
+        }
+
         public async Task<int> GenerateReportsAsync(ScPwdReportOptions options, IProgress<string> textProgress, IProgress<int> pctProgress)
         {
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
@@ -54,6 +74,7 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
 
             var scReports = new System.Collections.Concurrent.ConcurrentBag<ReportRow>();
             var pwdReports = new System.Collections.Concurrent.ConcurrentBag<ReportRow>();
+            var metadataDict = new System.Collections.Concurrent.ConcurrentDictionary<string, ReportRow>();
 
             await Task.Run(() =>
             {
@@ -77,46 +98,40 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
                     if (Directory.Exists(dateCacheDir))
                     {
                         textProgress?.Report($"  Parsing receipts for {dateStr}...");
-                        ParseReportFiles(dateCacheDir, options, scReports, pwdReports);
+                        ParseReportFiles(dateCacheDir, options, scReports, pwdReports, metadataDict);
                     }
 
                     currentDateIndex++;
                     pctProgress?.Report((int)((double)currentDateIndex / totalDates * 100));
                 }
 
-                if (options.GenerateScReport && !scReports.Any())
-                    throw new Exception("No Senior Citizen (SC) data was found in the extracted EJ files for this date range.");
-
-                if (options.GeneratePwdReport && !pwdReports.Any())
-                    throw new Exception("No Person with Disability (PWD) data was found in the extracted EJ files for this date range.");
-
+                // FIX: Removed exceptions. We now proceed to generate files even if lists are empty.
                 if (options.GenerateScReport)
                 {
                     textProgress?.Report("Generating SC Excel Reports...");
-                    ExportExcelReports(scReports.ToList(), "senior", options, outputDir);
+                    ExportExcelReports(scReports.ToList(), "senior", options, outputDir, metadataDict);
                 }
 
                 if (options.GeneratePwdReport)
                 {
                     textProgress?.Report("Generating PWD Excel Reports...");
-                    ExportExcelReports(pwdReports.ToList(), "pwd", options, outputDir);
+                    ExportExcelReports(pwdReports.ToList(), "pwd", options, outputDir, metadataDict);
                 }
             });
 
             return scReports.Count + pwdReports.Count;
         }
 
-        private void ParseReportFiles(string sourceDir, ScPwdReportOptions options, System.Collections.Concurrent.ConcurrentBag<ReportRow> scReports, System.Collections.Concurrent.ConcurrentBag<ReportRow> pwdReports)
+        private void ParseReportFiles(string sourceDir, ScPwdReportOptions options,
+            System.Collections.Concurrent.ConcurrentBag<ReportRow> scReports,
+            System.Collections.Concurrent.ConcurrentBag<ReportRow> pwdReports,
+            System.Collections.Concurrent.ConcurrentDictionary<string, ReportRow> metadataDict)
         {
             var txtFiles = Directory.GetFiles(sourceDir, "*.txt", SearchOption.AllDirectories);
             if (txtFiles.Length == 0) return;
 
-            // FIX: Merge all TXT files into a single string BEFORE parsing
             var sb = new StringBuilder();
-            foreach (var file in txtFiles)
-            {
-                sb.AppendLine(File.ReadAllText(file, Encoding.UTF8));
-            }
+            foreach (var file in txtFiles) sb.AppendLine(File.ReadAllText(file, Encoding.UTF8));
             string mergedContent = sb.ToString();
 
             var blocks = Regex.Split(mergedContent, @"(?=Puregold Price Club|SECOND RECEIPT)", RegexOptions.IgnoreCase);
@@ -126,7 +141,16 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
                 if (string.IsNullOrWhiteSpace(block)) return;
                 if (block.IndexOf("SECOND RECEIPT", StringComparison.OrdinalIgnoreCase) >= 0) return;
 
-                // More resilient detection for SC/PWD blocks
+                // Only extract metadata from actual Sales Invoices / X/Z Reports to avoid SC/PWD Summary duplicates
+                if (!Regex.IsMatch(block, @"(?i)INVOICE#|SALES INVOICE|Total Amt Due|TERMINAL|CASHIER")) return;
+
+                var meta = ExtractMetadata(block);
+                if (meta != null)
+                {
+                    string key = $"{meta.Terminal}_{meta.Date:yyyyMMdd}";
+                    metadataDict.TryAdd(key, meta);
+                }
+
                 bool isSc = Regex.IsMatch(block, @"(?i)OSCA\s*(?:ID\s*)?No:");
                 bool isPwd = Regex.IsMatch(block, @"(?i)PWD\s*(?:ID\s*)?No:");
 
@@ -142,51 +166,70 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
             });
         }
 
+        private ReportRow ExtractMetadata(string block)
+        {
+            var row = new ReportRow();
+            string dateRaw = Regex.Match(block, @"(?i)(?:Trans\.?\s*Date|Date(?:\s*and\s*Time)?|Printed(?:\s*On)?|Tr)\s*[:\s]*([0-9]{1,4}[-/][0-9]{1,2}[-/][0-9]{1,4})").Groups[1].Value;
+            if (DateTime.TryParse(dateRaw, out DateTime dt)) row.Date = dt; else return null;
+
+            row.Terminal = ExtractTerminal(block);
+            row.SerialNumber = Regex.Match(block, @"S/N:([A-Z0-9\-]+)").Groups[1].Value.Trim();
+            row.MinNumber = Regex.Match(block, @"MIN:(\d+)").Groups[1].Value.Trim();
+
+            var addressMatch = Regex.Match(block, @"Puregold Price Club, Inc\.?(.*?)(?:VAT REG TIN)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            row.Address = addressMatch.Success ? Regex.Replace(addressMatch.Groups[1].Value, @"\s+", " ").Trim() : "SAVER'S BLDG. MAC ARTHUR HIGHWAY DOLORES CITY OF SAN FERNANDO";
+
+            var vatRegTinMatch = Regex.Match(block, @"(?i)VAT REG TIN[:\s]*([0-9\-]+)");
+            row.VatRegTin = vatRegTinMatch.Success ? vatRegTinMatch.Groups[1].Value.Trim() : "";
+
+            return row;
+        }
+
         private ReportRow ParseReportRow(string block, bool isSc)
         {
             try
             {
                 var row = new ReportRow();
 
-                // More flexible date matching
-                string dateRaw = Regex.Match(block, @"(?i)(?:Trans\.?\s*Date|Date):\s*([0-9]{1,4}[-/][0-9]{1,2}[-/][0-9]{1,4})").Groups[1].Value;
+                string dateRaw = Regex.Match(block, @"(?i)(?:Trans\.?\s*Date|Date(?:\s*and\s*Time)?|Printed(?:\s*On)?|Tr)\s*[:\s]*([0-9]{1,4}[-/][0-9]{1,2}[-/][0-9]{1,4})").Groups[1].Value;
                 if (DateTime.TryParse(dateRaw, out DateTime dt)) row.Date = dt; else return null;
 
-                row.Invoice = Regex.Match(block, @"INVOICE#\s*([\d\-]+)").Groups[1].Value.Trim();
-                var invParts = row.Invoice.Split('-');
-                row.Terminal = invParts.Length >= 2 ? invParts[1] : "000";
+                row.Terminal = ExtractTerminal(block);
 
-                row.SerialNumber = Regex.Match(block, @"S/N:([A-Z0-9]+)").Groups[1].Value.Trim();
+                var invoiceMatch = Regex.Match(block, @"INVOICE#\s*([\d\-]+)");
+                row.Invoice = invoiceMatch.Success ? invoiceMatch.Groups[1].Value.Trim() : "";
+
+                row.SerialNumber = Regex.Match(block, @"S/N:([A-Z0-9\-]+)").Groups[1].Value.Trim();
                 row.MinNumber = Regex.Match(block, @"MIN:(\d+)").Groups[1].Value.Trim();
-                row.Cashier = Regex.Match(block, @"Cashier:\s*([A-Z\s]+)").Groups[1].Value.Trim();
+                row.Cashier = Regex.Match(block, @"(?i)Cashier:\s*([A-Z\s]+)").Groups[1].Value.Trim();
 
-                row.Sales = ParseDecimal(Regex.Match(block, @"Subtotal\s+([\d,\.]+)").Groups[1].Value);
-                row.Vat = ParseDecimal(Regex.Match(block, @"VAT\s*\(12%\)\s+([\d,\.]+)").Groups[1].Value);
-                row.Exempt = ParseDecimal(Regex.Match(block, @"VAT Exempt Sale\s*\(E\)\s+([\d,\.]+)").Groups[1].Value);
+                var salesMatch = Regex.Match(block, @"(?i)(?:SC|PWD) Items Amount:\s*([\d,\.]+)");
+                if (!salesMatch.Success) salesMatch = Regex.Match(block, @"(?i)Subtotal\s+([\d,\.]+)");
+                row.Sales = ParseDecimal(salesMatch.Groups[1].Value);
 
-                var netMatch = Regex.Match(block, @"Total\s+(?:Amt\s+Due\s+)?Php\s+([\d,\.]+)");
-                if (!netMatch.Success) netMatch = Regex.Match(block, @"Total\s+Php\s+([\d,\.]+)");
+                row.Vat = ParseDecimal(Regex.Match(block, @"(?i)VAT\s*\(12%\)\s+([\d,\.]+)").Groups[1].Value);
+                row.Exempt = ParseDecimal(Regex.Match(block, @"(?i)VAT Exempt Sale\s*\(E\)\s+([\d,\.]+)").Groups[1].Value);
+
+                var netMatch = Regex.Match(block, @"(?i)Total\s+Amt\s+Due\s+Php\s+([\d,\.]+)");
+                if (!netMatch.Success) netMatch = Regex.Match(block, @"(?i)Total\s+Php\s+([\d,\.]+)");
                 row.NetSales = ParseDecimal(netMatch.Groups[1].Value);
 
-                string discPattern = isSc ? @"SC Discount Applied:\s*([\d,\.]+)" : @"PWD Discount Applied:\s*([\d,\.]+)";
+                string discPattern = isSc ? @"(?i)SC Discount Applied:\s*([\d,\.]+)" : @"(?i)PWD Discount Applied:\s*([\d,\.]+)";
                 row.Discount5 = ParseDecimal(Regex.Match(block, discPattern).Groups[1].Value);
 
-                // Improved Name matching (handles "Member Name:" as well)
                 var nameMatch = Regex.Match(block, @"(?i)(?:Member\s+)?Name:\s*([^\n\r]+)");
                 row.Name = nameMatch.Success ? nameMatch.Groups[1].Value.Trim() : "";
 
-                // Improved TIN matching
                 //var tinMatch = Regex.Match(block, @"(?i)TIN:\s*([0-9\-]+)");
-                row.Tin = "";
+                //row.Tin = tinMatch.Success ? tinMatch.Groups[1].Value.Trim() : "";
+                row.Tin =  "";
 
-                // Resilient ID matching
                 string idPattern = isSc ? @"(?i)OSCA\s*(?:ID\s*)?No:\s*([^\n\r]+)" : @"(?i)PWD\s*(?:ID\s*)?No:\s*([^\n\r]+)";
                 row.IdNo = Regex.Match(block, idPattern).Groups[1].Value.Trim();
 
                 var addressMatch = Regex.Match(block, @"Puregold Price Club, Inc\.?(.*?)(?:VAT REG TIN)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
                 row.Address = addressMatch.Success ? Regex.Replace(addressMatch.Groups[1].Value, @"\s+", " ").Trim() : "SAVER'S BLDG. MAC ARTHUR HIGHWAY DOLORES CITY OF SAN FERNANDO";
 
-                // FIX: Specifically look for VAT REG TIN instead of blindly grabbing the first number/hyphen sequence
                 var vatRegTinMatch = Regex.Match(block, @"(?i)VAT REG TIN[:\s]*([0-9\-]+)");
                 row.VatRegTin = vatRegTinMatch.Success ? vatRegTinMatch.Groups[1].Value.Trim() : "";
 
@@ -195,23 +238,42 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
             catch { return null; }
         }
 
-        private void ExportExcelReports(List<ReportRow> allRows, string typeName, ScPwdReportOptions options, string outputDir)
+        private void ExportExcelReports(List<ReportRow> allRows, string typeName, ScPwdReportOptions options, string outputDir, System.Collections.Concurrent.ConcurrentDictionary<string, ReportRow> metadataDict)
         {
-            var groupedByPos = allRows.GroupBy(r => r.Terminal).OrderBy(g => g.Key);
             var requestedDates = options.TargetDates.Select(d => d.Date).Distinct().OrderBy(d => d).ToList();
             var dateChunks = ChunkBy(requestedDates, options.ReportChunkDays);
 
-            foreach (var posGroup in groupedByPos)
+            var metadataByTerminal = metadataDict.Values.GroupBy(m => m.Terminal).ToDictionary(g => g.Key, g => g.OrderBy(m => m.Date).ToList());
+
+            if (!metadataByTerminal.Any())
             {
-                string term = posGroup.Key;
-                var termRows = posGroup.ToList();
-                var metadataRow = termRows.First();
+                var defaultMeta = new ReportRow
+                {
+                    Terminal = "001",
+                    Address = "SAVER'S BLDG. MAC ARTHUR HIGHWAY DOLORES CITY OF SAN FERNANDO",
+                    VatRegTin = "201-277-095-00771",
+                    SerialNumber = "N/A",
+                    MinNumber = "N/A",
+                    Date = requestedDates.FirstOrDefault()
+                };
+                metadataByTerminal["001"] = new List<ReportRow> { defaultMeta };
+            }
+
+            foreach (var termGroup in metadataByTerminal)
+            {
+                string term = termGroup.Key;
+                var termMetadata = termGroup.Value;
 
                 foreach (var chunk in dateChunks)
                 {
                     DateTime minDate = chunk.Min();
                     DateTime maxDate = chunk.Max();
-                    var chunkRows = termRows.Where(r => r.Date.Date >= minDate && r.Date.Date <= maxDate).OrderBy(r => r.Date).ToList();
+
+                    var chunkRows = allRows.Where(r => r.Terminal == term && r.Date.Date >= minDate && r.Date.Date <= maxDate).OrderBy(r => r.Date).ToList();
+
+                    var metadataRow = termMetadata.FirstOrDefault(m => m.Date.Date >= minDate && m.Date.Date <= maxDate);
+                    if (metadataRow == null) metadataRow = termMetadata.FirstOrDefault();
+                    if (metadataRow == null) continue;
 
                     string dateRangeStr = $"{minDate:MMdd}-{maxDate:MMdd}";
                     string fileName = $"{options.StoreCode}_{term}_{dateRangeStr}_{typeName}_report.xls";
@@ -275,6 +337,7 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
             html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\">20%</td>");
             html.AppendLine("</tr>");
 
+            // If rows is empty, this loop simply doesn't execute, leaving a perfectly formatted empty table
             foreach (var r in rows)
             {
                 html.AppendLine("<tr>");
@@ -326,7 +389,6 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
                             string localZip = Path.Combine(tempDir, "main.zip");
                             session.GetFiles(remoteZip, localZip).Check();
 
-                            // FIX: Extract to an Inner directory first to prevent collisions
                             string innerDir = Path.Combine(tempDir, "Inner");
                             Directory.CreateDirectory(innerDir);
                             ExtractZipSafe(localZip, innerDir, progress);
@@ -419,7 +481,6 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
             return false;
         }
 
-        // FIX: Use entry.FullName to preserve directory structure and prevent file collisions
         private void ExtractZipSafe(string zipPath, string extractPath, IProgress<string> progress = null)
         {
             try
