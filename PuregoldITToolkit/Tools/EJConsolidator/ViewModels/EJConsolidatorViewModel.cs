@@ -4,6 +4,7 @@ using PuregoldITToolkit.Tools.EJConsolidator.Interfaces;
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
 using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
+using System.Collections.Generic; // Required for List<T>
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -110,13 +111,21 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
 
             try
             {
+                // FIX: Initialize the dates list BEFORE passing it to the options object
+                var dates = new List<DateTime>();
+                for (var d = StartDate.Date; d <= EndDate.Date; d = d.AddDays(1)) dates.Add(d);
+
                 var options = new EJFilterOptions
                 {
                     IsModeTrxFinder = this.IsModeTrxFinder,
                     TargetTrxNumber = this.TargetTrxNumber?.Trim(),
                     StoreCode = this.StoreCode.Trim(),
                     LiveServerIp = this.LiveServerIp.Trim(),
-                    TotalPosCount = this.TotalPosCount,
+
+                    // FIX: TotalPosCount is already an int in the ViewModel, so no parsing needed
+                    TotalPosCount = this.TotalPosCount > 0 ? this.TotalPosCount : 6,
+                    TargetDates = dates,
+
                     MergeAllIntoOneFile = this.MergeAllIntoOneFile,
                     SpecificCashier = this.SpecificCashier?.Trim(),
                     SpecificBagger = this.SpecificBagger?.Trim(),
@@ -130,10 +139,11 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                     FilterProductOrSku = this.FilterProductOrSku?.Trim(),
                     SeniorCitizenOnly = this.SeniorCitizenOnly,
                     PwdOnly = this.PwdOnly,
-                    FilterScPwdId = this.FilterScPwdId?.Trim()
-                };
+                    FilterScPwdId = this.FilterScPwdId?.Trim(),
 
-                for (var d = StartDate.Date; d <= EndDate.Date; d = d.AddDays(1)) options.TargetDates.Add(d);
+                    // Ensure PosLanes is initialized to avoid null references
+                    PosLanes = new List<string>()
+                };
 
                 if (!string.IsNullOrWhiteSpace(PosLanes))
                 {

@@ -2,6 +2,7 @@
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
 using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -58,7 +59,17 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         if (Directory.Exists(dateCacheDir)) Directory.Delete(dateCacheDir, true);
                         Directory.CreateDirectory(dateCacheDir);
 
-                        bool success = DownloadFromPrimaryFtp(options, dateStr, dateCacheDir, textProgress);
+                        bool success = false;
+
+                        if (targetDate.Date == DateTime.Today)
+                        {
+                            success = DownloadFromPosDirectly(options, targetDate, dateCacheDir, textProgress);
+                        }
+
+                        if (!success)
+                        {
+                            success = DownloadFromPrimaryFtp(options, dateStr, dateCacheDir, textProgress);
+                        }
 
                         if (!success)
                         {
@@ -233,6 +244,67 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             return false;
         }
 
+        private bool DownloadFromPosDirectly(EJFilterOptions options, DateTime targetDate, string tempDir, IProgress<string> progress)
+        {
+            bool processedAny = false;
+            string dateStr = targetDate.ToString("MMddyyyy");
+            string ipPrefix = options.LiveServerIp.Substring(0, options.LiveServerIp.LastIndexOf('.') + 1);
+
+            List<int> lanesToCheck = new List<int>();
+            if (options.PosLanes != null && options.PosLanes.Any())
+            {
+                foreach (var l in options.PosLanes)
+                    if (int.TryParse(l, out int laneNum)) lanesToCheck.Add(laneNum);
+            }
+            else
+            {
+                int total = options.TotalPosCount > 0 ? options.TotalPosCount : 6;
+                for (int i = 1; i <= total; i++) lanesToCheck.Add(i);
+            }
+
+            progress?.Report($"  [EJ Today] Pulling live data directly from POS Terminals for {dateStr}...");
+            object syncLock = new object();
+
+            Parallel.ForEach(lanesToCheck, lane =>
+            {
+                string posIp = $"{ipPrefix}{50 + lane}";
+                try
+                {
+                    using (var session = new Session())
+                    {
+                        session.Open(new SessionOptions
+                        {
+                            Protocol = Protocol.Sftp,
+                            HostName = posIp,
+                            UserName = "cashier",
+                            Password = "cashier",
+                            SshHostKeyPolicy = SshHostKeyPolicy.AcceptNew,
+                            Timeout = TimeSpan.FromSeconds(5) 
+                        });
+
+                        string remotePath = $"/home/cashier/Documents/{dateStr}/";
+                        if (session.FileExists(remotePath))
+                        {
+                            var files = session.ListDirectory(remotePath).Files
+                                               .Where(f => !f.IsDirectory && f.Name.EndsWith(".txt", StringComparison.OrdinalIgnoreCase));
+
+                            foreach (var file in files)
+                            {
+                                string localFilePath = Path.Combine(tempDir, file.Name);
+                                session.GetFiles(remotePath + file.Name, localFilePath).Check();
+                                lock (syncLock) { processedAny = true; }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    progress?.Report($"  [Warning] Failed to pull from POS {lane} ({posIp}): {ex.Message}");
+                }
+            });
+
+            return processedAny;
+        }
         private bool DownloadFromFallbackSftp(EJFilterOptions options, string dateStr, string tempDir, IProgress<string> progress)
         {
             try

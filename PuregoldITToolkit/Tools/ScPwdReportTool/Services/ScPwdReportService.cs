@@ -271,8 +271,7 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
 
                     var chunkRows = allRows.Where(r => r.Terminal == term && r.Date.Date >= minDate && r.Date.Date <= maxDate).OrderBy(r => r.Date).ToList();
 
-                    var metadataRow = termMetadata.FirstOrDefault(m => m.Date.Date >= minDate && m.Date.Date <= maxDate);
-                    if (metadataRow == null) metadataRow = termMetadata.FirstOrDefault();
+                    var metadataRow = termMetadata.FirstOrDefault(m => m.Date.Date >= minDate && m.Date.Date <= maxDate) ?? termMetadata.FirstOrDefault();
                     if (metadataRow == null) continue;
 
                     string dateRangeStr = $"{minDate:MMdd}-{maxDate:MMdd}";
