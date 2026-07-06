@@ -63,10 +63,13 @@
                     <ComboBox ItemsSource="{Binding StoresList}" SelectedItem="{Binding SelectedStore}" DisplayMemberPath="DisplayText" Width="300" Height="38"/>
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Orientation="Horizontal">
-                    <RadioButton Content="📂 OTHERS FOLDER" IsChecked="{Binding IsTabOthers}" Style="{StaticResource SegmentedTab}"/>
-                    <RadioButton Content="📤 FROM HO FOLDER" IsChecked="{Binding IsTabFromHo}" Style="{StaticResource SegmentedTab}"/>
-                    <RadioButton Content="📁 ROOT FTP" IsChecked="{Binding IsTabRoot}" Style="{StaticResource SegmentedTab}"/>
+                <StackPanel Grid.Column="1" VerticalAlignment="Bottom">
+                    <TextBlock Text="Quick Access Shortcuts:" Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="0,0,0,5" FontStyle="Italic"/>
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Content="📂 OTHERS" IsChecked="{Binding IsTabOthers}" Style="{StaticResource SegmentedTab}"/>
+                        <RadioButton Content="📤 FROM HO" IsChecked="{Binding IsTabFromHo}" Style="{StaticResource SegmentedTab}"/>
+                        <RadioButton Content="📁 ROOT" IsChecked="{Binding IsTabRoot}" Style="{StaticResource SegmentedTab}"/>
+                    </StackPanel>
                 </StackPanel>
 
                 <Button Grid.Column="2" Command="{Binding RefreshCommand}" Content="🔄 REFRESH" Background="{StaticResource BgHighlight}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" Padding="15,0" VerticalAlignment="Bottom" Height="38" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1"/>
@@ -81,12 +84,27 @@
                 </Grid.RowDefinitions>
 
                 <Border Grid.Row="0" Background="{StaticResource BgApp}" Padding="15,10" CornerRadius="6,6,0,0" BorderBrush="{StaticResource BorderLight}" BorderThickness="0,0,0,1">
-                    <TextBlock Text="{Binding CurrentPath, StringFormat='Current Path: {0}'}" FontWeight="SemiBold" Foreground="{StaticResource BrandPrimaryDark}" TextTrimming="CharacterEllipsis"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Button Grid.Column="0" Command="{Binding GoUpCommand}" Content="⬆ UP" Background="{StaticResource BgHighlight}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="10,2" Margin="0,0,10,0" BorderThickness="1" BorderBrush="{StaticResource BorderLight}" Cursor="Hand"/>
+                        <TextBlock Grid.Column="1" Text="{Binding CurrentPath, StringFormat='Path: {0}'}" FontWeight="SemiBold" Foreground="{StaticResource BrandPrimaryDark}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Grid.Column="2" Text="* Double-click a folder to enter" Foreground="{StaticResource TextSecondary}" FontStyle="Italic" FontSize="11" VerticalAlignment="Center"/>
+                    </Grid>
                 </Border>
 
                 <DataGrid Grid.Row="1" ItemsSource="{Binding FilesList}" SelectedItem="{Binding SelectedFile}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" 
                           HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}" 
                           BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
+
+                    <DataGrid.InputBindings>
+                        <MouseBinding Gesture="LeftDoubleClick" Command="{Binding OpenDirectoryCommand}" CommandParameter="{Binding SelectedFile}"/>
+                    </DataGrid.InputBindings>
+
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="" Binding="{Binding TypeIcon}" Width="35">
                             <DataGridTextColumn.ElementStyle>

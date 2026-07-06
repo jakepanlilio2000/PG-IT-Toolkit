@@ -56,12 +56,19 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.ViewModels
         public ICommand DownloadCommand { get; }
         public ICommand RefreshCommand { get; }
 
+        // --- NEW: Navigation Commands ---
+        public ICommand OpenDirectoryCommand { get; }
+        public ICommand GoUpCommand { get; }
+
         public FtpBrowserViewModel(IFtpBrowserService service)
         {
             _service = service;
             LoadStoresCommand = new AsyncRelayCommand(LoadStoresAsync);
             DownloadCommand = new AsyncRelayCommand(DownloadFileAsync);
-            RefreshCommand = new AsyncRelayCommand(UpdatePathAndLoadAsync);
+            RefreshCommand = new AsyncRelayCommand(async () => await LoadPathAsync(CurrentPath));
+
+            OpenDirectoryCommand = new AsyncRelayCommand<FtpFileModel>(OpenDirectoryAsync);
+            GoUpCommand = new AsyncRelayCommand(GoUpAsync);
 
             _ = LoadStoresAsync();
         }
@@ -81,16 +88,17 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.ViewModels
 
         private async Task UpdatePathAndLoadAsync()
         {
+            string newPath = "";
             if (IsTabRoot)
             {
-                CurrentPath = "/";
+                newPath = "/";
             }
             else if (SelectedStore != null)
             {
                 if (IsTabOthers)
-                    CurrentPath = $"/toho/{SelectedStore.OriginalFolderName}/Others/";
+                    newPath = $"/toho/{SelectedStore.OriginalFolderName}/Others/";
                 else if (IsTabFromHo)
-                    CurrentPath = $"/fromho/{SelectedStore.OriginalFolderName}/";
+                    newPath = $"/fromho/{SelectedStore.OriginalFolderName}/";
             }
             else
             {
@@ -99,6 +107,16 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.ViewModels
                 return;
             }
 
+            await LoadPathAsync(newPath);
+        }
+
+        // --- NEW: Dynamic Path Loader ---
+        private async Task LoadPathAsync(string targetPath)
+        {
+            if (string.IsNullOrWhiteSpace(targetPath)) return;
+            if (!targetPath.EndsWith("/")) targetPath += "/";
+
+            CurrentPath = targetPath;
             IsBusy = true;
             StatusMessage = $"Loading {CurrentPath}...";
 
@@ -108,6 +126,35 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.ViewModels
 
             StatusMessage = $"Ready. {FilesList.Count} items found.";
             IsBusy = false;
+        }
+
+        // --- NEW: Directory Traversal Logic ---
+        private async Task OpenDirectoryAsync(FtpFileModel file)
+        {
+            if (file != null && file.IsDirectory)
+            {
+                await LoadPathAsync(file.FullPath);
+            }
+            else if (file != null && !file.IsDirectory)
+            {
+                await DownloadFileAsync();
+            }
+        }
+
+        private async Task GoUpAsync()
+        {
+            if (string.IsNullOrWhiteSpace(CurrentPath) || CurrentPath == "/") return;
+
+            string path = CurrentPath;
+            if (path.EndsWith("/") && path.Length > 1) path = path.TrimEnd('/');
+
+            int lastSlashIndex = path.LastIndexOf('/');
+            if (lastSlashIndex >= 0)
+            {
+                string parentPath = path.Substring(0, lastSlashIndex + 1);
+                if (string.IsNullOrWhiteSpace(parentPath)) parentPath = "/";
+                await LoadPathAsync(parentPath);
+            }
         }
 
         private async Task DownloadFileAsync()
