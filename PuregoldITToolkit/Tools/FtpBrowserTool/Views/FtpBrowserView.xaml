@@ -8,7 +8,7 @@
         <Style x:Key="SegmentedTab" TargetType="RadioButton">
             <Setter Property="Background" Value="{StaticResource BgApp}"/>
             <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
-            <Setter Property="Padding" Value="25,12"/>
+            <Setter Property="Padding" Value="15,10"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
@@ -55,24 +55,25 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0" Margin="0,0,20,0">
-                    <TextBlock Text="Select Target Store" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
+                    <Grid>
+                        <TextBlock Text="Select Target Store" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,5"/>
+                        <Button Command="{Binding RefreshCacheCommand}" Content="Sync FTP Stores" Background="Transparent" Foreground="{StaticResource BrandPrimaryDark}" BorderThickness="0" HorizontalAlignment="Right" FontSize="11" FontStyle="Italic" Cursor="Hand" Padding="0"/>
+                    </Grid>
                     <ComboBox ItemsSource="{Binding StoresList}" SelectedItem="{Binding SelectedStore}" DisplayMemberPath="DisplayText" Width="300" Height="38"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Bottom">
-                    <TextBlock Text="Quick Access Shortcuts:" Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="0,0,0,5" FontStyle="Italic"/>
+                    <TextBlock Text="Quick Access Server Shortcuts:" Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="0,0,0,5" FontStyle="Italic"/>
                     <StackPanel Orientation="Horizontal">
-                        <RadioButton Content="📂 OTHERS" IsChecked="{Binding IsTabOthers}" Style="{StaticResource SegmentedTab}"/>
-                        <RadioButton Content="📤 FROM HO" IsChecked="{Binding IsTabFromHo}" Style="{StaticResource SegmentedTab}"/>
-                        <RadioButton Content="📁 ROOT" IsChecked="{Binding IsTabRoot}" Style="{StaticResource SegmentedTab}"/>
+                        <RadioButton Content="📂 OTHERS (.177)" IsChecked="{Binding IsTabOthers}" Style="{StaticResource SegmentedTab}"/>
+                        <RadioButton Content="📤 FROM HO (.177)" IsChecked="{Binding IsTabFromHo}" Style="{StaticResource SegmentedTab}"/>
+                        <RadioButton Content="💾 .132 INSTALLERS" IsChecked="{Binding IsTabInstallers}" Style="{StaticResource SegmentedTab}"/>
+                        <RadioButton Content="📁 ROOT (.177)" IsChecked="{Binding IsTabRoot}" Style="{StaticResource SegmentedTab}"/>
                     </StackPanel>
                 </StackPanel>
-
-                <Button Grid.Column="2" Command="{Binding RefreshCommand}" Content="🔄 REFRESH" Background="{StaticResource BgHighlight}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" Padding="15,0" VerticalAlignment="Bottom" Height="38" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1"/>
             </Grid>
         </Border>
 
@@ -87,17 +88,24 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <Button Grid.Column="0" Command="{Binding GoUpCommand}" Content="⬆ UP" Background="{StaticResource BgHighlight}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="10,2" Margin="0,0,10,0" BorderThickness="1" BorderBrush="{StaticResource BorderLight}" Cursor="Hand"/>
-                        <TextBlock Grid.Column="1" Text="{Binding CurrentPath, StringFormat='Path: {0}'}" FontWeight="SemiBold" Foreground="{StaticResource BrandPrimaryDark}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Grid.Column="2" Text="* Double-click a folder to enter" Foreground="{StaticResource TextSecondary}" FontStyle="Italic" FontSize="11" VerticalAlignment="Center"/>
+                        <Button Grid.Column="0" Command="{Binding GoUpCommand}" Content="⬆ UP" Background="{StaticResource BgHighlight}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="12,5" Margin="0,0,15,0" BorderThickness="1" BorderBrush="{StaticResource BorderLight}" Cursor="Hand"/>
+                        <Button Grid.Column="1" Command="{Binding RefreshCommand}" Content="🔄" Background="Transparent" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="10,5" Margin="0,0,15,0" BorderThickness="1" BorderBrush="{StaticResource BorderLight}" Cursor="Hand" ToolTip="Refresh Directory"/>
+
+                        <TextBlock Grid.Column="2" Text="{Binding CurrentPath, StringFormat='Path: {0}'}" FontWeight="SemiBold" Foreground="{StaticResource BrandPrimaryDark}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+
+                        <StackPanel Grid.Column="3" Orientation="Horizontal">
+                            <TextBlock Text="🔍" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{StaticResource TextSecondary}"/>
+                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Width="200" Padding="5" VerticalContentAlignment="Center" Background="#FFFFFF"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
 
-                <DataGrid Grid.Row="1" ItemsSource="{Binding FilesList}" SelectedItem="{Binding SelectedFile}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" 
+                <DataGrid Grid.Row="1" ItemsSource="{Binding FilteredFilesList}" SelectedItem="{Binding SelectedFile}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" 
                           HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}" 
                           BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
 
@@ -114,7 +122,7 @@
                                 </Style>
                             </DataGridTextColumn.ElementStyle>
                         </DataGridTextColumn>
-                        <DataGridTextColumn Header="File Name" Binding="{Binding FileName}" FontWeight="Bold" Width="*"/>
+                        <DataGridTextColumn Header="File / Folder Name" Binding="{Binding FileName}" FontWeight="Bold" Width="*"/>
                         <DataGridTextColumn Header="Size" Binding="{Binding DisplaySize}" Width="100">
                             <DataGridTextColumn.ElementStyle>
                                 <Style TargetType="TextBlock">
@@ -130,7 +138,7 @@
                 <Border Grid.Row="1" Background="#CCFFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                         <ProgressBar IsIndeterminate="True" Width="120" Height="10" Margin="0,0,0,12" Foreground="{StaticResource BrandPrimary}"/>
-                        <TextBlock Text="Communicating with FTP..." FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Communicating with FTP Server..." FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
             </Grid>
@@ -138,7 +146,10 @@
 
         <Grid Grid.Row="3">
             <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" VerticalAlignment="Center"/>
-            <Button Command="{Binding DownloadCommand}" Content="💾 DOWNLOAD SELECTED FILE" Style="{StaticResource SuccessButton}" Padding="30,15" HorizontalAlignment="Right" FontSize="14"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Text="* Double-click a folder to enter" Foreground="{StaticResource TextSecondary}" FontStyle="Italic" FontSize="11" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                <Button Command="{Binding DownloadCommand}" Content="💾 DOWNLOAD SELECTED" Style="{StaticResource SuccessButton}" Padding="30,15" FontSize="14"/>
+            </StackPanel>
         </Grid>
     </Grid>
 </UserControl>

@@ -12,12 +12,15 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Services
 {
     public class FtpBrowserService : IFtpBrowserService
     {
-        private Session ConnectToPrimaryFtp()
+        private Session ConnectToFtp(string host = null)
         {
             var session = new Session();
             var settings = SettingsViewModel.GetCurrentSettings();
-            string ftpHost = string.IsNullOrWhiteSpace(settings.DefaultFtpServer) ? "192.168.200.177" : settings.DefaultFtpServer;
+            string primaryFtp = string.IsNullOrWhiteSpace(settings.DefaultFtpServer) ? "192.168.200.177" : settings.DefaultFtpServer;
+            string actualHost = host ?? primaryFtp;
+            string pass = string.IsNullOrWhiteSpace(settings.FtpPassword) ? "pw@1234" : settings.FtpPassword;
 
+            // Attempt Puregold credentials first
             for (int i = 1; i <= 12; i++)
             {
                 try
@@ -25,9 +28,26 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Services
                     session.Open(new SessionOptions
                     {
                         Protocol = Protocol.Ftp,
-                        HostName = ftpHost,
+                        HostName = actualHost,
                         UserName = $"ftp{i}@puregold",
-                        Password = settings.FtpPassword
+                        Password = pass
+                    });
+                    return session;
+                }
+                catch { }
+            }
+
+            // Fallback for .132 installers if standard credentials fail
+            if (actualHost.Contains("132"))
+            {
+                try
+                {
+                    session.Open(new SessionOptions
+                    {
+                        Protocol = Protocol.Ftp,
+                        HostName = actualHost,
+                        UserName = "anonymous",
+                        Password = "anonymous@"
                     });
                     return session;
                 }
@@ -41,7 +61,7 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Services
             return await Task.Run(() =>
             {
                 var list = new List<FtpStoreModel>();
-                using (var session = ConnectToPrimaryFtp())
+                using (var session = ConnectToFtp())
                 {
                     if (session == null) return list;
 
@@ -67,12 +87,12 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Services
             });
         }
 
-        public async Task<List<FtpFileModel>> GetFilesAsync(string path)
+        public async Task<List<FtpFileModel>> GetFilesAsync(string host, string path)
         {
             return await Task.Run(() =>
             {
                 var list = new List<FtpFileModel>();
-                using (var session = ConnectToPrimaryFtp())
+                using (var session = ConnectToFtp(host))
                 {
                     if (session == null) return list;
 
@@ -101,11 +121,11 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Services
             });
         }
 
-        public async Task<bool> DownloadFileAsync(string remotePath, string localPath)
+        public async Task<bool> DownloadFileAsync(string host, string remotePath, string localPath)
         {
             return await Task.Run(() =>
             {
-                using (var session = ConnectToPrimaryFtp())
+                using (var session = ConnectToFtp(host))
                 {
                     if (session == null) return false;
 

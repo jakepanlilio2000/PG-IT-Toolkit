@@ -7,7 +7,7 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Interfaces
     public interface IFtpBrowserService
     {
         Task<List<FtpStoreModel>> GetStoresAsync();
-        Task<List<FtpFileModel>> GetFilesAsync(string path);
-        Task<bool> DownloadFileAsync(string remotePath, string localPath);
+        Task<List<FtpFileModel>> GetFilesAsync(string host, string path);
+        Task<bool> DownloadFileAsync(string host, string remotePath, string localPath);
     }
 }
