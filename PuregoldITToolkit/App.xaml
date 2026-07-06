@@ -18,6 +18,8 @@
     xmlns:setVm="clr-namespace:PuregoldITToolkit.Tools.SettingsTool.ViewModels"
     xmlns:scV="clr-namespace:PuregoldITToolkit.Tools.ScPwdReportTool.Views"
     xmlns:scVm="clr-namespace:PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels"
+    xmlns:ftpV="clr-namespace:PuregoldITToolkit.Tools.FtpBrowserTool.Views"
+    xmlns:ftpVm="clr-namespace:PuregoldITToolkit.Tools.FtpBrowserTool.ViewModels"
     >
 
     <Application.Resources>
@@ -62,6 +64,9 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type scVm:ScPwdReportViewModel}">
             <scV:ScPwdReportView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type ftpVm:FtpBrowserViewModel}">
+            <ftpV:FtpBrowserView />
         </DataTemplate>
 
         <Style x:Key="CardStyle" TargetType="Border">

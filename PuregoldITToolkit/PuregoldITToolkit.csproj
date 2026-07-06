@@ -108,6 +108,15 @@
     <Compile Include="Tools\FormsTool\Views\TsrfView.xaml.cs">
       <DependentUpon>TsrfView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Tools\FtpBrowserTool.cs" />
+    <Compile Include="Tools\FtpBrowserTool\Interfaces\IFtpBrowserService.cs" />
+    <Compile Include="Tools\FtpBrowserTool\Models\FtpFileModel.cs" />
+    <Compile Include="Tools\FtpBrowserTool\Models\FtpStoreModel.cs" />
+    <Compile Include="Tools\FtpBrowserTool\Services\FtpBrowserService.cs" />
+    <Compile Include="Tools\FtpBrowserTool\ViewModels\FtpBrowserViewModel.cs" />
+    <Compile Include="Tools\FtpBrowserTool\Views\FtpBrowserView.xaml.cs">
+      <DependentUpon>FtpBrowserView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Tools\PimsVendorTool.cs" />
     <Compile Include="Tools\PimsManagerTool\Interfaces\IPimsRepository.cs" />
     <Compile Include="Tools\PimsManagerTool\Models\VendorModel.cs" />
@@ -184,6 +193,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Tools\FormsTool\Views\TsrfView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tools\FtpBrowserTool\Views\FtpBrowserView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

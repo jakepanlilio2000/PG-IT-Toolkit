@@ -29,6 +29,9 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
+using PuregoldITToolkit.Tools.FtpBrowserTool;
+using PuregoldITToolkit.Tools.FtpBrowserTool.Services;
+using PuregoldITToolkit.Tools.FtpBrowserTool.ViewModels;
 
 namespace PuregoldITToolkit
 {
@@ -110,7 +113,15 @@ namespace PuregoldITToolkit
                 registryService.RegisterTool(new PureposTool(pureposVm));
             }
 
-                var settingsService = new SettingsService();
+            if (LicenseManager.IsEnabled("FtpBrowserTool"))
+            {
+                var ftpService = new FtpBrowserService();
+                var ftpVm = new FtpBrowserViewModel(ftpService);
+                var ftpBrowserTool = new FtpBrowserTool(ftpVm);
+                registryService.RegisterTool(ftpBrowserTool);
+            }
+
+            var settingsService = new SettingsService();
                 var settingsVm = new SettingsViewModel(settingsService);
                 registryService.RegisterTool(new SettingsTool(settingsVm));
 
