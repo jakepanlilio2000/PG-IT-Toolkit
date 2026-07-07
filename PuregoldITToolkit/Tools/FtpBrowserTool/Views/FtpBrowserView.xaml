@@ -68,10 +68,10 @@
                 <StackPanel Grid.Column="1" VerticalAlignment="Bottom">
                     <TextBlock Text="Quick Access Server Shortcuts:" Foreground="{StaticResource TextSecondary}" FontSize="11" Margin="0,0,0,5" FontStyle="Italic"/>
                     <StackPanel Orientation="Horizontal">
-                        <RadioButton Content="📂 OTHERS (.177)" IsChecked="{Binding IsTabOthers}" Style="{StaticResource SegmentedTab}"/>
-                        <RadioButton Content="📤 FROM HO (.177)" IsChecked="{Binding IsTabFromHo}" Style="{StaticResource SegmentedTab}"/>
-                        <RadioButton Content="💾 .132 INSTALLERS" IsChecked="{Binding IsTabInstallers}" Style="{StaticResource SegmentedTab}"/>
-                        <RadioButton Content="📁 ROOT (.177)" IsChecked="{Binding IsTabRoot}" Style="{StaticResource SegmentedTab}"/>
+                        <RadioButton Content="📂 OTHERS (.177)" GroupName="FtpTabs" IsChecked="{Binding IsTabOthers}" Style="{StaticResource SegmentedTab}"/>
+                        <RadioButton Content="📤 FROM HO (.177)" GroupName="FtpTabs" IsChecked="{Binding IsTabFromHo}" Style="{StaticResource SegmentedTab}"/>
+                        <RadioButton Content="💾 .132 INSTALLERS" GroupName="FtpTabs" IsChecked="{Binding IsTabInstallers}" Style="{StaticResource SegmentedTab}"/>
+                        <RadioButton Content="📁 ROOT (.177)" GroupName="FtpTabs" IsChecked="{Binding IsTabRoot}" Style="{StaticResource SegmentedTab}"/>
                     </StackPanel>
                 </StackPanel>
             </Grid>
@@ -100,7 +100,8 @@
 
                         <StackPanel Grid.Column="3" Orientation="Horizontal">
                             <TextBlock Text="🔍" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{StaticResource TextSecondary}"/>
-                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Width="200" Padding="5" VerticalContentAlignment="Center" Background="#FFFFFF"/>
+                            <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Width="150" Padding="5" VerticalContentAlignment="Center" Background="#FFFFFF" Margin="0,0,10,0"/>
+                            <Button Command="{Binding DeepSearchCommand}" Content="DEEP SEARCH" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,2" BorderThickness="0" Cursor="Hand" ToolTip="Scan all subdirectories remotely"/>
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -147,6 +148,14 @@
         <Grid Grid.Row="3">
             <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" VerticalAlignment="Center"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+
+               
+                <StackPanel Orientation="Horizontal" Visibility="{Binding IsDeepSearching, Converter={StaticResource BoolToVis}}" VerticalAlignment="Center" Margin="0,0,15,0">
+                    <ProgressBar IsIndeterminate="True" Width="100" Height="10" Margin="0,0,10,0" Foreground="{StaticResource BrandAccent}"/>
+                    <TextBlock Text="{Binding DeepSearchStatus}" FontWeight="SemiBold" Foreground="{StaticResource BrandAccent}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <Button Command="{Binding CancelDeepSearchCommand}" Content="❌ CANCEL" Background="#E53E3E" Foreground="White" FontWeight="Bold" Padding="10,2" BorderThickness="0" Cursor="Hand" Visibility="{Binding CanCancelSearch, Converter={StaticResource BoolToVis}}"/>
+                </StackPanel>
+
                 <TextBlock Text="* Double-click a folder to enter" Foreground="{StaticResource TextSecondary}" FontStyle="Italic" FontSize="11" VerticalAlignment="Center" Margin="0,0,15,0"/>
                 <Button Command="{Binding DownloadCommand}" Content="💾 DOWNLOAD SELECTED" Style="{StaticResource SuccessButton}" Padding="30,15" FontSize="14"/>
             </StackPanel>
