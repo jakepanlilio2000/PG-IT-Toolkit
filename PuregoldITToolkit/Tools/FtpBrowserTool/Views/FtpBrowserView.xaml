@@ -99,6 +99,9 @@
                         <TextBlock Grid.Column="2" Text="{Binding CurrentPath, StringFormat='Path: {0}'}" FontWeight="SemiBold" Foreground="{StaticResource BrandPrimaryDark}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
 
                         <StackPanel Grid.Column="3" Orientation="Horizontal">
+                            <Button Command="{Binding UploadCommand}" Content="📤 UPLOAD" Background="{StaticResource BrandPrimary}" Foreground="White" FontWeight="Bold" Padding="15,5" Margin="0,0,10,0" BorderThickness="0" Cursor="Hand"/>
+                            <Button Command="{Binding DownloadMultipleCommand}" Content="💾 DOWNLOAD" Background="{StaticResource BtnSuccess}" Foreground="White" FontWeight="Bold" Padding="15,5" Margin="0,0,10,0" BorderThickness="0" Cursor="Hand"/>
+
                             <TextBlock Text="🔍" VerticalAlignment="Center" Margin="0,0,5,0" Foreground="{StaticResource TextSecondary}"/>
                             <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Width="150" Padding="5" VerticalContentAlignment="Center" Background="#FFFFFF" Margin="0,0,10,0"/>
                             <Button Command="{Binding DeepSearchCommand}" Content="DEEP SEARCH" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" Padding="15,2" BorderThickness="0" Cursor="Hand" ToolTip="Scan all subdirectories remotely"/>
@@ -106,13 +109,28 @@
                     </Grid>
                 </Border>
 
-                <DataGrid Grid.Row="1" ItemsSource="{Binding FilteredFilesList}" SelectedItem="{Binding SelectedFile}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" 
+                <DataGrid Grid.Row="1" x:Name="FilesGrid" ItemsSource="{Binding FilteredFilesList}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" 
+                          SelectionMode="Extended" AllowDrop="True" Drop="FilesGrid_Drop" MouseMove="FilesGrid_MouseMove" SelectionChanged="FilesGrid_SelectionChanged"
                           HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}" 
                           BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
 
                     <DataGrid.InputBindings>
-                        <MouseBinding Gesture="LeftDoubleClick" Command="{Binding OpenDirectoryCommand}" CommandParameter="{Binding SelectedFile}"/>
+                        <MouseBinding Gesture="LeftDoubleClick" Command="{Binding OpenDirectoryCommand}" CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
                     </DataGrid.InputBindings>
+
+                    <DataGrid.ContextMenu>
+                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                            <MenuItem Header="💾 Download" Command="{Binding DownloadCommand}"/>
+                            <MenuItem Header="📖 Quick View" Command="{Binding QuickViewCommand}"/>
+                            <MenuItem Header="📂 Navigate to Folder" Command="{Binding OpenInExplorerCommand}"/>
+                            <MenuItem Header="📋 Copy FTP Path" Command="{Binding CopyPathCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="🔄 Rename" Command="{Binding RenameCommand}"/>
+                            <MenuItem Header="🗑️ Delete" Command="{Binding DeleteCommand}"/>
+                            <Separator/>
+                            <MenuItem Header="ℹ️ Properties" Command="{Binding ViewPropertiesCommand}"/>
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
 
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="" Binding="{Binding TypeIcon}" Width="35">
@@ -135,30 +153,56 @@
                         <DataGridTextColumn Header="Last Modified" Binding="{Binding LastModified, StringFormat='MM/dd/yyyy hh:mm tt'}" Width="160"/>
                     </DataGrid.Columns>
                 </DataGrid>
-
-                <Border Grid.Row="1" Background="#CCFFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
-                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <ProgressBar IsIndeterminate="True" Width="120" Height="10" Margin="0,0,0,12" Foreground="{StaticResource BrandPrimary}"/>
-                        <TextBlock Text="Communicating with FTP Server..." FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" HorizontalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
             </Grid>
         </Border>
 
         <Grid Grid.Row="3">
             <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" VerticalAlignment="Center"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-
-               
                 <StackPanel Orientation="Horizontal" Visibility="{Binding IsDeepSearching, Converter={StaticResource BoolToVis}}" VerticalAlignment="Center" Margin="0,0,15,0">
                     <ProgressBar IsIndeterminate="True" Width="100" Height="10" Margin="0,0,10,0" Foreground="{StaticResource BrandAccent}"/>
                     <TextBlock Text="{Binding DeepSearchStatus}" FontWeight="SemiBold" Foreground="{StaticResource BrandAccent}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                     <Button Command="{Binding CancelDeepSearchCommand}" Content="❌ CANCEL" Background="#E53E3E" Foreground="White" FontWeight="Bold" Padding="10,2" BorderThickness="0" Cursor="Hand" Visibility="{Binding CanCancelSearch, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
-
                 <TextBlock Text="* Double-click a folder to enter" Foreground="{StaticResource TextSecondary}" FontStyle="Italic" FontSize="11" VerticalAlignment="Center" Margin="0,0,15,0"/>
                 <Button Command="{Binding DownloadCommand}" Content="💾 DOWNLOAD SELECTED" Style="{StaticResource SuccessButton}" Padding="30,15" FontSize="14"/>
             </StackPanel>
         </Grid>
+
+        <!-- FULL SCREEN BLOCKING OVERLAY -->
+        <Border Grid.RowSpan="4" Background="#CCFFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}" Panel.ZIndex="99">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ProgressBar Width="300" Height="20" Margin="0,0,0,12" Foreground="{StaticResource BrandPrimary}">
+                    <ProgressBar.Style>
+                        <Style TargetType="ProgressBar">
+                            <Setter Property="IsIndeterminate" Value="False"/>
+                            <Setter Property="Value" Value="{Binding TransferPercentage}"/>
+                            <Setter Property="Maximum" Value="100"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsTransferring}" Value="False">
+                                    <Setter Property="IsIndeterminate" Value="True"/>
+                                    <Setter Property="Value" Value="0"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ProgressBar.Style>
+                </ProgressBar>
+
+                <TextBlock Text="{Binding TransferStatus}" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" HorizontalAlignment="Center" Visibility="{Binding IsTransferring, Converter={StaticResource BoolToVis}}"/>
+
+                <TextBlock Text="Communicating with FTP Server..." FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" HorizontalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsTransferring}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

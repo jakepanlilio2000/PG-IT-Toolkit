@@ -8,7 +8,7 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.Models
         private string _storeCode;
         private string _storeName;
         private string _modemSerial;
-        private string _cidSid = "N/A";
+        private string _cidSid = "";
         private string _issueStatus = "DOWN";
         private string _issueDesc;
         private string _address;
@@ -23,10 +23,10 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.Models
 
         // Triggers UI Preview update whenever a value changes
         public string Isp { get => _isp; set { if (SetProperty(ref _isp, value)) OnPropertyChanged(nameof(GeneratedBody)); } }
-        public string StoreCode { get => _storeCode; set { if (SetProperty(ref _storeCode, value?.ToUpper())) OnPropertyChanged(nameof(GeneratedBody)); } }
-        public string StoreName { get => _storeName; set { if (SetProperty(ref _storeName, value?.ToUpper())) OnPropertyChanged(nameof(GeneratedBody)); } }
-        public string ModemSerial { get => _modemSerial; set { if (SetProperty(ref _modemSerial, value?.ToUpper())) OnPropertyChanged(nameof(GeneratedBody)); } }
-        public string CidSid { get => _cidSid; set { if (SetProperty(ref _cidSid, value?.ToUpper())) OnPropertyChanged(nameof(GeneratedBody)); } }
+        public string StoreCode { get => _storeCode; set { if (SetProperty(ref _storeCode, value?.ToUpper())) { OnPropertyChanged(nameof(GeneratedBody)); OnPropertyChanged(nameof(Subject)); } } }
+        public string StoreName { get => _storeName; set { if (SetProperty(ref _storeName, value?.ToUpper())) { OnPropertyChanged(nameof(GeneratedBody)); OnPropertyChanged(nameof(Subject)); } } }
+        public string ModemSerial { get => _modemSerial; set { if (SetProperty(ref _modemSerial, value?.ToUpper())) { OnPropertyChanged(nameof(GeneratedBody)); OnPropertyChanged(nameof(Subject)); } } }
+        public string CidSid { get => _cidSid; set { if (SetProperty(ref _cidSid, value?.ToUpper())) { OnPropertyChanged(nameof(GeneratedBody)); OnPropertyChanged(nameof(Subject)); } } }
         public string IssueStatus { get => _issueStatus; set { if (SetProperty(ref _issueStatus, value?.ToUpper())) OnPropertyChanged(nameof(GeneratedBody)); } }
         public string IssueDesc { get => _issueDesc; set { if (SetProperty(ref _issueDesc, value?.ToUpper())) OnPropertyChanged(nameof(GeneratedBody)); } }
         public string Address { get => _address; set { if (SetProperty(ref _address, value?.ToUpper())) OnPropertyChanged(nameof(GeneratedBody)); } }
@@ -37,7 +37,24 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.Models
         public string AllItZoneEmail { get => _allItZoneEmail; set => SetProperty(ref _allItZoneEmail, value); }
         public string ZoneHeadEmail { get => _zoneHeadEmail; set => SetProperty(ref _zoneHeadEmail, value); }
         public string ZoneHeadName { get => _zoneHeadName; set => SetProperty(ref _zoneHeadName, value); }
+        public string Subject
+        {
+            get
+            {
+                string details = "";
+                if (!string.IsNullOrWhiteSpace(ModemSerial)) details += ModemSerial;
 
+                if (!string.IsNullOrWhiteSpace(CidSid) && CidSid != "N/A")
+                {
+                    if (!string.IsNullOrEmpty(details)) details += " / ";
+                    details += CidSid;
+                }
+
+                return string.IsNullOrEmpty(details)
+                    ? $"NETWORK DOWN ({StoreCode} - {StoreName})"
+                    : $"NETWORK DOWN ({StoreCode} - {StoreName}) ({details})";
+            }
+        }
         public string AttachmentPath { get => _attachmentPath; set { if (SetProperty(ref _attachmentPath, value)) OnPropertyChanged(nameof(GeneratedBody)); } }
         public string GeneratedBody
         {

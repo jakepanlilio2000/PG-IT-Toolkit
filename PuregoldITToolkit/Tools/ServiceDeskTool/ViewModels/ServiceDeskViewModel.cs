@@ -68,7 +68,7 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
         // Outage Previews
         public string OutagePreviewTo => OutageData.Isp == "GLOBE" ? "gowifihelpdesk@globe.com.ph, globedsgservicedesk@globe.com.ph" : "mnstech@convergeict.com, Mnssupport@convergeict.com, enterprisesupport@convergeict.com";
         public string OutagePreviewCc => $"{OutageData.AllItZoneEmail}, {OutageData.ZoneHeadName} <{OutageData.ZoneHeadEmail}>";
-        public string OutagePreviewSubject => $"NETWORK DOWN ({OutageData.StoreCode} - {OutageData.StoreName}) ({OutageData.ModemSerial})";
+        public string OutagePreviewSubject => OutageData.Subject;
 
         private string _statusMessage = "Ready.";
         public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }

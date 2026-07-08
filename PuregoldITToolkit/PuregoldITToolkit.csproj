@@ -48,6 +48,7 @@
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -114,6 +115,7 @@
     <Compile Include="Tools\FtpBrowserTool\Models\FtpStoreModel.cs" />
     <Compile Include="Tools\FtpBrowserTool\Services\FtpBrowserService.cs" />
     <Compile Include="Tools\FtpBrowserTool\ViewModels\FtpBrowserViewModel.cs" />
+    <Compile Include="Tools\FtpBrowserTool\Views\CustomDialog.cs" />
     <Compile Include="Tools\FtpBrowserTool\Views\FtpBrowserView.xaml.cs">
       <DependentUpon>FtpBrowserView.xaml</DependentUpon>
     </Compile>
@@ -262,6 +264,9 @@
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
+    <Content Include="StoreProfilesDatabase.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

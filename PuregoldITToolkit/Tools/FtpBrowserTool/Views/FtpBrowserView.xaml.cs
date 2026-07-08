@@ -1,28 +1,50 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using PuregoldITToolkit.Tools.FtpBrowserTool.Models;
+using PuregoldITToolkit.Tools.FtpBrowserTool.ViewModels;
 
 namespace PuregoldITToolkit.Tools.FtpBrowserTool.Views
 {
-    /// <summary>
-    /// Interaction logic for FtpBrowserView.xaml
-    /// </summary>
     public partial class FtpBrowserView : UserControl
     {
         public FtpBrowserView()
         {
             InitializeComponent();
+        }
+
+        private void FilesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (DataContext is FtpBrowserViewModel vm)
+            {
+                vm.SelectedFiles = ((DataGrid)sender).SelectedItems.Cast<FtpFileModel>().ToList();
+            }
+        }
+
+        private async void FilesGrid_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton == MouseButtonState.Pressed && DataContext is FtpBrowserViewModel vm && vm.SelectedFiles.Any())
+            {
+                await vm.PrepareDragAsync();
+                if (vm.DragDataObject != null)
+                {
+                    DragDrop.DoDragDrop((DependencyObject)sender, vm.DragDataObject, DragDropEffects.Copy);
+                    vm.DragDataObject = null;
+                }
+            }
+        }
+
+        private void FilesGrid_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (DataContext is FtpBrowserViewModel vm)
+                {
+                    _ = vm.ExecuteUploadFromDrop(files);
+                }
+            }
         }
     }
 }

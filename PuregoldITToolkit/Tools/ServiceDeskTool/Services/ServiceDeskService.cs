@@ -139,7 +139,7 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.Services
                         : "mnstech@convergeict.com, Mnssupport@convergeict.com, enterprisesupport@convergeict.com";
 
                     string ccAddresses = $"{data.AllItZoneEmail}, {data.ZoneHeadName} <{data.ZoneHeadEmail}>";
-                    string subject = $"NETWORK DOWN ({data.StoreCode} - {data.StoreName}) ({data.ModemSerial})";
+                    string subject = data.Subject;
 
                     string boundary = "----=_Part_" + Guid.NewGuid().ToString("N");
                     string contentId = "modem_img_" + Guid.NewGuid().ToString("N") + "@puregold.com";
