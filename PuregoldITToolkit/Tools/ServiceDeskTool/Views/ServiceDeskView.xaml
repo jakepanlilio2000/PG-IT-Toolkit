@@ -189,7 +189,13 @@
 
                                 <StackPanel Grid.Column="0" Margin="0,0,20,0">
                                     <TextBlock Text="Load Store Profile" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,8" FontSize="14"/>
-                                    <ComboBox ItemsSource="{Binding StoreProfiles}" SelectedItem="{Binding SelectedProfile}" DisplayMemberPath="DisplayName" Height="34" Padding="5"/>
+                                    <ComboBox ItemsSource="{Binding StoreProfiles}" SelectedItem="{Binding SelectedProfile}" Height="34" Padding="5">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
                                 </StackPanel>
 
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Bottom">

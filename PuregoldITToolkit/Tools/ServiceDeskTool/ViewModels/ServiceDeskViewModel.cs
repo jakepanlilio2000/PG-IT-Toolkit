@@ -152,6 +152,7 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
             if (string.IsNullOrWhiteSpace(OutageData.StoreCode))
             {
                 StatusMessage = "Store Code is required to save a profile.";
+                System.Windows.MessageBox.Show("Store Code is required to save a profile.", "Missing Information", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
                 return;
             }
 
@@ -182,7 +183,10 @@ namespace PuregoldITToolkit.Tools.ServiceDeskTool.ViewModels
                 SelectedProfile = newProfile;
                 StatusMessage = $"Profile for {OutageData.StoreCode} added!";
             }
+
             SaveProfilesToJson();
+
+            System.Windows.MessageBox.Show("Store profile successfully saved!", "Success", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
 
         private void AddNewProfile()
