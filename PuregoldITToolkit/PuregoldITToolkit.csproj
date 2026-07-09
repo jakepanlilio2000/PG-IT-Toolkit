@@ -129,6 +129,7 @@
     </Compile>
     <Compile Include="Tools\PureposTool.cs" />
     <Compile Include="Tools\PureposTool\Interfaces\IPureposService.cs" />
+    <Compile Include="Tools\PureposTool\Models\BirEisModel.cs" />
     <Compile Include="Tools\PureposTool\Models\EjSaveModel.cs" />
     <Compile Include="Tools\PureposTool\Models\EodModel.cs" />
     <Compile Include="Tools\PureposTool\Models\PureposModels.cs" />

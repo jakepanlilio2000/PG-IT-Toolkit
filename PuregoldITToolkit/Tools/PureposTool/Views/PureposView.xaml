@@ -58,7 +58,8 @@
             <RadioButton x:Name="RbAutoPerm" Content="🔑 Auto Permission" IsChecked="True" Style="{StaticResource SegmentedTab}"/>
             <RadioButton x:Name="RbManualEj" Content="🗃️ Manual EJ Save" Style="{StaticResource SegmentedTab}"/>
             <RadioButton x:Name="RbCli" Content="💻 Remote CLI" Style="{StaticResource SegmentedTab}"/>
-            <RadioButton x:Name="RbEod" Content="📧 EOD Generator" Style="{StaticResource SegmentedTab}"/>
+            <RadioButton x:Name="RbEod" Content="📧 EOD Generator"  Style="{StaticResource SegmentedTab}"/>
+            <RadioButton x:Name="RbBirEis" Content="🏢 BIR-EIS Sync" Style="{StaticResource SegmentedTab}"/>
         </StackPanel>
 
         <Grid Grid.Row="2" Grid.Column="0" Margin="0,0,20,0">
@@ -180,6 +181,41 @@
                                 </StackPanel>
                             </StackPanel>
                         </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+            <Border Style="{StaticResource CardStyle}" Visibility="{Binding IsChecked, ElementName=RbBirEis, Converter={StaticResource BoolToVis}}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,5">
+                            <TextBlock Text="BIR-EIS Automation &amp; Network Sync" FontWeight="Bold" FontSize="16" Foreground="{StaticResource BrandPrimary}" VerticalAlignment="Center"/>
+                            <Border Background="{StaticResource BtnSuccess}" CornerRadius="4" Padding="8,4" HorizontalAlignment="Right">
+                                <TextBlock Text="🌐 Uses Global Live Server &amp; FTP IPs" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF"/>
+                            </Border>
+                        </Grid>
+                        <TextBlock Text="Automatically fetches the EIS format text file from the CONSO Server, copies it into the local 'done' directory, saves a debugging copy to your desktop, and uploads it to the ANAHAW-BIR-EIS directory on the Main FTP." TextWrapping="Wrap" FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,20"/>
+
+                        <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
+                            <StackPanel>
+                                <TextBlock Text="Configuration Parameters" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,15" FontSize="13"/>
+                                <WrapPanel>
+                                    <StackPanel Margin="0,0,20,15" Width="100">
+                                        <TextBlock Text="Store Code" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding BirEisData.StoreCode}" FontWeight="Bold" FontSize="14"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,20,15" Width="150">
+                                        <TextBlock Text="Live Server IP" Style="{StaticResource FormLabel}"/>
+                                        <TextBox Text="{Binding BirEisData.LiveServerIp}" FontWeight="Bold" FontSize="14"/>
+                                    </StackPanel>
+                                    <StackPanel Width="150" Margin="0,0,0,15">
+                                        <TextBlock Text="Target EIS Date" Style="{StaticResource FormLabel}"/>
+                                        <DatePicker SelectedDate="{Binding BirEisData.TargetDate}" Height="34" Padding="5"/>
+                                    </StackPanel>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Command="{Binding RunBirEisCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Content="🚀 EXECUTE BIR-EIS SYNC" Style="{StaticResource DangerButton}" Padding="20,15" HorizontalAlignment="Left" FontSize="14"/>
                     </StackPanel>
                 </ScrollViewer>
             </Border>

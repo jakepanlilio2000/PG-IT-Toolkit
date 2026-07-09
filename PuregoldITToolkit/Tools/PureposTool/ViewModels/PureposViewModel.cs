@@ -19,6 +19,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         public AutoPermissionModel PermissionData { get; } = new AutoPermissionModel();
         public EjSaveModel EjData { get; } = new EjSaveModel();
         public EodModel EodData { get; } = new EodModel();
+        public BirEisModel BirEisData { get; } = new BirEisModel();
 
         // CLI Properties
         private string _cliTargetIp = "192.92.92.51";
@@ -86,6 +87,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         public ICommand RunAllPosCliCommand { get; }
         public ICommand RunConsoCliCommand { get; }
         public ICommand OpenPuttyCommand { get; }
+        public ICommand RunBirEisCommand { get; }
 
         public PureposViewModel(IPureposService service)
         {
@@ -99,6 +101,9 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             RunAllPosCliCommand = new AsyncRelayCommand(ExecuteAllPosCliAsync);
             RunConsoCliCommand = new AsyncRelayCommand(ExecuteConsoCliAsync);
             OpenPuttyCommand = new RelayCommand(ExecutePutty);
+
+            // FIX: Assignment moved inside the constructor
+            RunBirEisCommand = new AsyncRelayCommand(ExecuteBirEisAsync);
 
             var settings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
             CliUsername = settings.PosUsername;
@@ -134,7 +139,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             System.Windows.Application.Current.Dispatcher.Invoke(() => { CliOutput += $"{message}\n"; });
         }
 
-        // --- NEW: INTERACTIVE COMMAND HANDLER (NANO/VI/TOP) ---
+        // --- INTERACTIVE COMMAND HANDLER (NANO/VI/TOP) ---
         private bool LaunchInteractiveTerminal(string ip, string user, string pass, string command)
         {
             string cmdLower = command.Trim().ToLower();
@@ -169,6 +174,13 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
                 }
             }
             return false;
+        }
+
+        private async Task ExecuteBirEisAsync()
+        {
+            IsBusy = true;
+            await _service.RunBirEisSyncAsync(BirEisData, AppendLog);
+            IsBusy = false;
         }
 
         private async Task ExecuteEodAsync()
@@ -242,6 +254,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             foreach (var res in results) AppendLog(res);
             IsBusy = false;
         }
+
         private async Task ExecuteConsoCliAsync()
         {
             IsBusy = true;

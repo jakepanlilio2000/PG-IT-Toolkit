@@ -47,7 +47,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 {
                     string dateStr = targetDate.ToString("MMddyyyy");
                     string dateCacheDir = Path.Combine(cacheRoot, dateStr);
-
                     textProgress?.Report($"Processing Date: {dateStr}...");
 
                     if (Directory.Exists(dateCacheDir) && Directory.GetFiles(dateCacheDir, "*.txt", SearchOption.AllDirectories).Any())
@@ -58,7 +57,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                     {
                         if (Directory.Exists(dateCacheDir)) Directory.Delete(dateCacheDir, true);
                         Directory.CreateDirectory(dateCacheDir);
-
                         bool success = false;
 
                         if (targetDate.Date == DateTime.Today)
@@ -68,13 +66,17 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
 
                         if (!success)
                         {
-                            success = DownloadFromPrimaryFtp(options, dateStr, dateCacheDir, textProgress);
+                            success = DownloadFromLiveServerFolder(options, dateStr, dateCacheDir, textProgress);
                         }
 
                         if (!success)
                         {
-                            textProgress?.Report($"  [Fallback] Primary failed. Checking Live Server {options.LiveServerIp} for {dateStr}...");
-                            success = DownloadFromFallbackSftp(options, dateStr, dateCacheDir, textProgress);
+                            success = DownloadFromLiveServerDoneZip(options, dateStr, dateCacheDir, textProgress);
+                        }
+                        if (!success)
+                        {
+                            textProgress?.Report($"  [Fallback] Checking FTP Server for {dateStr}...");
+                            success = DownloadFromPrimaryFtp(options, dateStr, dateCacheDir, textProgress);
                         }
 
                         if (!success)
@@ -100,6 +102,125 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
 
             return totalProcessedReceipts;
         }
+
+        private bool DownloadFromLiveServerFolder(EJFilterOptions options, string dateStr, string tempDir, IProgress<string> progress)
+        {
+            try
+            {
+                var globalSettings = SettingsViewModel.GetCurrentSettings();
+                if (string.IsNullOrWhiteSpace(globalSettings.ConsoUser) || string.IsNullOrWhiteSpace(globalSettings.ConsoPassword))
+                {
+                    progress?.Report($"  [Error] Console credentials not configured. Please check Settings.");
+                    return false;
+                }
+
+
+                SessionOptions sftpOptions = new SessionOptions
+                {
+                    Protocol = Protocol.Sftp,
+                    HostName = options.LiveServerIp,
+                    UserName = globalSettings.ConsoUser,
+                    Password = globalSettings.ConsoPassword,
+                    SshHostKeyPolicy = SshHostKeyPolicy.GiveUpSecurityAndAcceptAny,
+                    Timeout = TimeSpan.FromSeconds(30)
+                };
+
+                using (Session session = new Session())
+                {
+                    session.Open(sftpOptions);
+                    string remoteFolder = $"/opt/purepos/ejreceipt/{dateStr}/";
+
+                    var files = session.ListDirectory(remoteFolder).Files;
+                    var zipFiles = files.Where(f => !f.IsDirectory && f.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
+
+                    if (zipFiles.Any())
+                    {
+                        progress?.Report($"  Found {zipFiles.Count} ZIP files in {remoteFolder}");
+                        string innerDir = Path.Combine(tempDir, "Inner");
+                        Directory.CreateDirectory(innerDir);
+
+                        bool processedAny = false;
+                        foreach (var zipFile in zipFiles)
+                        {
+                            string localZipPath = Path.Combine(tempDir, zipFile.Name);
+                            session.GetFiles(remoteFolder + zipFile.Name, localZipPath).Check();
+                            ExtractZipSafe(localZipPath, innerDir, progress);
+                            processedAny = true;
+                        }
+
+                        if (processedAny)
+                        {
+                            var txtFiles = Directory.GetFiles(innerDir, "*.txt", SearchOption.AllDirectories);
+                            foreach (var txt in txtFiles)
+                            {
+                                File.Copy(txt, Path.Combine(tempDir, Path.GetFileName(txt)), true);
+                            }
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                progress?.Report($"  [Failed] Live Server Folder Error: {ex.Message}");
+            }
+            return false;
+        }
+
+        private bool DownloadFromLiveServerDoneZip(EJFilterOptions options, string dateStr, string tempDir, IProgress<string> progress)
+        {
+            try
+            {
+                var globalSettings = SettingsViewModel.GetCurrentSettings();
+                if (string.IsNullOrWhiteSpace(globalSettings.ConsoUser) || string.IsNullOrWhiteSpace(globalSettings.ConsoPassword))
+                {
+                    progress?.Report($"  [Error] Console credentials not configured. Please check Settings.");
+                    return false;
+                }
+                SessionOptions sftpOptions = new SessionOptions
+                {
+                    Protocol = Protocol.Sftp,
+                    HostName = options.LiveServerIp,
+                    UserName = globalSettings.ConsoUser,
+                    Password = globalSettings.ConsoPassword,
+                    SshHostKeyPolicy = SshHostKeyPolicy.GiveUpSecurityAndAcceptAny,
+                    Timeout = TimeSpan.FromSeconds(30)
+                };
+
+                using (Session session = new Session())
+                {
+                    session.Open(sftpOptions);
+                    string doneZipPath = $"/opt/purepos/ejreceipt/done/{dateStr}_EJReceiptJournal.zip";
+
+                    if (session.FileExists(doneZipPath))
+                    {
+                        progress?.Report($"  Found Done ZIP: {doneZipPath}");
+                        string localZipPath = Path.Combine(tempDir, "done.zip");
+                        session.GetFiles(doneZipPath, localZipPath).Check();
+
+                        string innerDir = Path.Combine(tempDir, "Inner");
+                        Directory.CreateDirectory(innerDir);
+                        ExtractZipSafe(localZipPath, innerDir, progress);
+
+                        var txtFiles = Directory.GetFiles(innerDir, "*.txt", SearchOption.AllDirectories);
+                        if (txtFiles.Any())
+                        {
+                            foreach (var txt in txtFiles)
+                            {
+                                File.Copy(txt, Path.Combine(tempDir, Path.GetFileName(txt)), true);
+                            }
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                progress?.Report($"  [Failed] Live Server Done ZIP Error: {ex.Message}");
+            }
+            return false;
+        }
+
 
         private int MergeAndFilterFiles(string sourceDir, string sodPath, string masterFile, string trxFile, string dateStr, EJFilterOptions options, IProgress<string> progress)
         {
@@ -278,7 +399,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                             HostName = posIp,
                             UserName = "cashier",
                             Password = "cashier",
-                            SshHostKeyPolicy = SshHostKeyPolicy.AcceptNew,
+                            SshHostKeyPolicy = SshHostKeyPolicy.GiveUpSecurityAndAcceptAny,
                             Timeout = TimeSpan.FromSeconds(5) 
                         });
 
