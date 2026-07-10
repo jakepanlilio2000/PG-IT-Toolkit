@@ -105,17 +105,16 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
                     pctProgress?.Report((int)((double)currentDateIndex / totalDates * 100));
                 }
 
-                // FIX: Removed exceptions. We now proceed to generate files even if lists are empty.
                 if (options.GenerateScReport)
                 {
                     textProgress?.Report("Generating SC Excel Reports...");
-                    ExportExcelReports(scReports.ToList(), "senior", options, outputDir, metadataDict);
+                    ExportExcelReports(scReports.ToList(), "senior", options, outputDir);
                 }
 
                 if (options.GeneratePwdReport)
                 {
                     textProgress?.Report("Generating PWD Excel Reports...");
-                    ExportExcelReports(pwdReports.ToList(), "pwd", options, outputDir, metadataDict);
+                    ExportExcelReports(pwdReports.ToList(), "pwd", options, outputDir);
                 }
             });
 
@@ -238,43 +237,56 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
             catch { return null; }
         }
 
-        private void ExportExcelReports(List<ReportRow> allRows, string typeName, ScPwdReportOptions options, string outputDir, System.Collections.Concurrent.ConcurrentDictionary<string, ReportRow> metadataDict)
+        private void ExportExcelReports(List<ReportRow> allRows, string typeName, ScPwdReportOptions options, string outputDir)
         {
+            List<string> terminals;
+
+            if (options.MergeAllPos)
+            {
+                // Force a single merged bucket
+                terminals = new List<string> { "ALL" };
+            }
+            else if (allRows != null && allRows.Any())
+            {
+                terminals = allRows.Select(r => r.Terminal).Distinct().OrderBy(t => t).ToList();
+            }
+            else
+            {
+                if (options.PosLanes != null && options.PosLanes.Any())
+                    terminals = options.PosLanes.Select(l => int.TryParse(l, out int num) ? num.ToString() : l).OrderBy(t => t).ToList();
+                else
+                    terminals = new List<string> { "1", "2", "3", "4", "5", "6" };
+            }
+
             var requestedDates = options.TargetDates.Select(d => d.Date).Distinct().OrderBy(d => d).ToList();
             var dateChunks = ChunkBy(requestedDates, options.ReportChunkDays);
 
-            var metadataByTerminal = metadataDict.Values.GroupBy(m => m.Terminal).ToDictionary(g => g.Key, g => g.OrderBy(m => m.Date).ToList());
-
-            if (!metadataByTerminal.Any())
+            foreach (var term in terminals)
             {
-                var defaultMeta = new ReportRow
+                var termRows = options.MergeAllPos
+                    ? (allRows?.ToList() ?? new List<ReportRow>())
+                    : (allRows?.Where(r => r.Terminal == term).ToList() ?? new List<ReportRow>());
+
+                var metadataRow = termRows.FirstOrDefault() ?? allRows?.FirstOrDefault() ?? new ReportRow
                 {
-                    Terminal = "001",
+                    Terminal = term,
                     Address = "SAVER'S BLDG. MAC ARTHUR HIGHWAY DOLORES CITY OF SAN FERNANDO",
-                    VatRegTin = "201-277-095-00771",
-                    SerialNumber = "N/A",
-                    MinNumber = "N/A",
-                    Date = requestedDates.FirstOrDefault()
+                    VatRegTin = "VAT REG TIN: 201-277-095-00135",
+                    SerialNumber = "UNKNOWN",
+                    MinNumber = "UNKNOWN"
                 };
-                metadataByTerminal["001"] = new List<ReportRow> { defaultMeta };
-            }
 
-            foreach (var termGroup in metadataByTerminal)
-            {
-                string term = termGroup.Key;
-                var termMetadata = termGroup.Value;
+                if (options.MergeAllPos) metadataRow.Terminal = "ALL";
 
                 foreach (var chunk in dateChunks)
                 {
                     DateTime minDate = chunk.Min();
                     DateTime maxDate = chunk.Max();
 
-                    var chunkRows = allRows.Where(r => r.Terminal == term && r.Date.Date >= minDate && r.Date.Date <= maxDate).OrderBy(r => r.Date).ToList();
-
-                    var metadataRow = termMetadata.FirstOrDefault(m => m.Date.Date >= minDate && m.Date.Date <= maxDate) ?? termMetadata.FirstOrDefault();
-                    if (metadataRow == null) continue;
+                    var chunkRows = termRows.Where(r => r.Date.Date >= minDate && r.Date.Date <= maxDate).OrderBy(r => r.Date).ToList();
 
                     string dateRangeStr = $"{minDate:MMdd}-{maxDate:MMdd}";
+
                     string fileName = $"{options.StoreCode}_{term}_{dateRangeStr}_{typeName}_report.xls";
                     string filePath = Path.Combine(outputDir, fileName);
 

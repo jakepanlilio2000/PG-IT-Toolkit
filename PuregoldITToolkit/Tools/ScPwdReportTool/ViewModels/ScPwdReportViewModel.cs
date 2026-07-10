@@ -26,6 +26,7 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels
 
         private bool _generateScReport = true;
         private bool _generatePwdReport = true;
+        private bool _mergeAllPos = false;
         private int _reportChunkDays = 3;
         private string _reportUserId;
 
@@ -43,6 +44,9 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels
 
         public bool GenerateScReport { get => _generateScReport; set => SetProperty(ref _generateScReport, value); }
         public bool GeneratePwdReport { get => _generatePwdReport; set => SetProperty(ref _generatePwdReport, value); }
+
+        public bool MergeAllPos { get => _mergeAllPos; set => SetProperty(ref _mergeAllPos, value); }
+
         public int ReportChunkDays { get => _reportChunkDays; set => SetProperty(ref _reportChunkDays, value); }
         public string ReportUserId { get => _reportUserId; set => SetProperty(ref _reportUserId, value); }
 
@@ -91,6 +95,7 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels
                 PosLanes = lanes,
                 GenerateScReport = GenerateScReport,
                 GeneratePwdReport = GeneratePwdReport,
+                MergeAllPos = MergeAllPos, 
                 ReportChunkDays = ReportChunkDays <= 0 ? 3 : ReportChunkDays,
                 ReportUserId = ReportUserId?.Trim()
             };
@@ -138,6 +143,7 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels
                     if (data.TryGetValue("ChunkDays", out string cd) && int.TryParse(cd, out int chunk)) ReportChunkDays = chunk;
                     if (data.TryGetValue("GenSc", out string scb) && bool.TryParse(scb, out bool gSc)) GenerateScReport = gSc;
                     if (data.TryGetValue("GenPwd", out string pwb) && bool.TryParse(pwb, out bool gPw)) GeneratePwdReport = gPw;
+                    if (data.TryGetValue("MergePos", out string mPos) && bool.TryParse(mPos, out bool merged)) MergeAllPos = merged; // NEW
                 }
                 catch { }
             }
@@ -156,7 +162,8 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels
                     ["UserId"] = ReportUserId,
                     ["ChunkDays"] = ReportChunkDays.ToString(),
                     ["GenSc"] = GenerateScReport.ToString(),
-                    ["GenPwd"] = GeneratePwdReport.ToString()
+                    ["GenPwd"] = GeneratePwdReport.ToString(),
+                    ["MergePos"] = MergeAllPos.ToString() 
                 };
                 File.WriteAllText(_cacheFile, JsonSerializer.Serialize(data));
             }

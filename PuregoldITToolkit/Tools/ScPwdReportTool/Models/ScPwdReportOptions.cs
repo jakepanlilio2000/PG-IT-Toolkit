@@ -15,5 +15,7 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Models
         public bool GeneratePwdReport { get; set; }
         public int ReportChunkDays { get; set; }
         public string ReportUserId { get; set; }
+
+        public bool MergeAllPos { get; set; }
     }
 }

@@ -64,6 +64,8 @@
                         <WrapPanel Margin="0,0,0,20">
                             <CheckBox Content="Generate Senior Citizen (SC) Report" IsChecked="{Binding GenerateScReport}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,25,0"/>
                             <CheckBox Content="Generate PWD Report" IsChecked="{Binding GeneratePwdReport}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,25,0"/>
+
+                            <CheckBox Content="Merge All POS into One Report" IsChecked="{Binding MergeAllPos}" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Margin="0,0,25,0"/>
                         </WrapPanel>
                         <WrapPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,40,0">
