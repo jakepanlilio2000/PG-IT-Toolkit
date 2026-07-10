@@ -882,6 +882,140 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
             });
         }
 
+        // --- NEW: PROMO AVAILMENT AUTO SYNC ---
+        public async Task RunPromoAvailmentSyncAsync(AutoSyncModel config, Action<string> logCallback)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    var globalSettings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
+
+                    string dateFromStr = config.DateFrom.ToString("yyyy-MM-dd");
+                    string dateToStr = config.DateTo.ToString("yyyy-MM-dd");
+                    string combinedDateStr = config.DateFrom.ToString("yyyyMMdd");
+
+                    string fileName = $"{config.StoreCode}_{combinedDateStr}.zip";
+
+                    string remoteSourceDir = "/opt/purepos/promo_availment";
+                    string remoteSourcePath = $"{remoteSourceDir}/{fileName}";
+                    string remoteDestDir = $"{remoteSourceDir}/done";
+
+                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                    string sodPath = Path.Combine(desktopPath, "SOD_Output");
+                    if (!Directory.Exists(sodPath)) Directory.CreateDirectory(sodPath);
+                    string localFilePath = Path.Combine(sodPath, fileName);
+
+                    logCallback($"\n==================================================");
+                    logCallback($"       PROMO AVAILMENT AUTO SYNC INITIATED        ");
+                    logCallback($"==================================================");
+                    logCallback($"[*] Target File: {fileName}");
+
+                    logCallback($"\n[*] Connecting to CONSO SFTP ({config.LiveServerIp})...");
+                    using (var ssh = new Renci.SshNet.SshClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
+                    using (var sftp = new Renci.SshNet.SftpClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
+                    {
+                        ssh.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
+                        sftp.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
+                        ssh.Connect();
+                        sftp.Connect();
+
+                        if (!sftp.Exists(remoteSourcePath))
+                        {
+                            logCallback($"[!] Target file not found on CONSO: {remoteSourcePath}");
+                            logCallback($"[*] Attempting to manually trigger Promo generation script via HTTP POST...");
+
+                            string genCommand = $"curl -s -d \"txtFrom={dateFromStr}&txtTo={dateToStr}&menu=Promo+Availment&trigger=1\" -X POST http://{config.LiveServerIp}/IT_TOOLS/index.php";
+
+                            var genCmdResult = ssh.RunCommand(genCommand);
+
+                            System.Threading.Thread.Sleep(5000);
+                            string zipCommand = $"cd {remoteSourceDir} && zip {fileName} {config.StoreCode}_{combinedDateStr}.csv";
+                            ssh.RunCommand(zipCommand);
+                            System.Threading.Thread.Sleep(1000);
+
+                            if (sftp.Exists(remoteSourcePath))
+                            {
+                                logCallback($"[+] Successfully generated missing Promo ZIP from CONSO web server!");
+                            }
+                            else
+                            {
+                                logCallback($"[ERROR] Auto-generation failed. File is still missing.");
+                                logCallback($"[DEBUG] cURL Output: {genCmdResult.Result}\n{genCmdResult.Error}");
+                                ssh.Disconnect();
+                                sftp.Disconnect();
+                                return;
+                            }
+                        }
+
+                        // 2. Download for Debugging
+                        logCallback($"[+] File located. Downloading to Desktop/SOD_Output for debugging...");
+                        using (var fs = new FileStream(localFilePath, FileMode.Create))
+                        {
+                            sftp.DownloadFile(remoteSourcePath, fs);
+                        }
+                        logCallback($"[+] Download successful.");
+
+                        // 3. Move to 'done' directory on CONSO
+                        logCallback($"[*] Executing remote copy to {remoteDestDir}...");
+                        ssh.RunCommand($"mkdir -p {remoteDestDir}");
+                        var cmd = ssh.RunCommand($"mv {remoteSourcePath} {remoteDestDir}/");
+                        if (cmd.ExitStatus == 0)
+                            logCallback($"[+] Remote move executed successfully.");
+                        else
+                            logCallback($"[WARNING] Remote move failed: {cmd.Error}");
+
+                        ssh.Disconnect();
+                        sftp.Disconnect();
+                    }
+
+                    // 4. Upload to Main FTP
+                    if (config.DebugMode)
+                    {
+                        logCallback($"\n[DEBUG MODE ACTIVE] Bypassing Main FTP Upload step.");
+                        logCallback($"[DEBUG] Review local Promo file at: \n{localFilePath}");
+                    }
+                    else
+                    {
+                        string ftpHost = string.IsNullOrWhiteSpace(globalSettings.DefaultFtpServer) ? "192.168.200.177" : globalSettings.DefaultFtpServer;
+
+                        string ftpTargetUrl = $"ftp://{ftpHost}/toho/PROMO_AVAILMENT_REPORT/automated/{fileName}";
+
+                        logCallback($"\n[*] Uploading to Main FTP: {ftpTargetUrl}...");
+
+                        bool ftpSuccess = false;
+                        foreach (var user in _ftpUsers)
+                        {
+                            try
+                            {
+ 
+                                string username = user == "puregold/ftp1" ? "ftphub" : user;
+
+                                var creds = new System.Net.NetworkCredential(username, globalSettings.FtpPassword);
+                                UploadToFtp(ftpTargetUrl, localFilePath, creds);
+                                logCallback($"[+] Upload successful using FTP account: {username}");
+                                ftpSuccess = true;
+                                break;
+                            }
+                            catch { }
+                        }
+
+                        if (!ftpSuccess) logCallback("[ERROR] Failed to upload to FTP.");
+                        else
+                        {
+                            if (File.Exists(localFilePath)) File.Delete(localFilePath);
+                        }
+                    }
+
+                    logCallback("\n✅ PROMO AVAILMENT SYNC COMPLETED.");
+                }
+                catch (Exception ex)
+                {
+                    logCallback($"\n[FATAL ERROR] {ex.Message}");
+                }
+            });
+
+        }
         private string GetFtpStoreDirectory(string ftpIp, string storeCode, out NetworkCredential workingCreds, Action<string> logCallback)
         {
             workingCreds = null;

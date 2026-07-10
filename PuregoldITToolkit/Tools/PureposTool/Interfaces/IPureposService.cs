@@ -13,5 +13,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Interfaces
 
         Task RunBirEisSyncAsync(AutoSyncModel config, Action<string> logCallback);
         Task RunCrmPointsSyncAsync(AutoSyncModel config, Action<string> logCallback);
+        Task RunPromoAvailmentSyncAsync(AutoSyncModel config, Action<string> logCallback);
     }
 }

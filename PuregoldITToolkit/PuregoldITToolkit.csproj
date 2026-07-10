@@ -68,6 +68,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Core\Converters\InverseBoolConverter.cs" />
+    <Compile Include="Core\Converters\InverseBoolToVisConverter.cs" />
     <Compile Include="Core\Helpers\PasswordHelper.cs" />
     <Compile Include="Core\Helpers\ResourceHelper.cs" />
     <Compile Include="Services\LicenseManager.cs" />

@@ -2,6 +2,7 @@
     x:Class="PuregoldITToolkit.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    
     xmlns:ejV="clr-namespace:PuregoldITToolkit.Tools.EJConsolidator.Views"
     xmlns:ejVm="clr-namespace:PuregoldITToolkit.Tools.EJConsolidator.ViewModels"
     xmlns:formsV="clr-namespace:PuregoldITToolkit.Tools.FormsTool.Views"
@@ -24,6 +25,7 @@
 
     <Application.Resources>
 
+        
         <SolidColorBrush x:Key="BrandPrimary" Color="#C41E3A" />
         <SolidColorBrush x:Key="BrandPrimaryDark" Color="#A01830" />
         <SolidColorBrush x:Key="BrandAccent" Color="#FFD700" />

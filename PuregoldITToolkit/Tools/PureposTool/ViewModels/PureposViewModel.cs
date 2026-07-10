@@ -92,7 +92,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
 
         public ICommand RunBirEisCommand { get; }
         public ICommand RunCrmPointsCommand { get; }
-
+        public ICommand RunPromoAvailmentCommand { get; }
         public PureposViewModel(IPureposService service)
         {
             _service = service;
@@ -117,6 +117,12 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             {
                 IsBusy = true;
                 await _service.RunCrmPointsSyncAsync(AutoSyncData, AppendLog); 
+                IsBusy = false;
+            });
+            RunPromoAvailmentCommand = new AsyncRelayCommand(async () =>
+            {
+                IsBusy = true;
+                await _service.RunPromoAvailmentSyncAsync(AutoSyncData, AppendLog);
                 IsBusy = false;
             });
 
