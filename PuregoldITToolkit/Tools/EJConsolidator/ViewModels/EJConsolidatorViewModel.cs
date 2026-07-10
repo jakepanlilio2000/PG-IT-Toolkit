@@ -4,7 +4,7 @@ using PuregoldITToolkit.Tools.EJConsolidator.Interfaces;
 using PuregoldITToolkit.Tools.EJConsolidator.Models;
 using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
-using System.Collections.Generic; // Required for List<T>
+using System.Collections.Generic; 
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -111,7 +111,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
 
             try
             {
-                // FIX: Initialize the dates list BEFORE passing it to the options object
+                
                 var dates = new List<DateTime>();
                 for (var d = StartDate.Date; d <= EndDate.Date; d = d.AddDays(1)) dates.Add(d);
 
@@ -122,7 +122,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                     StoreCode = this.StoreCode.Trim(),
                     LiveServerIp = this.LiveServerIp.Trim(),
 
-                    // FIX: TotalPosCount is already an int in the ViewModel, so no parsing needed
+                    
                     TotalPosCount = this.TotalPosCount > 0 ? this.TotalPosCount : 6,
                     TargetDates = dates,
 
@@ -141,7 +141,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.ViewModels
                     PwdOnly = this.PwdOnly,
                     FilterScPwdId = this.FilterScPwdId?.Trim(),
 
-                    // Ensure PosLanes is initialized to avoid null references
+                    
                     PosLanes = new List<string>()
                 };
 

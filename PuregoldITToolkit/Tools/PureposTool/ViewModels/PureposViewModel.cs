@@ -19,7 +19,9 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         public AutoPermissionModel PermissionData { get; } = new AutoPermissionModel();
         public EjSaveModel EjData { get; } = new EjSaveModel();
         public EodModel EodData { get; } = new EodModel();
-        public BirEisModel BirEisData { get; } = new BirEisModel();
+
+        // FIX: The model is now named AutoSyncData, used for both BIR and CRM
+        public AutoSyncModel AutoSyncData { get; } = new AutoSyncModel();
 
         // CLI Properties
         private string _cliTargetIp = "192.92.92.51";
@@ -87,7 +89,9 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         public ICommand RunAllPosCliCommand { get; }
         public ICommand RunConsoCliCommand { get; }
         public ICommand OpenPuttyCommand { get; }
+
         public ICommand RunBirEisCommand { get; }
+        public ICommand RunCrmPointsCommand { get; }
 
         public PureposViewModel(IPureposService service)
         {
@@ -102,8 +106,19 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
             RunConsoCliCommand = new AsyncRelayCommand(ExecuteConsoCliAsync);
             OpenPuttyCommand = new RelayCommand(ExecutePutty);
 
-            // FIX: Assignment moved inside the constructor
-            RunBirEisCommand = new AsyncRelayCommand(ExecuteBirEisAsync);
+            RunBirEisCommand = new AsyncRelayCommand(async () =>
+            {
+                IsBusy = true;
+                await _service.RunBirEisSyncAsync(AutoSyncData, AppendLog); 
+                IsBusy = false;
+            });
+
+            RunCrmPointsCommand = new AsyncRelayCommand(async () =>
+            {
+                IsBusy = true;
+                await _service.RunCrmPointsSyncAsync(AutoSyncData, AppendLog); 
+                IsBusy = false;
+            });
 
             var settings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
             CliUsername = settings.PosUsername;
@@ -138,23 +153,16 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() => { CliOutput += $"{message}\n"; });
         }
-
-        // --- INTERACTIVE COMMAND HANDLER (NANO/VI/TOP) ---
         private bool LaunchInteractiveTerminal(string ip, string user, string pass, string command)
         {
             string cmdLower = command.Trim().ToLower();
-
-            // Strip out 'sudo ' if it exists so we can accurately detect the base command
             string baseCmd = cmdLower.StartsWith("sudo ") ? cmdLower.Substring(5).Trim() : cmdLower;
 
             if (baseCmd.StartsWith("nano") || baseCmd.StartsWith("vi") || baseCmd.StartsWith("vim") || baseCmd.StartsWith("top") || baseCmd.StartsWith("htop"))
             {
                 try
                 {
-                    // Create an ephemeral script to execute the interactive command 
                     string tempScript = Path.Combine(Path.GetTempPath(), $"purepos_cmd_{Guid.NewGuid().ToString("N").Substring(0, 8)}.sh");
-
-                    // Write the EXACT original command (including sudo) to the script
                     File.WriteAllText(tempScript, command);
 
                     Process.Start(new ProcessStartInfo
@@ -174,13 +182,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.ViewModels
                 }
             }
             return false;
-        }
-
-        private async Task ExecuteBirEisAsync()
-        {
-            IsBusy = true;
-            await _service.RunBirEisSyncAsync(BirEisData, AppendLog);
-            IsBusy = false;
         }
 
         private async Task ExecuteEodAsync()

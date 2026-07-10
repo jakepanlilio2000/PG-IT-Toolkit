@@ -10,6 +10,8 @@ namespace PuregoldITToolkit.Tools.PureposTool.Interfaces
         Task RunManualEjSaveAsync(EjSaveModel config, Action<string> logCallback);
         Task<string> RunSshCommandAsync(string host, string username, string password, string command);
         Task RunEodGeneratorAsync(EodModel config, Action<string> logCallback);
-        Task RunBirEisSyncAsync(BirEisModel config, Action<string> logCallback);
+
+        Task RunBirEisSyncAsync(AutoSyncModel config, Action<string> logCallback);
+        Task RunCrmPointsSyncAsync(AutoSyncModel config, Action<string> logCallback);
     }
 }

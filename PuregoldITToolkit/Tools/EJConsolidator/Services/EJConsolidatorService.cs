@@ -57,36 +57,52 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                     {
                         if (Directory.Exists(dateCacheDir)) Directory.Delete(dateCacheDir, true);
                         Directory.CreateDirectory(dateCacheDir);
+
                         bool success = false;
 
+                        
                         if (targetDate.Date == DateTime.Today)
                         {
+                            textProgress?.Report($"  [Source 1] Attempting POS Direct download for {dateStr}...");
                             success = DownloadFromPosDirectly(options, targetDate, dateCacheDir, textProgress);
                         }
 
+                        
                         if (!success)
                         {
+                            
+                            if (Directory.Exists(dateCacheDir)) Directory.Delete(dateCacheDir, true);
+                            Directory.CreateDirectory(dateCacheDir);
+
+                            textProgress?.Report($"  [Source 2] Attempting Live Server Folder for {dateStr}...");
                             success = DownloadFromLiveServerFolder(options, dateStr, dateCacheDir, textProgress);
                         }
 
                         if (!success)
                         {
+                            if (Directory.Exists(dateCacheDir)) Directory.Delete(dateCacheDir, true);
+                            Directory.CreateDirectory(dateCacheDir);
+
+                            textProgress?.Report($"  [Source 3] Attempting Live Server Done ZIP for {dateStr}...");
                             success = DownloadFromLiveServerDoneZip(options, dateStr, dateCacheDir, textProgress);
-                        }
-                        if (!success)
-                        {
-                            textProgress?.Report($"  [Fallback] Checking FTP Server for {dateStr}...");
-                            success = DownloadFromPrimaryFtp(options, dateStr, dateCacheDir, textProgress);
                         }
 
                         if (!success)
                         {
-                            textProgress?.Report($"  [Skipped] Could not retrieve any data for {dateStr}.");
+   
+                            if (Directory.Exists(dateCacheDir)) Directory.Delete(dateCacheDir, true);
+                            Directory.CreateDirectory(dateCacheDir);
+
+                            textProgress?.Report($"  [Source 4] Attempting Primary FTP Server for {dateStr}...");
+                            success = DownloadFromPrimaryFtp(options, dateStr, dateCacheDir, textProgress);
+                        }
+                        if (!success)
+                        {
+                            textProgress?.Report($"  [Skipped] Could not retrieve any data for {dateStr} from any source.");
                             if (Directory.Exists(dateCacheDir)) Directory.Delete(dateCacheDir, true);
                         }
                     }
-
-                    if (Directory.Exists(dateCacheDir))
+                    if (Directory.Exists(dateCacheDir) && Directory.GetFiles(dateCacheDir, "*.txt", SearchOption.AllDirectories).Any())
                     {
                         string dailyFile = Path.Combine(sodPath, $"Merged_{options.StoreCode}_{dateStr}.txt");
                         if (!options.IsModeTrxFinder && !options.MergeAllIntoOneFile && File.Exists(dailyFile)) File.Delete(dailyFile);
@@ -114,7 +130,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                     return false;
                 }
 
-
                 SessionOptions sftpOptions = new SessionOptions
                 {
                     Protocol = Protocol.Sftp,
@@ -129,7 +144,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 {
                     session.Open(sftpOptions);
                     string remoteFolder = $"/opt/purepos/ejreceipt/{dateStr}/";
-
                     var files = session.ListDirectory(remoteFolder).Files;
                     var zipFiles = files.Where(f => !f.IsDirectory && f.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)).ToList();
 
@@ -138,8 +152,8 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         progress?.Report($"  Found {zipFiles.Count} ZIP files in {remoteFolder}");
                         string innerDir = Path.Combine(tempDir, "Inner");
                         Directory.CreateDirectory(innerDir);
-
                         bool processedAny = false;
+
                         foreach (var zipFile in zipFiles)
                         {
                             string localZipPath = Path.Combine(tempDir, zipFile.Name);
@@ -177,6 +191,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                     progress?.Report($"  [Error] Console credentials not configured. Please check Settings.");
                     return false;
                 }
+
                 SessionOptions sftpOptions = new SessionOptions
                 {
                     Protocol = Protocol.Sftp,
@@ -221,7 +236,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
             return false;
         }
 
-
         private int MergeAndFilterFiles(string sourceDir, string sodPath, string masterFile, string trxFile, string dateStr, EJFilterOptions options, IProgress<string> progress)
         {
             var txtFiles = Directory.GetFiles(sourceDir, "*.txt", SearchOption.AllDirectories);
@@ -246,17 +260,10 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 foreach (var block in blocks)
                 {
                     if (string.IsNullOrWhiteSpace(block)) continue;
+
                     if (_filterService.IsMatch(block, options))
                     {
-                        string cardMatch = Regex.Match(block, @"(?i)Member Card Number:\s*.*?(\d{4})\b").Groups[1].Value;
-                        string memberMatch = Regex.Match(block, @"(?i)Member Name:\s*([^\n\r]+)").Groups[1].Value.Trim();
-                        string amountMatch = Regex.Match(block, @"(?i)Total(?: Amt Due)?\s*(?:Php)?\s*([\d,.]+)").Groups[1].Value.Trim();
-
-                        string cardText = string.IsNullOrEmpty(cardMatch) ? "N/A" : $"****{cardMatch}";
-                        string memberText = string.IsNullOrEmpty(memberMatch) ? "N/A" : memberMatch;
-                        string amountText = string.IsNullOrEmpty(amountMatch) ? "0.00" : amountMatch;
-
-                        // CRITICAL FIX: Add the matched block to the collection so it gets written to the file
+                       
                         filteredReceipts.Add(block);
                     }
                 }
@@ -331,7 +338,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                     }
 
                     string remoteZip = $"/PUREPOS_EJRECEIPT/{targetFolder}/{dateStr}_EJReceiptJournal.zip";
-
                     if (session.FileExists(remoteZip))
                     {
                         progress?.Report($"  Found Primary ZIP: {dateStr}_EJReceiptJournal.zip");
@@ -343,20 +349,17 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         ExtractZipSafe(localZip, innerDir, progress);
 
                         bool processedAny = false;
-
-                        var innerZips = Directory.GetFiles(innerDir, "*.zip", SearchOption.AllDirectories);
-                        foreach (var zip in innerZips)
-                        {
-                           
-                        }
-
                         var txtFiles = Directory.GetFiles(innerDir, "*.txt", SearchOption.AllDirectories);
+
                         foreach (var txt in txtFiles)
                         {
                             bool keep = options.PosLanes.Count == 0 || options.PosLanes.Any(lane => Regex.IsMatch(Path.GetFileName(txt), $@"(?i)_0*{lane}\.txt$"));
-                            if (keep) { File.Copy(txt, Path.Combine(tempDir, Path.GetFileName(txt)), true); processedAny = true; }
+                            if (keep)
+                            {
+                                File.Copy(txt, Path.Combine(tempDir, Path.GetFileName(txt)), true);
+                                processedAny = true;
+                            }
                         }
-
                         return processedAny;
                     }
                 }
@@ -400,7 +403,7 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                             UserName = "cashier",
                             Password = "cashier",
                             SshHostKeyPolicy = SshHostKeyPolicy.GiveUpSecurityAndAcceptAny,
-                            Timeout = TimeSpan.FromSeconds(5) 
+                            Timeout = TimeSpan.FromSeconds(5)
                         });
 
                         string remotePath = $"/home/cashier/Documents/{dateStr}/";
@@ -408,7 +411,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         {
                             var files = session.ListDirectory(remotePath).Files
                                                .Where(f => !f.IsDirectory && f.Name.EndsWith(".txt", StringComparison.OrdinalIgnoreCase));
-
                             foreach (var file in files)
                             {
                                 string localFilePath = Path.Combine(tempDir, file.Name);
@@ -426,12 +428,12 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
 
             return processedAny;
         }
+
         private bool DownloadFromFallbackSftp(EJFilterOptions options, string dateStr, string tempDir, IProgress<string> progress)
         {
             try
             {
                 var globalSettings = SettingsViewModel.GetCurrentSettings();
-
                 SessionOptions fallbackOptions = new SessionOptions
                 {
                     Protocol = Protocol.Sftp,
@@ -444,7 +446,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                 using (Session session = new Session())
                 {
                     session.Open(fallbackOptions);
-
                     string doneZipPath = $"/opt/purepos/ejreceipt/done/{dateStr}_EJReceiptJournal.zip";
 
                     if (session.FileExists(doneZipPath))
@@ -458,26 +459,16 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         ExtractZipSafe(localZipPath, innerDir, progress);
 
                         bool processedAny = false;
-
-                        var innerZips = Directory.GetFiles(innerDir, "*.zip", SearchOption.AllDirectories);
-                        foreach (var zip in innerZips)
-                        {
-                            bool keep = options.PosLanes.Count == 0 || options.PosLanes.Any(lane => Regex.IsMatch(Path.GetFileName(zip), $@"(?i)_0*{lane}\.zip$"));
-                            if (keep) { ExtractZipSafe(zip, tempDir, progress); processedAny = true; }
-                        }
-
                         var txtFiles = Directory.GetFiles(innerDir, "*.txt", SearchOption.AllDirectories);
                         foreach (var txt in txtFiles)
                         {
                             bool keep = options.PosLanes.Count == 0 || options.PosLanes.Any(lane => Regex.IsMatch(Path.GetFileName(txt), $@"(?i)_0*{lane}\.txt$"));
                             if (keep) { File.Copy(txt, Path.Combine(tempDir, Path.GetFileName(txt)), true); processedAny = true; }
                         }
-
                         if (processedAny) return true;
                     }
 
                     string targetFolder = $"/opt/purepos/ejreceipt/{dateStr}/";
-
                     if (session.FileExists(targetFolder))
                     {
                         progress?.Report($"  Found Date Folder: {targetFolder}");
@@ -485,11 +476,9 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                             .Where(f => !f.IsDirectory && (f.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || f.Name.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)));
 
                         bool processedAny = false;
-
                         foreach (var file in files)
                         {
                             bool keep = options.PosLanes.Count == 0 || options.PosLanes.Any(lane => Regex.IsMatch(file.Name, $@"(?i)_0*{lane}\.(zip|txt)$"));
-
                             if (keep)
                             {
                                 progress?.Report($"  Downloading POS File: {file.Name}");
@@ -505,7 +494,6 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                         }
                         return processedAny;
                     }
-
                     progress?.Report($"  No folders or files found for {dateStr} in Fallback Server.");
                 }
             }
@@ -525,8 +513,8 @@ namespace PuregoldITToolkit.Tools.EJConsolidator.Services
                     foreach (ZipArchiveEntry entry in archive.Entries)
                     {
                         if (string.IsNullOrWhiteSpace(entry.Name)) continue;
-                        string destinationPath = Path.GetFullPath(Path.Combine(extractPath, entry.FullName));
 
+                        string destinationPath = Path.GetFullPath(Path.Combine(extractPath, entry.FullName));
                         if (destinationPath.StartsWith(extractPath, StringComparison.Ordinal))
                         {
                             string targetDir = Path.GetDirectoryName(destinationPath);

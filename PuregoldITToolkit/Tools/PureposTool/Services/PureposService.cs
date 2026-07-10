@@ -55,73 +55,127 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
             logCallback("\n✅ AUTO PERMISSION COMPLETED SUCCESSFULLY.");
         }
 
-        public async Task RunBirEisSyncAsync(BirEisModel config, Action<string> logCallback)
+        // --- BIR-EIS AUTO SYNC ---
+        // FIX: Changed BirEisModel to AutoSyncModel
+        public async Task RunBirEisSyncAsync(AutoSyncModel config, Action<string> logCallback)
         {
             await Task.Run(() =>
             {
                 try
                 {
-                    var globalSettings = SettingsViewModel.GetCurrentSettings();
+                    var globalSettings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
+
                     string yyyy = config.TargetDate.ToString("yyyy");
+                    string yyyy_mm_dd = config.TargetDate.ToString("yyyy-MM-dd"); // Format for the PHP script argument
                     string yyyymmdd = config.TargetDate.ToString("yyyyMMdd");
                     string fileName = $"EIS_{config.StoreCode}_{yyyymmdd}.txt";
+
                     string remoteSourcePath = $"/opt/iPos/CONSO_EIS/{yyyy}/{fileName}";
+                    string remoteDestDir = "/opt/purepos/bir-eis/done";
 
                     string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                    string birPath = Path.Combine(desktopPath, "BIR_Output");
-                    if (!Directory.Exists(birPath)) Directory.CreateDirectory(birPath);
-
-                    string localFilePath = Path.Combine(birPath, fileName);
+                    string sodPath = Path.Combine(desktopPath, "SOD_Output");
+                    if (!Directory.Exists(sodPath)) Directory.CreateDirectory(sodPath);
+                    string localFilePath = Path.Combine(sodPath, fileName);
 
                     logCallback($"\n==================================================");
                     logCallback($"           BIR-EIS AUTO SYNC INITIATED            ");
                     logCallback($"==================================================");
                     logCallback($"[*] Target File: {fileName}");
+
                     logCallback($"\n[*] Connecting to CONSO SFTP ({config.LiveServerIp})...");
-                    using (var sftp = new SftpClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
+                    using (var ssh = new Renci.SshNet.SshClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
+                    using (var sftp = new Renci.SshNet.SftpClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
                     {
+                        ssh.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
                         sftp.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
+                        ssh.Connect();
                         sftp.Connect();
 
+                        // 1. Fallback Generation Check
                         if (!sftp.Exists(remoteSourcePath))
                         {
-                            logCallback($"[ERROR] Target file not found on CONSO: {remoteSourcePath}");
-                            sftp.Disconnect();
-                            return;
+                            logCallback($"[!] Target file not found on CONSO: {remoteSourcePath}");
+                            logCallback($"[*] Attempting to manually trigger EIS generation script via HTTP POST for {yyyy_mm_dd}...");
+
+                            string genCommand = $"curl -s -d \"date={yyyy_mm_dd}&ajax=true\" -X POST http://{config.LiveServerIp}/purepos_conso/reads/consolidate_eis";
+
+                            var genCmdResult = ssh.RunCommand(genCommand);
+
+                            // Add a brief pause to allow the PHP script time to write the file to the disk
+                            System.Threading.Thread.Sleep(3000);
+
+                            if (sftp.Exists(remoteSourcePath))
+                            {
+                                logCallback($"[+] Successfully generated missing EIS file from CONSO web server!");
+                            }
+                            else
+                            {
+                                logCallback($"[ERROR] Auto-generation failed. File is still missing.");
+                                logCallback($"[DEBUG] cURL Output: {genCmdResult.Result}\n{genCmdResult.Error}");
+                                ssh.Disconnect();
+                                sftp.Disconnect();
+                                return;
+                            }
                         }
 
-                        logCallback($"[+] File located. Downloading to Desktop/BIR_Output...");
+                        // 2. Download for Debugging
+                        logCallback($"[+] File located. Downloading to Desktop/SOD_Output for debugging...");
                         using (var fs = new FileStream(localFilePath, FileMode.Create))
                         {
                             sftp.DownloadFile(remoteSourcePath, fs);
                         }
-                        logCallback($"[+] Download successful: {localFilePath}");
+                        logCallback($"[+] Download successful.");
 
+                        // 3. Move to 'done' directory on CONSO
+                        logCallback($"[*] Executing remote copy to {remoteDestDir}...");
+                        ssh.RunCommand($"mkdir -p {remoteDestDir}");
+                        var cmd = ssh.RunCommand($"cp {remoteSourcePath} {remoteDestDir}/");
+                        if (cmd.ExitStatus == 0)
+                            logCallback($"[+] Remote copy executed successfully.");
+                        else
+                            logCallback($"[WARNING] Remote copy failed: {cmd.Error}");
+
+                        ssh.Disconnect();
                         sftp.Disconnect();
                     }
-                    logCallback($"[*] Processing EIS file and generating BIR reports on Windows...");
-                    ProcessEisFileForBIR(localFilePath, birPath, logCallback);
-                    string ftpHost = string.IsNullOrWhiteSpace(globalSettings.DefaultFtpServer) ? "192.168.200.177" : globalSettings.DefaultFtpServer;
-                    string ftpTargetUrl = $"ftp://{ftpHost}/toho/ANAHAW-BIR-EIS/{fileName}";
 
-                    logCallback($"\n[*] Uploading to Main FTP: {ftpTargetUrl}...");
-                    bool ftpSuccess = false;
-                    foreach (var user in _ftpUsers)
+                    // 4. Handle Debug Mode Logic
+                    if (config.DebugMode)
                     {
-                        try
-                        {
-                            var creds = new System.Net.NetworkCredential(user, globalSettings.FtpPassword);
-                            UploadToFtp(ftpTargetUrl, localFilePath, creds);
-                            logCallback($"[+] Upload successful using FTP account: {user}");
-                            ftpSuccess = true;
-                            break;
-                        }
-                        catch { /* Silently fail and try next credential */ }
+                        logCallback($"\n[DEBUG MODE ACTIVE] Bypassing Main FTP Upload step.");
+                        logCallback($"[DEBUG] You can review the generated EIS format at: \n{localFilePath}");
                     }
-
-                    if (!ftpSuccess)
+                    else
                     {
-                        logCallback("[ERROR] Failed to upload to FTP. Authentication or network failure.");
+                        // Upload to Main FTP Server
+                        string ftpHost = string.IsNullOrWhiteSpace(globalSettings.DefaultFtpServer) ? "192.168.200.177" : globalSettings.DefaultFtpServer;
+                        string ftpTargetUrl = $"ftp://{ftpHost}/toho/ANAHAW-BIR-EIS/{fileName}";
+
+                        logCallback($"\n[*] Uploading to Main FTP: {ftpTargetUrl}...");
+
+                        bool ftpSuccess = false;
+                        foreach (var user in _ftpUsers)
+                        {
+                            try
+                            {
+                                var creds = new System.Net.NetworkCredential(user, globalSettings.FtpPassword);
+                                UploadToFtp(ftpTargetUrl, localFilePath, creds);
+                                logCallback($"[+] Upload successful using FTP account: {user}");
+                                ftpSuccess = true;
+                                break;
+                            }
+                            catch { /* Silently fail and try next credential */ }
+                        }
+
+                        if (!ftpSuccess)
+                        {
+                            logCallback("[ERROR] Failed to upload to FTP. Authentication or network failure.");
+                        }
+                        else
+                        {
+                            if (File.Exists(localFilePath)) File.Delete(localFilePath);
+                        }
                     }
 
                     logCallback("\n✅ BIR-EIS SYNC PROCESS COMPLETED.");
@@ -133,6 +187,123 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
             });
         }
 
+        public async Task RunCrmPointsSyncAsync(AutoSyncModel config, Action<string> logCallback)
+        {
+            await Task.Run(() =>
+            {
+                try
+                {
+                    var globalSettings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
+
+                    string yyyy = config.TargetDate.ToString("yyyy");
+                    string yyyy_mm_dd = config.TargetDate.ToString("yyyy-MM-dd"); 
+                    string yyyymmdd = config.TargetDate.ToString("yyyyMMdd");
+                    string fileName = $"{config.StoreCode}_{yyyymmdd}_crm.csv";
+
+                    string remoteSourcePath = $"/opt/iPos/CRM/{yyyy}/{fileName}";
+                    string remoteDestDir = "/opt/purepos/crm/done";
+
+                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                    string sodPath = Path.Combine(desktopPath, "SOD_Output");
+                    if (!Directory.Exists(sodPath)) Directory.CreateDirectory(sodPath);
+                    string localFilePath = Path.Combine(sodPath, fileName);
+
+                    logCallback($"\n==================================================");
+                    logCallback($"           CRM POINTS AUTO SYNC INITIATED         ");
+                    logCallback($"==================================================");
+                    logCallback($"[*] Target File: {fileName}");
+
+                    logCallback($"\n[*] Connecting to CONSO SFTP ({config.LiveServerIp})...");
+                    using (var ssh = new Renci.SshNet.SshClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
+                    using (var sftp = new Renci.SshNet.SftpClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
+                    {
+                        ssh.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
+                        sftp.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
+                        ssh.Connect();
+                        sftp.Connect();
+                        if (!sftp.Exists(remoteSourcePath))
+                        {
+                            logCallback($"[!] Target file not found on CONSO: {remoteSourcePath}");
+                            logCallback($"[*] Attempting to manually trigger CRM generation script via HTTP POST for {yyyy_mm_dd}...");
+
+                            string genCommand = $"curl -s -d \"date={yyyy_mm_dd}&ajax=true\" -X POST http://{config.LiveServerIp}/purepos_conso/reads/generate_crm_points";
+
+                            var genCmdResult = ssh.RunCommand(genCommand);
+                            System.Threading.Thread.Sleep(3000); 
+
+                            if (sftp.Exists(remoteSourcePath))
+                            {
+                                logCallback($"[+] Successfully generated missing CRM CSV from CONSO web server!");
+                            }
+                            else
+                            {
+                                logCallback($"[ERROR] Auto-generation failed. File is still missing.");
+                                logCallback($"[DEBUG] cURL Output: {genCmdResult.Result}\n{genCmdResult.Error}");
+                                ssh.Disconnect();
+                                sftp.Disconnect();
+                                return;
+                            }
+                        }
+                        logCallback($"[+] File located. Downloading to Desktop/SOD_Output for debugging...");
+                        using (var fs = new FileStream(localFilePath, FileMode.Create))
+                        {
+                            sftp.DownloadFile(remoteSourcePath, fs);
+                        }
+                        logCallback($"[+] Download successful.");
+                        logCallback($"[*] Executing remote copy to {remoteDestDir}...");
+                        ssh.RunCommand($"mkdir -p {remoteDestDir}");
+                        var cmd = ssh.RunCommand($"cp {remoteSourcePath} {remoteDestDir}/");
+                        if (cmd.ExitStatus == 0)
+                            logCallback($"[+] Remote copy executed successfully.");
+                        else
+                            logCallback($"[WARNING] Remote copy failed: {cmd.Error}");
+
+                        ssh.Disconnect();
+                        sftp.Disconnect();
+                    }
+
+                    if (config.DebugMode)
+                    {
+                        logCallback($"\n[DEBUG MODE ACTIVE] Bypassing Main FTP Upload step.");
+                        logCallback($"[DEBUG] Review local CRM file at: \n{localFilePath}");
+                    }
+                    else
+                    {
+                        string ftpHost = string.IsNullOrWhiteSpace(globalSettings.DefaultFtpServer) ? "192.168.200.177" : globalSettings.DefaultFtpServer;
+                        string ftpTargetUrl = $"ftp://{ftpHost}/toho/CRM_DAILY_UPDATES_FROM_STORES/automated/{fileName}";
+
+                        logCallback($"\n[*] Uploading to Main FTP: {ftpTargetUrl}...");
+
+                        bool ftpSuccess = false;
+                        foreach (var user in _ftpUsers)
+                        {
+                            try
+                            {
+                                var creds = new System.Net.NetworkCredential(user, globalSettings.FtpPassword);
+                                UploadToFtp(ftpTargetUrl, localFilePath, creds);
+                                logCallback($"[+] Upload successful using FTP account: {user}");
+                                ftpSuccess = true;
+                                break;
+                            }
+                            catch { }
+                        }
+
+                        if (!ftpSuccess) logCallback("[ERROR] Failed to upload to FTP.");
+                        else
+                        {
+                            if (File.Exists(localFilePath)) File.Delete(localFilePath);
+                        }
+                    }
+
+                    logCallback("\n✅ CRM POINTS SYNC PROCESS COMPLETED.");
+                }
+                catch (Exception ex)
+                {
+                    logCallback($"\n[FATAL ERROR] {ex.Message}");
+                }
+            });
+        }
+        
         private void ProcessEisFileForBIR(string eisFilePath, string outputDir, Action<string> logCallback)
         {
             try
