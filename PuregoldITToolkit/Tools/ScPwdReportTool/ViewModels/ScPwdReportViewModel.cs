@@ -99,15 +99,16 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels
                 ReportChunkDays = ReportChunkDays <= 0 ? 3 : ReportChunkDays,
                 ReportUserId = ReportUserId?.Trim()
             };
-
             try
             {
                 var textProgress = new Progress<string>(msg => StatusMessage = msg);
                 var pctProgress = new Progress<int>(pct => ProgressValue = pct);
 
-                int recordsFound = await _service.GenerateReportsAsync(options, textProgress, pctProgress);
-                StatusMessage = $"Success! Found {recordsFound} receipts. Saved to Desktop/SC_PWD_Reports.";
+                await _service.GenerateReportsViaApiAsync(options, textProgress, pctProgress);
+
+                StatusMessage = $"Success! API execution completed. Check Desktop/SC_PWD_Reports.";
                 StatusColor = "#27AE60";
+                ProgressValue = 100;
             }
             catch (Exception ex)
             {

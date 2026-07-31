@@ -1,373 +1,152 @@
 ﻿using PuregoldITToolkit.Tools.ScPwdReportTool.Interfaces;
 using PuregoldITToolkit.Tools.ScPwdReportTool.Models;
-using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
-using WinSCP;
 
 namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
 {
     public class ScPwdReportService : IScPwdReportService
     {
-        private class ReportRow
-        {
-            public DateTime Date { get; set; }
-            public string Name { get; set; }
-            public string IdNo { get; set; }
-            public string Tin { get; set; }
-            public string Invoice { get; set; }
-            public decimal Sales { get; set; }
-            public decimal Vat { get; set; }
-            public decimal Exempt { get; set; }
-            public decimal Discount5 { get; set; }
-            public decimal NetSales { get; set; }
-            public string Terminal { get; set; }
-            public string SerialNumber { get; set; }
-            public string MinNumber { get; set; }
-            public string Cashier { get; set; }
-            public string Address { get; set; }
-            public string VatRegTin { get; set; }
-        }
-
-        private decimal ParseDecimal(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return 0;
-            input = input.Replace(",", "").Trim();
-            decimal.TryParse(input, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out decimal result);
-            return result;
-        }
-
-        private string ExtractTerminal(string block)
-        {
-            var match = Regex.Match(block, @"INVOICE#\s*\d{3}-(\d{3})-\d+");
-            if (match.Success) return match.Groups[1].Value;
-
-            match = Regex.Match(block, @"ST:\s*\d{3}\s*\|\s*Rg:\s*(\d{3})");
-            if (match.Success) return match.Groups[1].Value;
-
-            match = Regex.Match(block, @"Store\s*#:\s*\d{3}\s*/\s*Terminal\s*#:\s*(\d{3})");
-            if (match.Success) return match.Groups[1].Value;
-
-            match = Regex.Match(block, @"TERMINAL\s*#:\s*(\d{3})");
-            if (match.Success) return match.Groups[1].Value;
-
-            match = Regex.Match(block, @"(?:Trans(?:action)?|Tr)\s*#[:\s]*\d{3}(\d{3})\d+");
-            if (match.Success) return match.Groups[1].Value;
-
-            return "001"; // Fallback to 001 instead of 000
-        }
-
-        public async Task<int> GenerateReportsAsync(ScPwdReportOptions options, IProgress<string> textProgress, IProgress<int> pctProgress)
+        public async Task GenerateReportsViaApiAsync(ScPwdReportOptions options, IProgress<string> textProgress, IProgress<int> pctProgress)
         {
             string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             string outputDir = Path.Combine(desktopPath, "SC_PWD_Reports");
             Directory.CreateDirectory(outputDir);
 
-            string cacheRoot = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "EJ_Cache", options.StoreCode);
-            Directory.CreateDirectory(cacheRoot);
-
-            var scReports = new System.Collections.Concurrent.ConcurrentBag<ReportRow>();
-            var pwdReports = new System.Collections.Concurrent.ConcurrentBag<ReportRow>();
-            var metadataDict = new System.Collections.Concurrent.ConcurrentDictionary<string, ReportRow>();
-
-            await Task.Run(() =>
-            {
-                int totalDates = options.TargetDates.Count;
-                int currentDateIndex = 0;
-
-                foreach (var targetDate in options.TargetDates)
-                {
-                    string dateStr = targetDate.ToString("MMddyyyy");
-                    string dateCacheDir = Path.Combine(cacheRoot, dateStr);
-
-                    textProgress?.Report($"Scanning Date: {dateStr}...");
-
-                    if (!Directory.Exists(dateCacheDir) || !Directory.GetFiles(dateCacheDir, "*.txt", SearchOption.AllDirectories).Any())
-                    {
-                        Directory.CreateDirectory(dateCacheDir);
-                        bool success = DownloadFromPrimaryFtp(options, dateStr, dateCacheDir, textProgress);
-                        if (!success) DownloadFromFallbackSftp(options, dateStr, dateCacheDir, textProgress);
-                    }
-
-                    if (Directory.Exists(dateCacheDir))
-                    {
-                        textProgress?.Report($"  Parsing receipts for {dateStr}...");
-                        ParseReportFiles(dateCacheDir, options, scReports, pwdReports, metadataDict);
-                    }
-
-                    currentDateIndex++;
-                    pctProgress?.Report((int)((double)currentDateIndex / totalDates * 100));
-                }
-
-                if (options.GenerateScReport)
-                {
-                    textProgress?.Report("Generating SC Excel Reports...");
-                    ExportExcelReports(scReports.ToList(), "senior", options, outputDir);
-                }
-
-                if (options.GeneratePwdReport)
-                {
-                    textProgress?.Report("Generating PWD Excel Reports...");
-                    ExportExcelReports(pwdReports.ToList(), "pwd", options, outputDir);
-                }
-            });
-
-            return scReports.Count + pwdReports.Count;
-        }
-
-        private void ParseReportFiles(string sourceDir, ScPwdReportOptions options,
-            System.Collections.Concurrent.ConcurrentBag<ReportRow> scReports,
-            System.Collections.Concurrent.ConcurrentBag<ReportRow> pwdReports,
-            System.Collections.Concurrent.ConcurrentDictionary<string, ReportRow> metadataDict)
-        {
-            var txtFiles = Directory.GetFiles(sourceDir, "*.txt", SearchOption.AllDirectories);
-            if (txtFiles.Length == 0) return;
-
-            var sb = new StringBuilder();
-            foreach (var file in txtFiles) sb.AppendLine(File.ReadAllText(file, Encoding.UTF8));
-            string mergedContent = sb.ToString();
-
-            var blocks = Regex.Split(mergedContent, @"(?=Puregold Price Club|SECOND RECEIPT)", RegexOptions.IgnoreCase);
-
-            Parallel.ForEach(blocks, block =>
-            {
-                if (string.IsNullOrWhiteSpace(block)) return;
-                if (block.IndexOf("SECOND RECEIPT", StringComparison.OrdinalIgnoreCase) >= 0) return;
-
-                // Only extract metadata from actual Sales Invoices / X/Z Reports to avoid SC/PWD Summary duplicates
-                if (!Regex.IsMatch(block, @"(?i)INVOICE#|SALES INVOICE|Total Amt Due|TERMINAL|CASHIER")) return;
-
-                var meta = ExtractMetadata(block);
-                if (meta != null)
-                {
-                    string key = $"{meta.Terminal}_{meta.Date:yyyyMMdd}";
-                    metadataDict.TryAdd(key, meta);
-                }
-
-                bool isSc = Regex.IsMatch(block, @"(?i)OSCA\s*(?:ID\s*)?No:");
-                bool isPwd = Regex.IsMatch(block, @"(?i)PWD\s*(?:ID\s*)?No:");
-
-                if ((isSc && options.GenerateScReport) || (isPwd && options.GeneratePwdReport))
-                {
-                    var row = ParseReportRow(block, isSc);
-                    if (row != null)
-                    {
-                        if (isSc) scReports.Add(row);
-                        else pwdReports.Add(row);
-                    }
-                }
-            });
-        }
-
-        private ReportRow ExtractMetadata(string block)
-        {
-            var row = new ReportRow();
-            string dateRaw = Regex.Match(block, @"(?i)(?:Trans\.?\s*Date|Date(?:\s*and\s*Time)?|Printed(?:\s*On)?|Tr)\s*[:\s]*([0-9]{1,4}[-/][0-9]{1,2}[-/][0-9]{1,4})").Groups[1].Value;
-            if (DateTime.TryParse(dateRaw, out DateTime dt)) row.Date = dt; else return null;
-
-            row.Terminal = ExtractTerminal(block);
-            row.SerialNumber = Regex.Match(block, @"S/N:([A-Z0-9\-]+)").Groups[1].Value.Trim();
-            row.MinNumber = Regex.Match(block, @"MIN:(\d+)").Groups[1].Value.Trim();
-
-            var addressMatch = Regex.Match(block, @"Puregold Price Club, Inc\.?(.*?)(?:VAT REG TIN)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-            row.Address = addressMatch.Success ? Regex.Replace(addressMatch.Groups[1].Value, @"\s+", " ").Trim() : "SAVER'S BLDG. MAC ARTHUR HIGHWAY DOLORES CITY OF SAN FERNANDO";
-
-            var vatRegTinMatch = Regex.Match(block, @"(?i)VAT REG TIN[:\s]*([0-9\-]+)");
-            row.VatRegTin = vatRegTinMatch.Success ? vatRegTinMatch.Groups[1].Value.Trim() : "";
-
-            return row;
-        }
-
-        private ReportRow ParseReportRow(string block, bool isSc)
-        {
-            try
-            {
-                var row = new ReportRow();
-
-                string dateRaw = Regex.Match(block, @"(?i)(?:Trans\.?\s*Date|Date(?:\s*and\s*Time)?|Printed(?:\s*On)?|Tr)\s*[:\s]*([0-9]{1,4}[-/][0-9]{1,2}[-/][0-9]{1,4})").Groups[1].Value;
-                if (DateTime.TryParse(dateRaw, out DateTime dt)) row.Date = dt; else return null;
-
-                row.Terminal = ExtractTerminal(block);
-
-                var invoiceMatch = Regex.Match(block, @"INVOICE#\s*([\d\-]+)");
-                row.Invoice = invoiceMatch.Success ? invoiceMatch.Groups[1].Value.Trim() : "";
-
-                row.SerialNumber = Regex.Match(block, @"S/N:([A-Z0-9\-]+)").Groups[1].Value.Trim();
-                row.MinNumber = Regex.Match(block, @"MIN:(\d+)").Groups[1].Value.Trim();
-                row.Cashier = Regex.Match(block, @"(?i)Cashier:\s*([A-Z\s]+)").Groups[1].Value.Trim();
-
-                var salesMatch = Regex.Match(block, @"(?i)(?:SC|PWD) Items Amount:\s*([\d,\.]+)");
-                if (!salesMatch.Success) salesMatch = Regex.Match(block, @"(?i)Subtotal\s+([\d,\.]+)");
-                row.Sales = ParseDecimal(salesMatch.Groups[1].Value);
-
-                row.Vat = ParseDecimal(Regex.Match(block, @"(?i)VAT\s*\(12%\)\s+([\d,\.]+)").Groups[1].Value);
-                row.Exempt = ParseDecimal(Regex.Match(block, @"(?i)VAT Exempt Sale\s*\(E\)\s+([\d,\.]+)").Groups[1].Value);
-
-                var netMatch = Regex.Match(block, @"(?i)Total\s+Amt\s+Due\s+Php\s+([\d,\.]+)");
-                if (!netMatch.Success) netMatch = Regex.Match(block, @"(?i)Total\s+Php\s+([\d,\.]+)");
-                row.NetSales = ParseDecimal(netMatch.Groups[1].Value);
-
-                string discPattern = isSc ? @"(?i)SC Discount Applied:\s*([\d,\.]+)" : @"(?i)PWD Discount Applied:\s*([\d,\.]+)";
-                row.Discount5 = ParseDecimal(Regex.Match(block, discPattern).Groups[1].Value);
-
-                var nameMatch = Regex.Match(block, @"(?i)(?:Member\s+)?Name:\s*([^\n\r]+)");
-                row.Name = nameMatch.Success ? nameMatch.Groups[1].Value.Trim() : "";
-
-                //var tinMatch = Regex.Match(block, @"(?i)TIN:\s*([0-9\-]+)");
-                //row.Tin = tinMatch.Success ? tinMatch.Groups[1].Value.Trim() : "";
-                row.Tin =  "";
-
-                string idPattern = isSc ? @"(?i)OSCA\s*(?:ID\s*)?No:\s*([^\n\r]+)" : @"(?i)PWD\s*(?:ID\s*)?No:\s*([^\n\r]+)";
-                row.IdNo = Regex.Match(block, idPattern).Groups[1].Value.Trim();
-
-                var addressMatch = Regex.Match(block, @"Puregold Price Club, Inc\.?(.*?)(?:VAT REG TIN)", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-                row.Address = addressMatch.Success ? Regex.Replace(addressMatch.Groups[1].Value, @"\s+", " ").Trim() : "SAVER'S BLDG. MAC ARTHUR HIGHWAY DOLORES CITY OF SAN FERNANDO";
-
-                var vatRegTinMatch = Regex.Match(block, @"(?i)VAT REG TIN[:\s]*([0-9\-]+)");
-                row.VatRegTin = vatRegTinMatch.Success ? vatRegTinMatch.Groups[1].Value.Trim() : "";
-
-                return row;
-            }
-            catch { return null; }
-        }
-
-        private void ExportExcelReports(List<ReportRow> allRows, string typeName, ScPwdReportOptions options, string outputDir)
-        {
             List<string> terminals;
-
             if (options.MergeAllPos)
             {
-                // Force a single merged bucket
-                terminals = new List<string> { "ALL" };
-            }
-            else if (allRows != null && allRows.Any())
-            {
-                terminals = allRows.Select(r => r.Terminal).Distinct().OrderBy(t => t).ToList();
+                terminals = new List<string> { "0" };
             }
             else
             {
                 if (options.PosLanes != null && options.PosLanes.Any())
-                    terminals = options.PosLanes.Select(l => int.TryParse(l, out int num) ? num.ToString() : l).OrderBy(t => t).ToList();
+                {
+                    terminals = options.PosLanes
+                        .Select(l => int.TryParse(l, out int num) ? num.ToString() : l)
+                        .Distinct().OrderBy(t => t).ToList();
+                }
                 else
+                {
                     terminals = new List<string> { "1", "2", "3", "4", "5", "6" };
+                }
             }
 
             var requestedDates = options.TargetDates.Select(d => d.Date).Distinct().OrderBy(d => d).ToList();
             var dateChunks = ChunkBy(requestedDates, options.ReportChunkDays);
 
-            foreach (var term in terminals)
+            int totalOperations = terminals.Count * dateChunks.Count;
+            int currentOperation = 0;
+
+            var cookieContainer = new CookieContainer();
+            using (var handler = new HttpClientHandler { CookieContainer = cookieContainer })
+            using (var client = new HttpClient(handler))
             {
-                var termRows = options.MergeAllPos
-                    ? (allRows?.ToList() ?? new List<ReportRow>())
-                    : (allRows?.Where(r => r.Terminal == term).ToList() ?? new List<ReportRow>());
+                client.Timeout = TimeSpan.FromMinutes(10);
 
-                var metadataRow = termRows.FirstOrDefault() ?? allRows?.FirstOrDefault() ?? new ReportRow
+                foreach (var term in terminals)
                 {
-                    Terminal = term,
-                    Address = "SAVER'S BLDG. MAC ARTHUR HIGHWAY DOLORES CITY OF SAN FERNANDO",
-                    VatRegTin = "VAT REG TIN: 201-277-095-00135",
-                    SerialNumber = "UNKNOWN",
-                    MinNumber = "UNKNOWN"
-                };
+                    string displayTerm = (term == "0" && options.MergeAllPos) ? "ALL" : term.PadLeft(3, '0');
+                    string payloadTerm = term;
 
-                if (options.MergeAllPos) metadataRow.Terminal = "ALL";
+                    foreach (var chunk in dateChunks)
+                    {
+                        DateTime minDate = chunk.Min();
+                        DateTime maxDate = chunk.Max();
 
-                foreach (var chunk in dateChunks)
-                {
-                    DateTime minDate = chunk.Min();
-                    DateTime maxDate = chunk.Max();
+                        string apiDateRangeStr = $"{minDate:yyyy-MM-dd} to {maxDate:yyyy-MM-dd}";
+                        string fileDateRangeStr = $"{minDate:MMdd}-{maxDate:MMdd}";
 
-                    var chunkRows = termRows.Where(r => r.Date.Date >= minDate && r.Date.Date <= maxDate).OrderBy(r => r.Date).ToList();
+                        if (options.GenerateScReport)
+                        {
+                            textProgress?.Report($"[SC] Terminal {displayTerm}: Generating data for {apiDateRangeStr}...");
+                            bool success = await TriggerReportApi(client, options.LiveServerIp, "get_senior_reports", apiDateRangeStr, payloadTerm);
 
-                    string dateRangeStr = $"{minDate:MMdd}-{maxDate:MMdd}";
+                            if (success)
+                            {
+                                textProgress?.Report($"[SC] Terminal {displayTerm}: Downloading Excel...");
+                                string downloadUrl = $"http://{options.LiveServerIp}/purepos_conso/prints/senior_sales_excel/{displayTerm}";
 
-                    string fileName = $"{options.StoreCode}_{term}_{dateRangeStr}_{typeName}_report.xls";
-                    string filePath = Path.Combine(outputDir, fileName);
+                                string fileName = $"{options.StoreCode}_{displayTerm}_{fileDateRangeStr}_senior_report.xls";
+                                string filePath = Path.Combine(outputDir, fileName);
 
-                    GenerateHtmlExcelFile(chunkRows, metadataRow, typeName, options, filePath);
+                                await DownloadExcelFile(client, downloadUrl, filePath);
+                            }
+                            else
+                            {
+                                textProgress?.Report($"[SC ERROR] Terminal {displayTerm}: Failed to generate {apiDateRangeStr}.");
+                            }
+                        }
+
+                        if (options.GeneratePwdReport)
+                        {
+                            textProgress?.Report($"[PWD] Terminal {displayTerm}: Generating data for {apiDateRangeStr}...");
+                            bool success = await TriggerReportApi(client, options.LiveServerIp, "get_pwd_reports", apiDateRangeStr, payloadTerm);
+
+                            if (success)
+                            {
+                                textProgress?.Report($"[PWD] Terminal {displayTerm}: Downloading Excel...");
+                                string downloadUrl = $"http://{options.LiveServerIp}/purepos_conso/prints/pwd_sales_excel/{displayTerm}";
+
+                                string fileName = $"{options.StoreCode}_{displayTerm}_{fileDateRangeStr}_pwd_report.xls";
+                                string filePath = Path.Combine(outputDir, fileName);
+
+                                await DownloadExcelFile(client, downloadUrl, filePath);
+                            }
+                            else
+                            {
+                                textProgress?.Report($"[PWD ERROR] Terminal {displayTerm}: Failed to generate {apiDateRangeStr}.");
+                            }
+                        }
+
+                        currentOperation++;
+                        pctProgress?.Report((int)((double)currentOperation / totalOperations * 100));
+                    }
                 }
             }
         }
 
-        private void GenerateHtmlExcelFile(List<ReportRow> rows, ReportRow metadataRow, string typeName, ScPwdReportOptions options, string outputPath)
+        private async Task<bool> TriggerReportApi(HttpClient client, string ip, string endpoint, string dateRange, string terminalId)
         {
-            var html = new StringBuilder();
-
-            html.AppendLine("<html xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\" xmlns=\"http://www.w3.org/TR/REC-html40\">");
-            html.AppendLine("<head><meta charset=\"utf-8\">");
-            html.AppendLine("<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Report</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->");
-            html.AppendLine("<style>body, table, td, th { font-family: Calibri; font-size: 11pt; } table { border-collapse: collapse; } .b { font-weight: bold; } .c { text-align: center; vertical-align: middle; } .r { text-align: right; }</style>");
-            html.AppendLine("</head><body>");
-
-            string storeNameDisplay = string.IsNullOrWhiteSpace(options.StoreName) ? "PUREGOLD JR - SAN FERNANDO" : options.StoreName;
-            string terminalDisplay = int.TryParse(metadataRow.Terminal, out int termNum) ? termNum.ToString() : metadataRow.Terminal;
-            string userIdDisplay = string.IsNullOrWhiteSpace(options.ReportUserId) ? "87113" : options.ReportUserId;
-
-            html.AppendLine("<table cellpadding=\"0\" cellspacing=\"0\">");
-            html.AppendLine("<colgroup><col width=\"64\"/><col width=\"152\"/><col width=\"152\"/><col width=\"152\"/><col width=\"152\"/><col width=\"152\"/><col width=\"152\"/><col width=\"152\"/><col width=\"152\"/><col width=\"64\"/><col width=\"152\"/></colgroup>");
-
-            html.AppendLine("<tr><td colspan=\"11\" class=\"b\">PUREGOLD PRICE CLUB INC.</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">STORE CODE : {options.StoreCode} {storeNameDisplay}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">{metadataRow.Address}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">{metadataRow.VatRegTin}</td></tr>");
-            html.AppendLine("<tr><td colspan=\"11\" class=\"b\">PUREGOLD pos V.1.0.0</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">SERIAL# {metadataRow.SerialNumber}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">MIN# {metadataRow.MinNumber}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">Terminal# {terminalDisplay}</td></tr>");
-            html.AppendLine($"<tr><td colspan=\"11\" class=\"b\">DATE GENERATED : {DateTime.Now:MM/dd/yyyy HH:mm:ss} | USER : {userIdDisplay}</td></tr>");
-            html.AppendLine("<tr><td colspan=\"11\" style=\"height: 10px;\"></td></tr>");
-
-            string titleStyle = "font-family: Calibri; font-size: 16pt; font-weight: bold; border: .5pt solid black; text-align: center; vertical-align: middle;";
-            string title = typeName == "senior" ? "Senior Citizen Sales Book/Report" : "Persons with Disability Sales Book/Report";
-            html.AppendLine($"<tr><td colspan=\"11\" align=\"center\" valign=\"middle\" style=\"{titleStyle}\">{title}</td></tr>");
-
-            string baseHeaderStyle = "font-family: Calibri; font-size: 11pt; font-weight: bold; border: .5pt solid black; text-align: center; vertical-align: middle;";
-            string personType = typeName == "senior" ? "Senior Citizen (SC)" : "Person with Disability (PWD)";
-            string idType = typeName == "senior" ? "OSCA ID No./ SC ID No." : "PWD ID No.";
-            string tinType = typeName == "senior" ? "SC TIN" : "PWD TIN";
-
-            html.AppendLine("<tr>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #A5A5A5;\" rowspan=\"2\">Date</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #00FFFF;\" rowspan=\"2\">Name of {personType}</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\" rowspan=\"2\">{idType}</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #9999FF;\" rowspan=\"2\">{tinType}</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\" rowspan=\"2\">SI/OR Number</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #99FF99;\" rowspan=\"2\">Sales (inclusive of VAT)</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FF9933;\" rowspan=\"2\">VAT Amount</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #CCCCFF;\" rowspan=\"2\">VAT Exempt Sales</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\" colspan=\"2\">Discount</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #A5A5A5;\" rowspan=\"2\">Net Sales</td>");
-            html.AppendLine("</tr><tr>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\">5%</td>");
-            html.AppendLine($"<td align=\"center\" valign=\"middle\" style=\"{baseHeaderStyle} background-color: #FFFF00;\">20%</td>");
-            html.AppendLine("</tr>");
-
-            // If rows is empty, this loop simply doesn't execute, leaving a perfectly formatted empty table
-            foreach (var r in rows)
+            try
             {
-                html.AppendLine("<tr>");
-                html.AppendLine($"<td class=\"c\">{r.Date:MM/dd/yyyy}</td>");
-                html.AppendLine($"<td>{r.Name}</td>");
-                html.AppendLine($"<td class=\"c\" style=\"mso-number-format:'\\@'\">{r.IdNo}</td>");
-                html.AppendLine($"<td class=\"c\" style=\"mso-number-format:'\\@'\">{r.Tin}</td>");
-                html.AppendLine($"<td class=\"c\" style=\"mso-number-format:'\\@'\">{r.Invoice}</td>");
-                html.AppendLine($"<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">{r.Sales:F2}</td>");
-                html.AppendLine($"<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">{r.Vat:F2}</td>");
-                html.AppendLine($"<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">{r.Exempt:F2}</td>");
-                html.AppendLine($"<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">{r.Discount5:F2}</td>");
-                html.AppendLine("<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">0.00</td>");
-                html.AppendLine($"<td class=\"r\" style=\"mso-number-format:'#\\,##0.00'\">{r.NetSales:F2}</td>");
-                html.AppendLine("</tr>");
-            }
+                string url = $"http://{ip}/purepos_conso/prints/{endpoint}";
+                var content = new FormUrlEncodedContent(new[]
+                {
+                    new KeyValuePair<string, string>("date_range", dateRange),
+                    new KeyValuePair<string, string>("terminal_id", terminalId)
+                });
 
-            html.AppendLine("</table></body></html>");
-            File.WriteAllText(outputPath, html.ToString(), Encoding.UTF8);
+                var response = await client.PostAsync(url, content);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private async Task DownloadExcelFile(HttpClient client, string url, string destinationPath)
+        {
+            try
+            {
+                var response = await client.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+
+                using (var fs = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await response.Content.CopyToAsync(fs);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Download failed from {url}: {ex.Message}");
+            }
         }
 
         private List<List<T>> ChunkBy<T>(List<T> source, int chunkSize)
@@ -377,142 +156,6 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
             return source.Select((x, i) => new { Index = i, Value = x })
                          .GroupBy(x => x.Index / chunkSize)
                          .Select(x => x.Select(v => v.Value).ToList()).ToList();
-        }
-
-        private bool DownloadFromPrimaryFtp(ScPwdReportOptions options, string dateStr, string tempDir, IProgress<string> progress)
-        {
-            string ftpHost = "192.168.200.177";
-            using (Session session = new Session())
-            {
-                for (int i = 1; i <= 12; i++)
-                {
-                    try
-                    {
-                        session.Open(new SessionOptions { Protocol = Protocol.Ftp, HostName = ftpHost, UserName = $"ftp{i}@puregold", Password = "pw@1234" });
-                        var files = session.ListDirectory("/PUREPOS_EJRECEIPT/").Files;
-                        string targetFolder = files.FirstOrDefault(f => f.Name.StartsWith($"({options.StoreCode})"))?.Name;
-                        if (string.IsNullOrEmpty(targetFolder)) return false;
-
-                        string remoteZip = $"/PUREPOS_EJRECEIPT/{targetFolder}/{dateStr}_EJReceiptJournal.zip";
-                        if (session.FileExists(remoteZip))
-                        {
-                            progress?.Report($"  Found Primary ZIP: {dateStr}_EJReceiptJournal.zip");
-                            string localZip = Path.Combine(tempDir, "main.zip");
-                            session.GetFiles(remoteZip, localZip).Check();
-
-                            string innerDir = Path.Combine(tempDir, "Inner");
-                            Directory.CreateDirectory(innerDir);
-                            ExtractZipSafe(localZip, innerDir, progress);
-
-                            bool processedAny = false;
-                            var innerZips = Directory.GetFiles(innerDir, "*.zip", SearchOption.AllDirectories);
-                            foreach (var zip in innerZips)
-                            {
-                                ExtractZipSafe(zip, tempDir, progress);
-                                processedAny = true;
-                            }
-
-                            var txtFiles = Directory.GetFiles(innerDir, "*.txt", SearchOption.AllDirectories);
-                            foreach (var txt in txtFiles)
-                            {
-                                File.Copy(txt, Path.Combine(tempDir, Path.GetFileName(txt)), true);
-                                processedAny = true;
-                            }
-                            return processedAny;
-                        }
-                    }
-                    catch (Exception ex) { progress?.Report($"  Primary FTP Error: {ex.Message}"); }
-                }
-            }
-            return false;
-        }
-
-        private bool DownloadFromFallbackSftp(ScPwdReportOptions options, string dateStr, string tempDir, IProgress<string> progress)
-        {
-            try
-            {
-                var globalSettings = SettingsViewModel.GetCurrentSettings();
-                using (Session session = new Session())
-                {
-                    session.Open(new SessionOptions { Protocol = Protocol.Sftp, HostName = options.LiveServerIp, UserName = globalSettings.ConsoUser, Password = globalSettings.ConsoPassword, SshHostKeyPolicy = SshHostKeyPolicy.AcceptNew });
-
-                    string doneZipPath = $"/opt/purepos/ejreceipt/done/{dateStr}_EJReceiptJournal.zip";
-                    if (session.FileExists(doneZipPath))
-                    {
-                        progress?.Report($"  Found Consolidated ZIP: {doneZipPath}");
-                        string localZipPath = Path.Combine(tempDir, "merged_fallback.zip");
-                        session.GetFiles(doneZipPath, localZipPath).Check();
-
-                        string innerDir = Path.Combine(tempDir, "Inner");
-                        Directory.CreateDirectory(innerDir);
-                        ExtractZipSafe(localZipPath, innerDir, progress);
-
-                        bool processedAny = false;
-                        var innerZips = Directory.GetFiles(innerDir, "*.zip", SearchOption.AllDirectories);
-                        foreach (var zip in innerZips)
-                        {
-                            ExtractZipSafe(zip, tempDir, progress);
-                            processedAny = true;
-                        }
-
-                        var txtFiles = Directory.GetFiles(innerDir, "*.txt", SearchOption.AllDirectories);
-                        foreach (var txt in txtFiles)
-                        {
-                            File.Copy(txt, Path.Combine(tempDir, Path.GetFileName(txt)), true);
-                            processedAny = true;
-                        }
-                        if (processedAny) return true;
-                    }
-
-                    string targetFolder = $"/opt/purepos/ejreceipt/{dateStr}/";
-                    if (session.FileExists(targetFolder))
-                    {
-                        progress?.Report($"  Found Date Folder: {targetFolder}");
-                        var files = session.ListDirectory(targetFolder).Files.Where(f => !f.IsDirectory && (f.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) || f.Name.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)));
-
-                        bool processedAny = false;
-                        foreach (var file in files)
-                        {
-                            progress?.Report($"  Downloading POS File: {file.Name}");
-                            string localFilePath = Path.Combine(tempDir, file.Name);
-                            session.GetFiles(targetFolder + file.Name, localFilePath).Check();
-
-                            if (file.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-                            {
-                                ExtractZipSafe(localFilePath, tempDir, progress);
-                            }
-                            processedAny = true;
-                        }
-                        return processedAny;
-                    }
-                    progress?.Report($"  No folders or files found for {dateStr} in Fallback Server.");
-                }
-            }
-            catch (Exception ex) { progress?.Report($"  [Failed] Fallback Connection Error: {ex.Message}"); }
-            return false;
-        }
-
-        private void ExtractZipSafe(string zipPath, string extractPath, IProgress<string> progress = null)
-        {
-            try
-            {
-                using (ZipArchive archive = ZipFile.OpenRead(zipPath))
-                {
-                    foreach (ZipArchiveEntry entry in archive.Entries)
-                    {
-                        if (string.IsNullOrWhiteSpace(entry.Name)) continue;
-                        string destinationPath = Path.GetFullPath(Path.Combine(extractPath, entry.FullName));
-
-                        if (destinationPath.StartsWith(extractPath, StringComparison.Ordinal))
-                        {
-                            string targetDir = Path.GetDirectoryName(destinationPath);
-                            if (!Directory.Exists(targetDir)) Directory.CreateDirectory(targetDir);
-                            entry.ExtractToFile(destinationPath, true);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex) { progress?.Report($"  [Warning] Extractor: {ex.Message}"); }
         }
     }
 }

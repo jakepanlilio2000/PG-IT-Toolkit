@@ -6,6 +6,6 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Interfaces
 {
     public interface IScPwdReportService
     {
-        Task<int> GenerateReportsAsync(ScPwdReportOptions options, IProgress<string> textProgress, IProgress<int> pctProgress);
+        Task GenerateReportsViaApiAsync(ScPwdReportOptions options, IProgress<string> textProgress, IProgress<int> pctProgress);
     }
 }
