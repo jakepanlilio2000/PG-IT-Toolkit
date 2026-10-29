@@ -1,10 +1,13 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using PuregoldITToolkit.Core.Base;
+using PuregoldITToolkit.Services;
 using PuregoldITToolkit.Tools.FormsTool.Interfaces;
 using PuregoldITToolkit.Tools.FormsTool.Models;
-using PuregoldITToolkit.Tools.SettingsTool.ViewModels; // To access global settings helper
+using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -15,9 +18,6 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
     public class InfViewModel : ViewModelBase
     {
         private readonly IFormsExportService _exportService;
-
-        private readonly string DefaultToAddresses = "John Lee S. Caronan IT-HO <jscaronan@puregold.com.ph>, Jose Marie O. Gonzales IT-HO <jogonzales@puregold.com.ph>, Marc M. Del Rosario IT-HO <mmdelrosario@puregold.com.ph>, Felix Canada IT-PUREMART <felix.canada@puregold.intra>";
-        private readonly string DefaultCcAddresses = "Winston C. Dahan IT-HO <wcdahan@puregold.com.ph>, Mon Tongco Jr IT-HO <mtongcojr@puregold.com.ph>";
 
         public ObservableCollection<string> InfTypes { get; } = new ObservableCollection<string>
         {
@@ -46,8 +46,27 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
         private string _storeName;
         public string StoreName { get => _storeName; set { if (SetProperty(ref _storeName, value)) UpdatePreview(); } }
 
+        // Distribution list properties
+        private string _toAddresses = "John Lee S. Caronan IT-HO <jscaronan@puregold.com.ph>, Jose Marie O. Gonzales IT-HO <jogonzales@puregold.com.ph>, Marc M. Del Rosario IT-HO <mmdelrosario@puregold.com.ph>, Felix Canada IT-PUREMART <felix.canada@puregold.intra>";
+        public string ToAddresses
+        {
+            get => _toAddresses;
+            set { if (SetProperty(ref _toAddresses, PuregoldITToolkit.Tools.SettingsTool.Models.SettingsModel.RemoveRetiredContact(value))) UpdatePreview(); }
+        }
+
+        private string _ccAddresses = "Winston C. Dahan IT-HO <wcdahan@puregold.com.ph>, Mon Tongco Jr IT-HO <mtongcojr@puregold.com.ph>";
+        public string CcAddresses
+        {
+            get => _ccAddresses;
+            set { if (SetProperty(ref _ccAddresses, PuregoldITToolkit.Tools.SettingsTool.Models.SettingsModel.RemoveRetiredContact(value))) UpdatePreview(); }
+        }
+
         private string _additionalCc;
-        public string AdditionalCc { get => _additionalCc; set { if (SetProperty(ref _additionalCc, value)) UpdatePreview(); } }
+        public string AdditionalCc { get => _additionalCc; set { if (SetProperty(ref _additionalCc, PuregoldITToolkit.Tools.SettingsTool.Models.SettingsModel.RemoveRetiredContact(value))) UpdatePreview(); } }
+
+        public string FullCc => string.IsNullOrWhiteSpace(AdditionalCc)
+            ? CcAddresses
+            : (string.IsNullOrWhiteSpace(CcAddresses) ? AdditionalCc : $"{CcAddresses}, {AdditionalCc}");
 
         public bool IsType4Apar => SelectedInfType != null && SelectedInfType.Contains("APAR");
         public bool IsPromoLocked => SelectedInfType != null && SelectedInfType.Contains("(Promo)");
@@ -55,10 +74,15 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
         public InfEntryModel CurrentEntry { get; } = new InfEntryModel();
         public ObservableCollection<InfEntryModel> InfTable { get; } = new ObservableCollection<InfEntryModel>();
         public ObservableCollection<string> ScreenshotPaths { get; } = new ObservableCollection<string>();
+        public ObservableCollection<string> CustomColumns { get; } = new ObservableCollection<string>();
+        private string _newColumnName;
+        public string NewColumnName { get => _newColumnName; set => SetProperty(ref _newColumnName, value); }
+        public ICommand AddColumnCommand { get; }
+        public ICommand RemoveColumnCommand { get; }
 
         // Preview Properties
-        public string InfPreviewTo => DefaultToAddresses;
-        public string InfPreviewCc => string.IsNullOrWhiteSpace(AdditionalCc) ? DefaultCcAddresses : $"{DefaultCcAddresses}, {AdditionalCc}";
+        public string InfPreviewTo => ToAddresses;
+        public string InfPreviewCc => FullCc;
         public string InfPreviewSubject { get; private set; }
         public string InfPreviewBody { get; private set; }
 
@@ -74,23 +98,57 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
         public InfViewModel(IFormsExportService exportService)
         {
             _exportService = exportService;
+            AddColumnCommand = new RelayCommand(AddColumn);
+            RemoveColumnCommand = new RelayCommand<string>(RemoveColumn);
             SelectedInfType = InfTypes[0];
 
             AddToTableCommand = new RelayCommand(AddEntry);
             RemoveItemCommand = new RelayCommand<InfEntryModel>(RemoveEntry);
-
             AddScreenshotCommand = new RelayCommand(AddScreenshot);
             RemoveScreenshotCommand = new RelayCommand<string>(RemoveScreenshot);
 
             ExportCommand = new AsyncRelayCommand(ExportDataAsync, () => InfTable.Count > 0);
+
+            // Populate defaults from centralized Settings
+            var globalSettings = SettingsViewModel.GetCurrentSettings();
+            if (!string.IsNullOrWhiteSpace(globalSettings.InfDefaultToEmails))
+                ToAddresses = globalSettings.InfDefaultToEmails;
+            if (!string.IsNullOrWhiteSpace(globalSettings.InfDefaultCcEmails))
+                CcAddresses = globalSettings.InfDefaultCcEmails;
+            if (!string.IsNullOrWhiteSpace(globalSettings.StoreName))
+                StoreName = globalSettings.StoreName;
+            if (!string.IsNullOrWhiteSpace(globalSettings.StoreCode))
+                CurrentEntry.StoreCode = globalSettings.StoreCode;
 
             CurrentEntry.PropertyChanged += (s, e) =>
             {
                 if (e.PropertyName == nameof(InfEntryModel.StoreCode)) UpdatePreview();
             };
 
-            InfTable.CollectionChanged += (s, e) => UpdatePreview();
+            InfTable.CollectionChanged += (s, e) =>
+            {
+                if (e.OldItems != null) foreach (InfEntryModel entry in e.OldItems) TrackEntry(entry, false);
+                if (e.NewItems != null) foreach (InfEntryModel entry in e.NewItems) TrackEntry(entry, true);
+                UpdatePreview();
+                ((AsyncRelayCommand)ExportCommand).NotifyCanExecuteChanged();
+            };
+
             ScreenshotPaths.CollectionChanged += (s, e) => UpdatePreview();
+            UpdatePreview();
+        }
+
+        private void TrackEntry(InfEntryModel entry, bool subscribe)
+        {
+            if (subscribe) { entry.PropertyChanged += EntryChanged; entry.CustomFields.CollectionChanged += CustomFieldsChanged; }
+            else { entry.PropertyChanged -= EntryChanged; entry.CustomFields.CollectionChanged -= CustomFieldsChanged; }
+            foreach (var field in entry.CustomFields)
+                if (subscribe) field.PropertyChanged += EntryChanged; else field.PropertyChanged -= EntryChanged;
+        }
+        private void EntryChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) { UpdatePreview(); }
+        private void CustomFieldsChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (e.OldItems != null) foreach (InfCustomField field in e.OldItems) field.PropertyChanged -= EntryChanged;
+            if (e.NewItems != null) foreach (InfCustomField field in e.NewItems) field.PropertyChanged += EntryChanged;
             UpdatePreview();
         }
 
@@ -102,7 +160,18 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
             string cleanType = Regex.Replace(SelectedInfType ?? "", @"^\d+\.\s*", "");
 
             InfPreviewSubject = $"Item Not Found: {storeCode}-{storeName} Purepos";
-            InfPreviewBody = $"Masayang araw po,\n\nMakikisuyo po sana INF Concern for {storeCode} - {storeName}\n\nConcern (UNMATCH / INF):  {cleanType}\n\n[Plain HTML Table Auto-Generated Here]\n\n[ {ScreenshotPaths.Count} Image(s) Attached Inline (Width 500) ]\n\n[HTML Signature attached internally]";
+            var body = new System.Text.StringBuilder();
+            body.AppendLine($"Masayang araw po,\n\nMakikisuyo po sana INF Concern for {storeCode} - {storeName}");
+            body.AppendLine($"\nConcern: {cleanType}\n");
+            foreach (var entry in InfTable)
+            {
+                body.AppendLine($"SKU: {entry.Sku} | UPC: {entry.Upc} | {entry.Description}");
+                body.AppendLine($"PurePOS: {entry.PurePosPrice} | MMS: {entry.MmsPrice} | Promo: {entry.IsPromo}");
+                foreach (var field in entry.CustomFields) body.AppendLine($"{field.Name}: {field.Value}");
+                body.AppendLine();
+            }
+            body.AppendLine($"{InfTable.Count} item(s) · {ScreenshotPaths.Count} supporting image(s)");
+            InfPreviewBody = body.ToString();
 
             OnPropertyChanged(nameof(InfPreviewTo));
             OnPropertyChanged(nameof(InfPreviewCc));
@@ -131,7 +200,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
                 return;
             }
 
-            InfTable.Add(new InfEntryModel
+            var entry = new InfEntryModel
             {
                 StoreCode = CurrentEntry.StoreCode,
                 Sku = CurrentEntry.Sku,
@@ -141,12 +210,43 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
                 MmsPrice = CurrentEntry.MmsPrice,
                 Description = CurrentEntry.Description,
                 IsPromo = CurrentEntry.IsPromo
-            });
+            };
+            foreach (var field in CurrentEntry.CustomFields)
+                entry.CustomFields.Add(new InfCustomField { Name = field.Name, Value = field.Value });
+            InfTable.Add(entry);
 
             CurrentEntry.Clear();
             EvaluatePromoLock();
-            StatusMessage = "Item added to list.";
-            ((AsyncRelayCommand)ExportCommand).NotifyCanExecuteChanged();
+            StatusMessage = $"Added item to list ({InfTable.Count} item(s) total).";
+        }
+
+        private void AddColumn()
+        {
+            string name = NewColumnName?.Trim();
+            string[] standard = { "Store", "Store Code", "SKU", "Reg. SKU", "Generated SKU", "UPC", "PurePOS Price", "MMS Price", "Description", "Is Promo?", "Action" };
+            if (string.IsNullOrWhiteSpace(name) || name.Length > 60 || name.Any(char.IsControl) ||
+                CustomColumns.Concat(standard).Any(c => string.Equals(c, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                StatusMessage = "Use a unique column name (1–60 characters).";
+                return;
+            }
+            CurrentEntry.CustomFields.Add(new InfCustomField { Name = name });
+            foreach (var entry in InfTable) entry.CustomFields.Add(new InfCustomField { Name = name });
+            CustomColumns.Add(name);
+            NewColumnName = string.Empty;
+            StatusMessage = $"Added column: {name}. It will be included in the email.";
+            UpdatePreview();
+        }
+
+        private void RemoveColumn(string name)
+        {
+            int index = CustomColumns.IndexOf(name);
+            if (index < 0) return;
+            CurrentEntry.CustomFields.RemoveAt(index);
+            foreach (var entry in InfTable) entry.CustomFields.RemoveAt(index);
+            CustomColumns.RemoveAt(index);
+            StatusMessage = $"Removed column: {name}.";
+            UpdatePreview();
         }
 
         private void RemoveEntry(InfEntryModel item)
@@ -154,7 +254,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
             if (item != null)
             {
                 InfTable.Remove(item);
-                ((AsyncRelayCommand)ExportCommand).NotifyCanExecuteChanged();
+                StatusMessage = $"Removed item. ({InfTable.Count} remaining).";
             }
         }
 
@@ -185,12 +285,22 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
             var globalSettings = SettingsViewModel.GetCurrentSettings();
             string sig = globalSettings.SignatureHtml ?? string.Empty;
 
-            string storeCode = InfTable.FirstOrDefault()?.StoreCode ?? "UNKNOWN";
+            string storeCode = InfTable.FirstOrDefault()?.StoreCode ?? CurrentEntry.StoreCode ?? "UNKNOWN";
             string storeName = string.IsNullOrWhiteSpace(StoreName) ? "UNKNOWN" : StoreName.Trim();
 
             bool success = await _exportService.ExportInfToEmailAsync(InfTable, SelectedInfType, storeCode, storeName, InfPreviewTo, InfPreviewCc, sig, ScreenshotPaths);
 
-            StatusMessage = success ? "Success! Thunderbird draft opened." : "Error drafting email.";
+            if (success)
+            {
+                StatusMessage = "Success! Email draft generated and opened in default email client.";
+                LoggingService.Instance.LogSuccess($"Drafted INF email for Store {storeCode} ({InfTable.Count} items)");
+            }
+            else
+            {
+                StatusMessage = "Error drafting INF email.";
+                LoggingService.Instance.LogError($"Failed to draft INF email for Store {storeCode}");
+            }
         }
+
     }
 }

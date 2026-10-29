@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="PuregoldITToolkit.Tools.FormsTool.Views.InfView"
+<UserControl x:Class="PuregoldITToolkit.Tools.FormsTool.Views.InfView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -9,12 +9,14 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
             <Setter Property="Margin" Value="0,0,0,5"/>
+            <Setter Property="FontSize" Value="12"/>
         </Style>
 
         <Style x:Key="TbHeaderLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="#666666"/>
-            <Setter Property="Width" Value="60"/>
+            <Setter Property="Width" Value="70"/>
             <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
         <Style x:Key="TbHeaderValue" TargetType="TextBlock">
@@ -31,58 +33,68 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="INF Email Drafter" FontWeight="Bold" FontSize="18" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Padding="15,12" Margin="0,0,0,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="INF · Item not found" FontWeight="Bold" FontSize="18" Foreground="{StaticResource BrandPrimary}"/>
+                    <TextBlock Text="Prepare an email for items with missing or incorrect prices." Foreground="{StaticResource TextSecondary}" FontSize="12" Margin="0,3,0,0"/>
+                </StackPanel>
+
+            </Grid>
+        </Border>
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,10,0">
             <StackPanel>
 
-                <!-- 0. INSTRUCTIONS (Added to match other forms) -->
-                <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,15">
-                    <StackPanel>
-                        <TextBlock Text="Instructions:" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,8"/>
-                        <TextBlock Text="1. Enter the Store Name. Standard HO routing is applied automatically.&#x0a;2. Paste your Store Officers, Managers, MDSG, and Customer Service emails into the Additional CC box.&#x0a;3. Select the INF form type, input item details, attach screenshots, and click Draft Email." TextWrapping="Wrap" Foreground="{StaticResource TextPrimary}" LineHeight="20" Margin="0,0,0,12"/>
+                <TextBlock Text="Add the items, any extra columns, and screenshots, then prepare the email." TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,14"/>
 
-                        <TextBlock Text="Additional CC Format Example (Separate with commas or new lines):" FontWeight="SemiBold" Foreground="{StaticResource BrandPrimaryDark}" FontSize="12" Margin="0,0,0,4"/>
-                        <TextBlock Foreground="{StaticResource TextSecondary}" FontStyle="Italic" FontSize="11" LineHeight="16" TextWrapping="Wrap">
-                            <Run Text="Francis Pio Emmanuel Y. Pena &lt;fypena@puregold.intra&gt; (Store Officer),&#x0a;"/>
-                            <Run Text="MDSG-SAN FERNANDO JR. &lt;mdsgsnfernando@puregold.intra&gt; (Concerned Dept.),&#x0a;"/>
-                            <Run Text="Customer Service - SAN FERNANDO &lt;cssf@puregold.intra&gt;,&#x0a;"/>
-                            <Run Text="Gener G. Paguio &lt;ggpaguio@puregold.intra&gt; (Store Manager)"/>
-                        </TextBlock>
-                    </StackPanel>
-                </Border>
-
-                <!-- 1. Store Context -->
-                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,15">
+                <!-- 1. Store Context & Distribution Routing -->
+                <Expander Header="Store &amp; email recipients" Background="{StaticResource BgCard}" Padding="14" Margin="0,0,0,15" BorderBrush="{StaticResource BorderLight}" BorderThickness="1">
                     <StackPanel>
-                        <TextBlock Text="1. Store Context &amp; Routing" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
-                        <WrapPanel>
-                            <StackPanel Margin="0,0,20,0" Width="200">
+                        <TextBlock Text="Store and recipients" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
+
+                        <WrapPanel Margin="0,0,0,12">
+                            <StackPanel Margin="0,0,20,0" Width="220">
                                 <TextBlock Text="Store Name" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding StoreName, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
+                        </WrapPanel>
 
-                            <!-- Updated to Multi-line TextBox for easy pasting -->
-                            <StackPanel Width="400">
-                                <TextBlock Text="Additional CC (Optional)" Style="{StaticResource FormLabel}"/>
-                                <TextBox Text="{Binding AdditionalCc, UpdateSourceTrigger=PropertyChanged}" Height="75" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                        <StackPanel Margin="0,0,0,12">
+                            <TextBlock Text="To" Style="{StaticResource FormLabel}"/>
+                            <TextBox Text="{Binding ToAddresses, UpdateSourceTrigger=PropertyChanged}" Height="45" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+                        </StackPanel>
+
+                        <WrapPanel>
+                            <StackPanel Margin="0,0,20,0" Width="380">
+                                <TextBlock Text="Cc" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding CcAddresses, UpdateSourceTrigger=PropertyChanged}" Height="55" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                            </StackPanel>
+                            <StackPanel Width="380">
+                                <TextBlock Text="Additional Cc" Style="{StaticResource FormLabel}"/>
+                                <TextBox Text="{Binding AdditionalCc, UpdateSourceTrigger=PropertyChanged}" Height="55" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
                             </StackPanel>
                         </WrapPanel>
                     </StackPanel>
-                </Border>
+                </Expander>
 
                 <!-- 2. Item Entry -->
-                <Border Style="{StaticResource CardStyle}" Margin="0,0,0,15">
+                <Border Style="{StaticResource CardStyle}">
                     <StackPanel>
-                        <TextBlock Text="2. Item Data Entry" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
+                        <TextBlock Text="Items" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,15"/>
 
                         <WrapPanel Margin="0,0,0,20">
                             <TextBlock Text="INF Form Type:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{StaticResource TextPrimary}"/>
-                            <ComboBox ItemsSource="{Binding InfTypes}" SelectedItem="{Binding SelectedInfType}" Width="320" Height="34" Padding="5"/>
+                            <ComboBox ItemsSource="{Binding InfTypes}" SelectedItem="{Binding SelectedInfType}" Width="350" Height="34" Padding="5"/>
                         </WrapPanel>
 
                         <WrapPanel>
-                            <StackPanel Margin="0,0,15,12" Width="80">
+                            <StackPanel Margin="0,0,15,12" Width="90">
                                 <TextBlock Text="Store Code *" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding CurrentEntry.StoreCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold"/>
                             </StackPanel>
@@ -90,7 +102,7 @@
                                 <TextBlock Text="Reg. SKU *" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding CurrentEntry.Sku, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
-                            <StackPanel Margin="0,0,15,12" Width="130" Visibility="{Binding IsType4Apar, Converter={StaticResource BoolToVis}}">
+                            <StackPanel Margin="0,0,15,12" Width="140" Visibility="{Binding IsType4Apar, Converter={StaticResource BoolToVis}}">
                                 <TextBlock Text="Gen. SKU (APAR) *" Style="{StaticResource FormLabel}" Foreground="{StaticResource BrandPrimary}"/>
                                 <TextBox Text="{Binding CurrentEntry.GeneratedSku, UpdateSourceTrigger=PropertyChanged}" BorderBrush="{StaticResource BrandPrimary}"/>
                             </StackPanel>
@@ -106,7 +118,7 @@
                                 <TextBlock Text="MMS Price" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding CurrentEntry.MmsPrice, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
-                            <StackPanel Margin="0,0,15,12" Width="210">
+                            <StackPanel Margin="0,0,15,12" Width="220">
                                 <TextBlock Text="Description" Style="{StaticResource FormLabel}"/>
                                 <TextBox Text="{Binding CurrentEntry.Description, UpdateSourceTrigger=PropertyChanged}"/>
                             </StackPanel>
@@ -116,19 +128,43 @@
                             </StackPanel>
                         </WrapPanel>
 
-                        <Button Command="{Binding AddToTableCommand}" Content="+ ADD ITEM TO TABLE" Style="{StaticResource DangerButton}" Padding="20,10" HorizontalAlignment="Left" Margin="0,10,0,0"/>
+                        <Border Background="{StaticResource BgApp}" Padding="12" CornerRadius="6" Margin="0,10,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Custom columns" Style="{StaticResource FormLabel}"/>
+                                <WrapPanel Margin="0,0,0,10">
+                                    <TextBox Text="{Binding NewColumnName, UpdateSourceTrigger=PropertyChanged}" Width="220" Margin="0,0,8,0" ToolTip="Column name, e.g. Remarks, Supplier, or Ticket reference"/>
+                                    <Button Content="+ Add column" Command="{Binding AddColumnCommand}" Style="{StaticResource ActionButton}" Padding="12,6"/>
+                                </WrapPanel>
+                                <ItemsControl ItemsSource="{Binding CurrentEntry.CustomFields}">
+                                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Width="220" Margin="0,0,12,10">
+                                                <DockPanel>
+                                                    <Button DockPanel.Dock="Right" Content="Remove" Command="{Binding DataContext.RemoveColumnCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding Name}" Padding="5,2" Margin="6,0,0,4"/>
+                                                    <TextBlock Text="{Binding Name}" Style="{StaticResource FormLabel}" TextTrimming="CharacterEllipsis"/>
+                                                </DockPanel>
+                                                <TextBox Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Command="{Binding AddToTableCommand}" Content="+ ADD ITEM TO TABLE" Style="{StaticResource ActionButton}" Padding="20,10" HorizontalAlignment="Left" Margin="0,10,0,0"/>
                     </StackPanel>
                 </Border>
 
                 <!-- Data Table -->
                 <Border BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource BgCard}" Margin="0,0,0,15" MinHeight="150" MaxHeight="250">
-                    <DataGrid ItemsSource="{Binding InfTable}" AutoGenerateColumns="False" CanUserAddRows="False" 
+                    <DataGrid x:Name="ItemsTable" ItemsSource="{Binding InfTable}" AutoGenerateColumns="False" CanUserAddRows="False" MinColumnWidth="75"
                               HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}"
                               BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}" VerticalScrollBarVisibility="Auto">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="Store" Binding="{Binding StoreCode}" FontWeight="Bold" Width="70"/>
-                            <DataGridTextColumn Header="Reg. SKU" Binding="{Binding Sku}" Width="110"/>
-                            <DataGridTextColumn Header="Generated SKU (APAR)" Binding="{Binding GeneratedSku}" Width="150">
+                            <DataGridTextColumn Header="Store" Binding="{Binding StoreCode, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold" Width="70"/>
+                            <DataGridTextColumn Header="Reg. SKU" Binding="{Binding Sku, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+                            <DataGridTextColumn x:Name="GeneratedSkuColumn" Header="Generated SKU (APAR)" Binding="{Binding GeneratedSku, UpdateSourceTrigger=PropertyChanged}" Width="150">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -140,11 +176,11 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
-                            <DataGridTextColumn Header="UPC" Binding="{Binding Upc}" Width="140"/>
-                            <DataGridTextColumn Header="PurePos Price" Binding="{Binding PurePosPrice}" Width="110"/>
-                            <DataGridTextColumn Header="MMS Price" Binding="{Binding MmsPrice}" Width="110"/>
-                            <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*"/>
-                            <DataGridTextColumn Header="Is Promo?" Binding="{Binding IsPromo}" Width="80"/>
+                            <DataGridTextColumn Header="UPC" Binding="{Binding Upc, UpdateSourceTrigger=PropertyChanged}" Width="140"/>
+                            <DataGridTextColumn Header="PurePos Price" Binding="{Binding PurePosPrice, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+                            <DataGridTextColumn Header="MMS Price" Binding="{Binding MmsPrice, UpdateSourceTrigger=PropertyChanged}" Width="110"/>
+                            <DataGridTextColumn Header="Description" Binding="{Binding Description, UpdateSourceTrigger=PropertyChanged}" Width="180"/>
+                            <DataGridTextColumn Header="Is Promo?" Binding="{Binding IsPromo, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
                             <DataGridTemplateColumn Header="Action" Width="70">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -159,10 +195,10 @@
                 <!-- 3. Screenshots -->
                 <Border Background="{StaticResource BgHighlight}" BorderBrush="{StaticResource BorderFocus}" BorderThickness="1" CornerRadius="6" Padding="15" Margin="0,0,0,20">
                     <StackPanel>
-                        <TextBlock Text="3. Supporting Screenshots (Optional)" FontWeight="Bold" FontSize="13" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,10"/>
+                        <TextBlock Text="Screenshots (optional)" FontWeight="Bold" FontSize="13" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,10"/>
                         <TextBlock Text="Selected images will be embedded inline at the bottom of the email." FontSize="11" FontStyle="Italic" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,15"/>
 
-                        <Button Command="{Binding AddScreenshotCommand}" Content="BROWSE IMAGES..." Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" BorderThickness="0" Padding="15,8" HorizontalAlignment="Left" Margin="0,0,0,10" Cursor="Hand"/>
+                        <Button Command="{Binding AddScreenshotCommand}" Content="📷 BROWSE IMAGES..." Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" BorderThickness="0" Padding="15,8" HorizontalAlignment="Left" Margin="0,0,0,10" Cursor="Hand"/>
                         <ItemsControl ItemsSource="{Binding ScreenshotPaths}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -177,9 +213,10 @@
                 </Border>
 
                 <!-- Live Preview -->
-                <Border Background="#F3F3F3" BorderBrush="#CCCCCC" BorderThickness="1" CornerRadius="4">
+                <Border Background="#F8FAFC" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Margin="0,0,0,15">
                     <Grid>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -187,9 +224,9 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Text="Live Email Details Preview" Background="{StaticResource BrandPrimary}" Foreground="#FFFFFF" FontWeight="Bold" Padding="12,6" Margin="0,0,0,10"/>
+                        <TextBlock Grid.Row="0" Text="Email preview" Background="{StaticResource BrandPrimaryDark}" Foreground="#FFFFFF" FontWeight="Bold" Padding="12,8"/>
 
-                        <Grid Grid.Row="1" Margin="12,0,12,0">
+                        <Grid Grid.Row="2" Margin="12,2,12,2">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -198,7 +235,7 @@
                             <TextBlock Grid.Column="1" Text="{Binding InfPreviewTo}" Style="{StaticResource TbHeaderValue}" Foreground="#00529B"/>
                         </Grid>
 
-                        <Grid Grid.Row="2" Margin="12,0,12,4">
+                        <Grid Grid.Row="3" Margin="12,2,12,4">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -207,7 +244,7 @@
                             <TextBlock Grid.Column="1" Text="{Binding InfPreviewCc}" Style="{StaticResource TbHeaderValue}" Foreground="#00529B"/>
                         </Grid>
 
-                        <Grid Grid.Row="3" Margin="12,0,12,8">
+                        <Grid Grid.Row="4" Margin="12,2,12,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -216,17 +253,22 @@
                             <TextBlock Grid.Column="1" Text="{Binding InfPreviewSubject}" Style="{StaticResource TbHeaderValue}" FontWeight="Bold"/>
                         </Grid>
 
-                        <TextBox Grid.Row="4" Text="{Binding InfPreviewBody, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Background="#FFFFFF" Foreground="#000000" FontFamily="Calibri, Arial" FontSize="14" Padding="12" BorderBrush="#CCCCCC" BorderThickness="0,1,0,0" MinHeight="150"/>
+                        <TextBox Grid.Row="5" Text="{Binding InfPreviewBody, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True" Background="#FFFFFF" Foreground="#000000" FontFamily="Consolas, Calibri" FontSize="13" Padding="12" BorderBrush="{StaticResource BorderLight}" BorderThickness="0,1,0,0" MinHeight="140"/>
                     </Grid>
                 </Border>
 
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Execution -->
-        <Grid Grid.Row="2" Margin="0,15,0,0">
-            <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" VerticalAlignment="Center"/>
-            <Button Command="{Binding ExportCommand}" Content="📝 DRAFT INF EMAIL" FontSize="14" Style="{StaticResource DangerButton}" Padding="30,15" HorizontalAlignment="Right"/>
-        </Grid>
+        <!-- Execution Footer -->
+        <Border Grid.Row="2" Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderLight}" BorderThickness="0,1,0,0" Padding="15,10" Margin="-15,10,-15,-15">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock TextWrapping="Wrap" Margin="0,0,15,0" Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontWeight="Bold" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Command="{Binding ExportCommand}" Content="DRAFT INF EMAIL" FontSize="13" Style="{StaticResource SuccessButton}" Padding="25,12"/>
+                </StackPanel>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

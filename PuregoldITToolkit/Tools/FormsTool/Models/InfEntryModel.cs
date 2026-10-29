@@ -1,9 +1,12 @@
-﻿using PuregoldITToolkit.Core.Base;
+using PuregoldITToolkit.Core.Base;
+
+using System.Collections.ObjectModel;
 
 namespace PuregoldITToolkit.Tools.FormsTool.Models
 {
     public class InfEntryModel : ViewModelBase
     {
+        public ObservableCollection<InfCustomField> CustomFields { get; } = new ObservableCollection<InfCustomField>();
         private string _storeCode;
         private string _sku;
         private string _generatedSku;
@@ -31,7 +34,15 @@ namespace PuregoldITToolkit.Tools.FormsTool.Models
             PurePosPrice = string.Empty;
             MmsPrice = string.Empty;
             Description = string.Empty;
+            foreach (var field in CustomFields) field.Value = string.Empty;
             // IsPromo is managed by the ViewModel based on the Type
         }
+    }
+
+    public class InfCustomField : ViewModelBase
+    {
+        public string Name { get; set; }
+        private string _value;
+        public string Value { get => _value; set => SetProperty(ref _value, value); }
     }
 }

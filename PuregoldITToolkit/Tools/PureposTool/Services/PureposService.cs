@@ -1,4 +1,4 @@
-﻿using PuregoldITToolkit.Tools.PureposTool.Interfaces;
+using PuregoldITToolkit.Tools.PureposTool.Interfaces;
 using PuregoldITToolkit.Tools.PureposTool.Models;
 using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using Renci.SshNet;
@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace PuregoldITToolkit.Tools.PureposTool.Services
 {
@@ -32,27 +33,28 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
         {
             var globalSettings = SettingsViewModel.GetCurrentSettings();
             string ipPrefix = config.LiveServerIp.Substring(0, config.LiveServerIp.LastIndexOf('.') + 1);
-            var tasks = new List<Task>();
-
-            logCallback("\nFiring permission commands in parallel...");
-
-            for (int i = 1; i <= config.TotalLanes; i++)
+            var targets = Enumerable.Range(1, config.TotalLanes).Select(lane => $"{ipPrefix}{50 + lane}")
+                .Concat(new[] { config.LiveServerIp }).Distinct().ToList();
+            int failed = 0;
+            using (var throttle = new SemaphoreSlim(6))
             {
-                int lane = i;
-                string posIp = $"{ipPrefix}{50 + lane}";
-                tasks.Add(Task.Run(() =>
+                var tasks = targets.Select(async host =>
                 {
-                    ExecuteSshCommandSync(posIp, globalSettings.PosUsername, globalSettings.PosPassword, "sh /opt/purepos/scripts/permission.sh", logCallback);
-                }));
+                    await throttle.WaitAsync();
+                    try
+                    {
+                        bool conso = host == config.LiveServerIp;
+                        string result = await RunSshCommandAsync(host, conso ? globalSettings.ConsoUser : globalSettings.PosUsername,
+                            conso ? globalSettings.ConsoPassword : globalSettings.PosPassword, "sh /opt/purepos/scripts/permission.sh");
+                        logCallback(result);
+                        if (!result.StartsWith("[SUCCESS", StringComparison.Ordinal)) Interlocked.Increment(ref failed);
+                    }
+                    finally { throttle.Release(); }
+                });
+                await Task.WhenAll(tasks);
             }
-
-            tasks.Add(Task.Run(() =>
-            {
-                ExecuteSshCommandSync(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword, "sh /opt/purepos/scripts/permission.sh", logCallback);
-            }));
-
-            await Task.WhenAll(tasks);
-            logCallback("\n✅ AUTO PERMISSION COMPLETED SUCCESSFULLY.");
+            if (failed > 0) throw new InvalidOperationException($"Permission update failed on {failed} of {targets.Count} targets. Review the console for each host.");
+            logCallback($"Permission update completed on {targets.Count} targets.");
         }
 
         // --- BIR-EIS AUTO SYNC ---
@@ -196,7 +198,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                     var globalSettings = PuregoldITToolkit.Tools.SettingsTool.ViewModels.SettingsViewModel.GetCurrentSettings();
 
                     string yyyy = config.TargetDate.ToString("yyyy");
-                    string yyyy_mm_dd = config.TargetDate.ToString("yyyy-MM-dd"); 
+                    string yyyy_mm_dd = config.TargetDate.ToString("yyyy-MM-dd");
                     string yyyymmdd = config.TargetDate.ToString("yyyyMMdd");
                     string fileName = $"{config.StoreCode}_{yyyymmdd}_crm.csv";
 
@@ -229,7 +231,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                             string genCommand = $"curl -s -d \"date={yyyy_mm_dd}&ajax=true\" -X POST http://{config.LiveServerIp}/purepos_conso/reads/generate_crm_points";
 
                             var genCmdResult = ssh.RunCommand(genCommand);
-                            System.Threading.Thread.Sleep(3000); 
+                            System.Threading.Thread.Sleep(3000);
 
                             if (sftp.Exists(remoteSourcePath))
                             {
@@ -303,7 +305,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                 }
             });
         }
-        
+
         private void ProcessEisFileForBIR(string eisFilePath, string outputDir, Action<string> logCallback)
         {
             try
@@ -526,36 +528,6 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
 
         #endregion
 
-        private void ExecuteSshCommandSync(string host, string username, string password, string command, Action<string> logCallback)
-        {
-            try
-            {
-                using (var client = new SshClient(host, username, password))
-                {
-                    client.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
-                    client.Connect();
-                    var cmd = client.CreateCommand(command);
-                    string result = cmd.Execute();
-                    string error = cmd.Error;
-
-                    if (cmd.ExitStatus == 0)
-                    {
-                        logCallback($"[SUCCESS] {host}:\n{result.Trim()}\n{error.Trim()}".Trim());
-                    }
-                    else
-                    {
-                        logCallback($"[ERROR] {host} (Exit {cmd.ExitStatus}):\n{error.Trim()}\n{result.Trim()}".Trim());
-                    }
-
-                    client.Disconnect();
-                }
-            }
-            catch (Exception ex)
-            {
-                logCallback($"[FAILED] {host}: {ex.Message}");
-            }
-        }
-
         public async Task<string> RunSshCommandAsync(string host, string username, string password, string command)
         {
             return await Task.Run(() =>
@@ -567,6 +539,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                         client.ConnectionInfo.Timeout = TimeSpan.FromSeconds(10);
                         client.Connect();
                         var cmd = client.CreateCommand(command);
+                        cmd.CommandTimeout = TimeSpan.FromSeconds(90);
                         string result = cmd.Execute();
                         string error = cmd.Error;
                         client.Disconnect();
@@ -806,9 +779,9 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                         string dateStr = date.ToString("MMddyyyy");
                         string expectedZip = $"{dateStr}_EJReceiptJournal.zip";
 
-                        if (cache.Contains(dateStr) || existingFtpFiles.Contains(expectedZip))
+                        if (existingFtpFiles.Contains(expectedZip))
                         {
-                            cache.Add(dateStr);
+                            cache.Add($"{config.FtpServer}|{config.StoreCode}|{dateStr}");
                             continue;
                         }
                         datesToProcess.Add(date);
@@ -821,7 +794,8 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                         return;
                     }
 
-                    string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                    string desktopPath = Path.Combine(Path.GetTempPath(), "Puregold_Temp", "EJ_" + Guid.NewGuid().ToString("N"));
+                    Directory.CreateDirectory(desktopPath);
 
                     using (var sftp = new Renci.SshNet.SftpClient(config.LiveServerIp, globalSettings.ConsoUser, globalSettings.ConsoPassword))
                     {
@@ -849,7 +823,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                             var files = sftp.ListDirectory(remoteEjPath).Where(f => !f.IsDirectory);
                             foreach (var file in files)
                             {
-                                using (var fileStream = File.OpenWrite(Path.Combine(localTempDir, file.Name)))
+                                using (var fileStream = File.Create(Path.Combine(localTempDir, file.Name)))
                                 {
                                     sftp.DownloadFile(file.FullName, fileStream);
                                 }
@@ -865,7 +839,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                             Directory.Delete(localTempDir, true);
                             File.Delete(localZipFile);
 
-                            cache.Add(dateStr);
+                            cache.Add($"{config.FtpServer}|{config.StoreCode}|{dateStr}");
                             SaveCache(cache);
                             logCallback($"[SUCCESS] {dateStr} uploaded and cleaned up!");
                         }
@@ -988,7 +962,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Services
                         {
                             try
                             {
- 
+
                                 string username = user == "puregold/ftp1" ? "ftphub" : user;
 
                                 var creds = new System.Net.NetworkCredential(username, globalSettings.FtpPassword);

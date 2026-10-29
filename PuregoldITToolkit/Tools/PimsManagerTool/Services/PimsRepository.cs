@@ -1,4 +1,4 @@
-﻿using PuregoldITToolkit.Tools.PimsManagerTool.Interfaces;
+using PuregoldITToolkit.Tools.PimsManagerTool.Interfaces;
 using PuregoldITToolkit.Tools.PimsManagerTool.Models;
 using System;
 using System.Collections.Generic;
@@ -13,7 +13,7 @@ namespace PuregoldITToolkit.Tools.PimsManagerTool.Services
 
         public void SetCredentials(string server, string database, string username, string password)
         {
-            _connectionString = $"Server={server};Database={database};User Id={username};Password={password};Connection Timeout=5;";
+            _connectionString = new SqlConnectionStringBuilder { DataSource = server, InitialCatalog = database, UserID = username, Password = password, ConnectTimeout = 5 }.ConnectionString;
         }
 
         public async Task<(IEnumerable<VendorModel> Vendors, int TotalCount, string ErrorMessage)> GetVendorsPagedAsync(int pageNumber, int pageSize, string searchQuery = "")
@@ -29,7 +29,7 @@ namespace PuregoldITToolkit.Tools.PimsManagerTool.Services
 
                     string whereClause = string.IsNullOrWhiteSpace(searchQuery) ? "" : "WHERE [VENDORCD] LIKE @Search OR [VENDOR] LIKE @Search OR [SORT] LIKE @Search";
 
-                    string countQuery = $"SELECT COUNT(*) FROM [PGBIS].[dbo].[DIM_VENDORS] {whereClause}";
+                    string countQuery = $"SELECT COUNT(*) FROM [dbo].[DIM_VENDORS] {whereClause}";
                     using (SqlCommand countCmd = new SqlCommand(countQuery, conn))
                     {
                         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -40,12 +40,12 @@ namespace PuregoldITToolkit.Tools.PimsManagerTool.Services
 
                     string pagedQuery = $@"
                         WITH PagedVendors AS (
-                            SELECT 
-                                [VENDORCD], 
-                                [VENDOR], 
+                            SELECT
+                                [VENDORCD],
+                                [VENDOR],
                                 [SORT],
                                 ROW_NUMBER() OVER (ORDER BY [VENDORCD]) AS RowNum
-                            FROM [PGBIS].[dbo].[DIM_VENDORS]
+                            FROM [dbo].[DIM_VENDORS]
                             {whereClause}
                         )
                         SELECT [VENDORCD], [VENDOR], [SORT]
@@ -82,19 +82,19 @@ namespace PuregoldITToolkit.Tools.PimsManagerTool.Services
 
         public async Task<(bool Success, string ErrorMessage)> InsertVendorAsync(VendorModel vendor)
         {
-            string query = "INSERT INTO [PGBIS].[dbo].[DIM_VENDORS] ([VENDORCD], [VENDOR], [SORT]) VALUES (@VendorCd, @Vendor, @Sort)";
+            string query = "INSERT INTO [dbo].[DIM_VENDORS] ([VENDORCD], [VENDOR], [SORT]) VALUES (@VendorCd, @Vendor, @Sort)";
             return await ExecuteQueryAsync(query, vendor);
         }
 
         public async Task<(bool Success, string ErrorMessage)> UpdateVendorAsync(VendorModel vendor)
         {
-            string query = "UPDATE [PGBIS].[dbo].[DIM_VENDORS] SET [VENDOR] = @Vendor, [SORT] = @Sort WHERE [VENDORCD] = @VendorCd";
+            string query = "UPDATE [dbo].[DIM_VENDORS] SET [VENDOR] = @Vendor, [SORT] = @Sort WHERE [VENDORCD] = @VendorCd";
             return await ExecuteQueryAsync(query, vendor);
         }
 
         public async Task<(bool Success, string ErrorMessage)> DeleteVendorAsync(string vendorCd)
         {
-            string query = "DELETE FROM [PGBIS].[dbo].[DIM_VENDORS] WHERE [VENDORCD] = @VendorCd";
+            string query = "DELETE FROM [dbo].[DIM_VENDORS] WHERE [VENDORCD] = @VendorCd";
             try
             {
                 using (SqlConnection conn = new SqlConnection(_connectionString))
@@ -116,9 +116,9 @@ namespace PuregoldITToolkit.Tools.PimsManagerTool.Services
             string query = @"
                 USE [FreeItemsDB];
                 DELETE FROM [dbo].[TBLPROMOMASTER] WHERE [CPROMOID] = '8888888888';
-                INSERT INTO [dbo].[TBLPROMOMASTER] 
+                INSERT INTO [dbo].[TBLPROMOMASTER]
                     ([CPROMOID], [CPROMODESCRIPTION], [CSUPPLIERID], [DDATEFROM], [DDATETO], [IALLOCQTY], [CSTSNO])
-                VALUES 
+                VALUES
                     ('8888888888', 'SALE TO EMPLOYEE', 101, '1/1/1900', '12/31/2078', 99999999, 0);";
 
             try
@@ -127,7 +127,12 @@ namespace PuregoldITToolkit.Tools.PimsManagerTool.Services
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
                     await conn.OpenAsync();
-                    await cmd.ExecuteNonQueryAsync();
+                    using (var transaction = conn.BeginTransaction())
+                    {
+                        cmd.Transaction = transaction;
+                        await cmd.ExecuteNonQueryAsync();
+                        transaction.Commit();
+                    }
                     return (true, string.Empty);
                 }
             }

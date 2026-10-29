@@ -1,4 +1,4 @@
-﻿using PuregoldITToolkit.Tools.FtpBrowserTool.Interfaces;
+using PuregoldITToolkit.Tools.FtpBrowserTool.Interfaces;
 using PuregoldITToolkit.Tools.FtpBrowserTool.Models;
 using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
@@ -19,69 +19,8 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Services
         private Session ConnectToFtp(string host = null, Action<Session> configureSession = null)
         {
             var settings = SettingsViewModel.GetCurrentSettings();
-            string primaryFtp = string.IsNullOrWhiteSpace(settings.DefaultFtpServer) ? "192.168.200.177" : settings.DefaultFtpServer;
-            string actualHost = host ?? primaryFtp;
-            string pass = string.IsNullOrWhiteSpace(settings.FtpPassword) ? "pw@1234" : settings.FtpPassword;
-
-            Session session = null;
-            for (int i = 1; i <= 12; i++)
-            {
-                try
-                {
-                    if (session != null)
-                    {
-                        if (session.Opened) session.Close();
-                        session.Dispose();
-                    }
-
-                    session = new Session();
-
-                    configureSession?.Invoke(session);
-
-                    session.Open(new SessionOptions
-                    {
-                        Protocol = Protocol.Ftp,
-                        HostName = actualHost,
-                        UserName = $"ftp{i}@puregold",
-                        Password = pass
-                    });
-                    return session;
-                }
-                catch { }
-            }
-
-            if (actualHost.Contains("132"))
-            {
-                try
-                {
-                    if (session != null)
-                    {
-                        if (session.Opened) session.Close();
-                        session.Dispose();
-                    }
-                    session = new Session();
-
-                    configureSession?.Invoke(session);
-
-                    session.Open(new SessionOptions
-                    {
-                        Protocol = Protocol.Ftp,
-                        HostName = actualHost,
-                        UserName = "anonymous",
-                        Password = "anonymous@"
-                    });
-                    return session;
-                }
-                catch { }
-            }
-
-            if (session != null)
-            {
-                if (session.Opened) session.Close();
-                session.Dispose();
-            }
-
-            throw new InvalidOperationException($"Failed to connect to {actualHost}. All authentication attempts failed.");
+            return PuregoldITToolkit.Services.AutomaticFtpLogin.Open(host ?? settings.DefaultFtpServer, settings.FtpPort,
+                settings.FtpTimeoutSeconds, settings.FtpPassiveMode, configure: configureSession);
         }
 
         public async Task<List<FtpStoreModel>> GetStoresAsync()
@@ -236,7 +175,7 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Services
 
                     using (var session = ConnectToFtp(host, s =>
                     {
-                      
+
                         s.FileTransferProgress += (sender, e) =>
                         {
                             double baseProgress = (double)currentFileIndex / total;
@@ -259,7 +198,7 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Services
                             for (int i = 0; i < total; i++)
                             {
                                 cancellationToken.ThrowIfCancellationRequested();
-                                currentFileIndex = i; 
+                                currentFileIndex = i;
                                 var localPath = localPaths[i];
                                 var remoteFilePath = RemotePath.Combine(remotePath, Path.GetFileName(localPath));
 
@@ -307,7 +246,7 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Services
                             for (int i = 0; i < total; i++)
                             {
                                 cancellationToken.ThrowIfCancellationRequested();
-                                currentFileIndex = i; 
+                                currentFileIndex = i;
                                 var remotePath = remotePaths[i];
                                 var localFilePath = Path.Combine(localFolderPath, Path.GetFileName(remotePath));
 
@@ -338,9 +277,9 @@ namespace PuregoldITToolkit.Tools.FtpBrowserTool.Services
                     string remoteFolderName = pathParts.Length > 0 ? pathParts.Last() : "";
                     string targetLocalFolder = string.IsNullOrEmpty(remoteFolderName) ? localFolderPath : Path.Combine(localFolderPath, remoteFolderName);
 
-                    
+
                     Directory.CreateDirectory(targetLocalFolder);
-                    
+
 
                     using (var session = ConnectToFtp(host, s =>
                     {

@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.FormsTool.Interfaces;
 using PuregoldITToolkit.Tools.FormsTool.Models;
@@ -25,7 +25,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
 
         public ICommand ExportCommand { get; }
 
-        private bool _isUpdatingPreview;
+        private int _previewRevision;
 
         public TsrfViewModel(IFormsExportService exportService)
         {
@@ -41,22 +41,21 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
 
         private async void OnFormDataChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (_isUpdatingPreview) return;
-            _isUpdatingPreview = true;
-
-            await Task.Delay(250); // Debounce typing speed
-            await UpdatePreviewAsync();
-
-            _isUpdatingPreview = false;
+            int revision = ++_previewRevision;
+            await Task.Delay(180);
+            if (revision == _previewRevision) await UpdatePreviewAsync();
         }
 
         private async Task UpdatePreviewAsync()
         {
-            LivePreviewImage = await _exportService.GenerateTsrfPreviewAsync(FormData, "TSRF.png");
+            try { LivePreviewImage = await _exportService.GenerateTsrfPreviewAsync(FormData, "TSRF.png"); }
+            catch (Exception ex) { StatusMessage = "Preview unavailable: " + ex.Message; }
         }
 
         private async Task ExportDataAsync()
         {
+            try
+            {
             if (string.IsNullOrWhiteSpace(FormData.Company) ||
                 string.IsNullOrWhiteSpace(FormData.Others) ||
                 string.IsNullOrWhiteSpace(FormData.AssetDescription) ||
@@ -79,6 +78,8 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
 
             if (success) StatusMessage = "Success! Saved to Desktop\\Puregold_Forms_Output";
             else StatusMessage = "Error generating final image.";
+            }
+            catch (Exception ex) { StatusMessage = "Export failed: " + ex.Message; }
         }
     }
 }

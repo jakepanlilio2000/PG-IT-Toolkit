@@ -1,4 +1,4 @@
-﻿using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using PuregoldITToolkit.Tools.FormsTool.Interfaces;
@@ -55,112 +55,10 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
             {
                 try
                 {
-                    bool isType4 = infType.Contains("APAR");
+                    string content = GenerateInfEmailContent(entries, infType, storeCode, storeName, toAddresses, ccAddresses, signatureHtml, screenshotPaths);
 
-                    // Strips the "1. ", "2. ", etc., from the INF string
-                    string cleanInfType = Regex.Replace(infType, @"^\d+\.\s*", "");
-
-                    string subject = $"Item Not Found: {storeCode}-{storeName} Purepos";
-                    string boundary = "----=_Part_" + Guid.NewGuid().ToString("N");
-
-                    StringBuilder emlContent = new StringBuilder();
-
-                    // Mail Headers
-                    emlContent.AppendLine($"To: {toAddresses}");
-                    if (!string.IsNullOrWhiteSpace(ccAddresses)) emlContent.AppendLine($"Cc: {ccAddresses}");
-                    emlContent.AppendLine("X-Unsent: 1");
-                    emlContent.AppendLine($"Subject: {subject}");
-                    emlContent.AppendLine("MIME-Version: 1.0");
-                    emlContent.AppendLine($"Content-Type: multipart/related; boundary=\"{boundary}\"");
-                    emlContent.AppendLine();
-
-                    // HTML Body Construction
-                    emlContent.AppendLine($"--{boundary}");
-                    emlContent.AppendLine("Content-Type: text/html; charset=utf-8");
-                    emlContent.AppendLine();
-
-                    StringBuilder htmlBody = new StringBuilder();
-                    htmlBody.AppendLine("<html><body>");
-
-                    htmlBody.AppendLine("<p>Masayang araw po,<br><br>");
-                    htmlBody.AppendLine($"Makikisuyo po sana INF Concern for {storeCode} - {storeName}<br><br>");
-                    htmlBody.AppendLine($"Concern (UNMATCH / INF):&nbsp; {cleanInfType}</p><br>");
-
-                    // Plain Table (No Styles)
-                    htmlBody.AppendLine("<table border=\"1\">");
-                    htmlBody.AppendLine("<tr>");
-
-                    if (isType4)
-                        htmlBody.AppendLine("<th>Store</th><th>Reg SKU</th><th>Gen SKU (APAR)</th><th>UPC</th><th>PurePos Price</th><th>MMS Price</th><th>Description</th><th>IsPromo?</th>");
-                    else
-                        htmlBody.AppendLine("<th>Store</th><th>SKU</th><th>UPC</th><th>PurePos Price</th><th>MMS Price</th><th>Description</th><th>IsPromo?</th>");
-
-                    htmlBody.AppendLine("</tr>");
-
-                    foreach (var entry in entries)
-                    {
-                        htmlBody.AppendLine("<tr>");
-                        htmlBody.AppendLine($"<td>{entry.StoreCode}</td>");
-                        htmlBody.AppendLine($"<td>{entry.Sku}</td>");
-                        if (isType4) htmlBody.AppendLine($"<td>{entry.GeneratedSku}</td>");
-                        htmlBody.AppendLine($"<td>{entry.Upc}</td>");
-                        htmlBody.AppendLine($"<td>{entry.PurePosPrice}</td>");
-                        htmlBody.AppendLine($"<td>{entry.MmsPrice}</td>");
-                        htmlBody.AppendLine($"<td>{entry.Description}</td>");
-                        htmlBody.AppendLine($"<td>{entry.IsPromo}</td>");
-                        htmlBody.AppendLine("</tr>");
-                    }
-
-                    htmlBody.AppendLine("</table>");
-                    htmlBody.AppendLine("<br/><br/>");
-
-                    // Process Screenshots
-                    List<Tuple<string, string, string>> attachments = new List<Tuple<string, string, string>>();
-                    if (screenshotPaths != null && screenshotPaths.Any())
-                    {
-                        foreach (var path in screenshotPaths)
-                        {
-                            if (File.Exists(path))
-                            {
-                                string cid = "img_" + Guid.NewGuid().ToString("N") + "@puregold.com";
-                                string fileName = Path.GetFileName(path);
-                                attachments.Add(Tuple.Create(path, cid, fileName));
-
-                                // Inject HTML tag with fixed width
-                                htmlBody.AppendLine($"<img src=\"cid:{cid}\" width=\"500\" /><br/><br/>");
-                            }
-                        }
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(signatureHtml))
-                    {
-                        htmlBody.AppendLine(signatureHtml);
-                    }
-
-                    htmlBody.AppendLine("</body></html>");
-                    emlContent.AppendLine(htmlBody.ToString());
-                    emlContent.AppendLine();
-
-                    // Embed Images as Base64 encoded parts
-                    foreach (var att in attachments)
-                    {
-                        byte[] fileBytes = File.ReadAllBytes(att.Item1);
-                        string base64 = Convert.ToBase64String(fileBytes, Base64FormattingOptions.InsertLineBreaks);
-                        string mimeType = att.Item3.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ? "image/png" : "image/jpeg";
-
-                        emlContent.AppendLine($"--{boundary}");
-                        emlContent.AppendLine($"Content-Type: {mimeType}; name=\"{att.Item3}\"");
-                        emlContent.AppendLine("Content-Transfer-Encoding: base64");
-                        emlContent.AppendLine($"Content-ID: <{att.Item2}>");
-                        emlContent.AppendLine($"Content-Disposition: inline; filename=\"{att.Item3}\"");
-                        emlContent.AppendLine();
-                        emlContent.AppendLine(base64);
-                    }
-
-                    emlContent.AppendLine($"--{boundary}--");
-
-                    string tempPath = Path.Combine(Path.GetTempPath(), $"INF_Draft_{storeCode}_{DateTime.Now:yyyyMMdd_HHmmss}.eml");
-                    File.WriteAllText(tempPath, emlContent.ToString());
+                    string tempPath = Path.Combine(Path.GetTempPath(), $"INF_Draft_{SafeFileName(storeCode)}_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.eml");
+                    File.WriteAllText(tempPath, content);
 
                     Process.Start(new ProcessStartInfo { FileName = tempPath, UseShellExecute = true });
                     return true;
@@ -173,9 +71,139 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
             });
         }
 
+        public string GenerateInfEmailContent(IEnumerable<InfEntryModel> entries, string infType, string storeCode, string storeName, string toAddresses, string ccAddresses, string signatureHtml, IEnumerable<string> screenshotPaths)
+        {
+            entries = entries?.ToList() ?? new List<InfEntryModel>();
+            toAddresses = PuregoldITToolkit.Tools.SettingsTool.Models.SettingsModel.RemoveRetiredContact(toAddresses);
+            ccAddresses = PuregoldITToolkit.Tools.SettingsTool.Models.SettingsModel.RemoveRetiredContact(ccAddresses);
+            bool isType4 = (infType ?? "").Contains("APAR");
+            var customColumns = entries.SelectMany(e => e.CustomFields).Select(f => f.Name).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+            // Strips the "1. ", "2. ", etc., from the INF string
+            string cleanInfType = Regex.Replace(infType ?? "", @"^\d+\.\s*", "");
+
+            string subject = $"Item Not Found: {storeCode}-{storeName} Purepos";
+            string boundary = "----=_Part_" + Guid.NewGuid().ToString("N");
+
+            StringBuilder emlContent = new StringBuilder();
+
+            // Mail Headers
+            emlContent.AppendLine($"To: {CleanMailHeader(toAddresses)}");
+            if (!string.IsNullOrWhiteSpace(ccAddresses)) emlContent.AppendLine($"Cc: {CleanMailHeader(ccAddresses)}");
+            emlContent.AppendLine("X-Unsent: 1");
+            emlContent.AppendLine($"Subject: =?UTF-8?B?{Convert.ToBase64String(Encoding.UTF8.GetBytes(CleanMailHeader(subject)))}?=");
+            emlContent.AppendLine("MIME-Version: 1.0");
+            emlContent.AppendLine($"Content-Type: multipart/related; boundary=\"{boundary}\"");
+            emlContent.AppendLine();
+
+            // HTML Body Construction
+            emlContent.AppendLine($"--{boundary}");
+            emlContent.AppendLine("Content-Type: text/html; charset=utf-8");
+            emlContent.AppendLine("Content-Transfer-Encoding: base64");
+            emlContent.AppendLine();
+
+            StringBuilder htmlBody = new StringBuilder();
+            htmlBody.AppendLine("<html><body>");
+
+            htmlBody.AppendLine("<p>Masayang araw po,<br><br>");
+            htmlBody.AppendLine($"Makikisuyo po sana INF Concern for {Html(storeCode)} - {Html(storeName)}<br><br>");
+            htmlBody.AppendLine($"Concern (UNMATCH / INF):&nbsp; {Html(cleanInfType)}</p><br>");
+
+            // Plain Table (No Styles)
+            htmlBody.AppendLine("<table border=\"1\">");
+            htmlBody.AppendLine("<tr>");
+
+            if (isType4)
+                htmlBody.AppendLine("<th>Store</th><th>Reg SKU</th><th>Gen SKU (APAR)</th><th>UPC</th><th>PurePos Price</th><th>MMS Price</th><th>Description</th><th>IsPromo?</th>");
+            else
+                htmlBody.AppendLine("<th>Store</th><th>SKU</th><th>UPC</th><th>PurePos Price</th><th>MMS Price</th><th>Description</th><th>IsPromo?</th>");
+
+            foreach (var name in customColumns) htmlBody.AppendLine($"<th>{Html(name)}</th>");
+            htmlBody.AppendLine("</tr>");
+
+            foreach (var entry in entries)
+            {
+                htmlBody.AppendLine("<tr>");
+                htmlBody.AppendLine($"<td>{Html(entry.StoreCode)}</td>");
+                htmlBody.AppendLine($"<td>{Html(entry.Sku)}</td>");
+                if (isType4) htmlBody.AppendLine($"<td>{Html(entry.GeneratedSku)}</td>");
+                htmlBody.AppendLine($"<td>{Html(entry.Upc)}</td>");
+                htmlBody.AppendLine($"<td>{Html(entry.PurePosPrice)}</td>");
+                htmlBody.AppendLine($"<td>{Html(entry.MmsPrice)}</td>");
+                htmlBody.AppendLine($"<td>{Html(entry.Description)}</td>");
+                htmlBody.AppendLine($"<td>{Html(entry.IsPromo)}</td>");
+                foreach (var name in customColumns)
+                    htmlBody.AppendLine($"<td>{Html(entry.CustomFields.FirstOrDefault(f => string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase))?.Value)}</td>");
+                htmlBody.AppendLine("</tr>");
+            }
+
+            htmlBody.AppendLine("</table>");
+            htmlBody.AppendLine("<br/><br/>");
+
+            // Process Screenshots
+            List<Tuple<string, string, string>> attachments = new List<Tuple<string, string, string>>();
+            if (screenshotPaths != null && screenshotPaths.Any())
+            {
+                foreach (var path in screenshotPaths)
+                {
+                    if (File.Exists(path))
+                    {
+                        string cid = "img_" + Guid.NewGuid().ToString("N") + "@puregold.com";
+                        string fileName = Path.GetFileName(path);
+                        attachments.Add(Tuple.Create(path, cid, fileName));
+
+                        // Inject HTML tag with fixed width
+                        htmlBody.AppendLine($"<img src=\"cid:{cid}\" width=\"500\" /><br/><br/>");
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(signatureHtml))
+            {
+                htmlBody.AppendLine(signatureHtml);
+            }
+
+            htmlBody.AppendLine("</body></html>");
+            emlContent.AppendLine(Convert.ToBase64String(Encoding.UTF8.GetBytes(htmlBody.ToString()), Base64FormattingOptions.InsertLineBreaks));
+            emlContent.AppendLine();
+
+            // Embed Images as Base64 encoded parts
+            foreach (var att in attachments)
+            {
+                byte[] fileBytes = File.ReadAllBytes(att.Item1);
+                string base64 = Convert.ToBase64String(fileBytes, Base64FormattingOptions.InsertLineBreaks);
+                string mimeType = GetImageMimeType(att.Item3);
+
+                emlContent.AppendLine($"--{boundary}");
+                emlContent.AppendLine($"Content-Type: {mimeType}; name=\"{att.Item3}\"");
+                emlContent.AppendLine("Content-Transfer-Encoding: base64");
+                emlContent.AppendLine($"Content-ID: <{att.Item2}>");
+                emlContent.AppendLine($"Content-Disposition: inline; filename=\"{att.Item3}\"");
+                emlContent.AppendLine();
+                emlContent.AppendLine(base64);
+            }
+
+            emlContent.AppendLine($"--{boundary}--");
+
+            return emlContent.ToString();
+        }
+
+        private static string Html(string value) => System.Net.WebUtility.HtmlEncode(value ?? string.Empty);
+        private static string CleanMailHeader(string value) => (value ?? string.Empty).Replace("\r", " ").Replace("\n", " ");
+        private static string SafeFileName(string value) => string.Concat((value ?? "UNKNOWN").Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '_' : c));
+        private static string GetImageMimeType(string path)
+        {
+            switch (Path.GetExtension(path).ToLowerInvariant())
+            {
+                case ".png": return "image/png";
+                case ".bmp": return "image/bmp";
+                default: return "image/jpeg";
+            }
+        }
+
         public async Task<System.Windows.Media.ImageSource> GenerateObPreviewAsync(ObModel data, string templateName)
         {
-            return await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => DrawObImage(data, templateName));
+            return await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => RenderObImage(data, templateName));
         }
 
         public async Task<bool> ExportObToImageAsync(ObModel data, string templateName, string outputPath)
@@ -184,7 +212,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
             {
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    var rtb = DrawObImage(data, templateName);
+                    var rtb = RenderObImage(data, templateName, true);
 
                     System.Windows.Media.Imaging.PngBitmapEncoder encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
                     encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
@@ -205,7 +233,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
             }
         }
 
-        private System.Windows.Media.Imaging.RenderTargetBitmap DrawObImage(ObModel data, string templateName)
+        public System.Windows.Media.Imaging.RenderTargetBitmap RenderObImage(ObModel data, string templateName, bool highResolution = false)
         {
             // Load embedded template
             System.Windows.Media.Imaging.BitmapImage bitmapTemplate = LoadEmbeddedTemplate(templateName);
@@ -255,11 +283,8 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                     sigBitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
                     sigBitmap.EndInit();
 
-                    double targetHeight = 60;
-                    double targetWidth = (sigBitmap.PixelWidth / (double)sigBitmap.PixelHeight) * targetHeight;
-                    double xPos = 180 - (targetWidth / 2);
-
-                    dc.DrawImage(sigBitmap, new System.Windows.Rect(xPos, 440, targetWidth, targetHeight));
+                    System.Windows.Media.RenderOptions.SetBitmapScalingMode(visual, System.Windows.Media.BitmapScalingMode.HighQuality);
+                    dc.DrawImage(sigBitmap, new System.Windows.Rect(data.ImageX, data.ImageY, data.ImageWidth, data.ImageHeight));
                 }
                 else if (!string.IsNullOrEmpty(data.EmployeeSignature))
                 {
@@ -267,11 +292,12 @@ namespace PuregoldITToolkit.Tools.FormsTool.Services
                 }
             }
 
+            double dpi = highResolution ? 300 : 96;
+            double scale = dpi / 96;
             System.Windows.Media.Imaging.RenderTargetBitmap rtb = new System.Windows.Media.Imaging.RenderTargetBitmap(
-                bitmapTemplate.PixelWidth,
-                bitmapTemplate.PixelHeight,
-                96, 96,
-                System.Windows.Media.PixelFormats.Pbgra32);
+                (int)Math.Ceiling(bitmapTemplate.PixelWidth * scale),
+                (int)Math.Ceiling(bitmapTemplate.PixelHeight * scale),
+                dpi, dpi, System.Windows.Media.PixelFormats.Pbgra32);
 
             rtb.Render(visual);
             rtb.Freeze();

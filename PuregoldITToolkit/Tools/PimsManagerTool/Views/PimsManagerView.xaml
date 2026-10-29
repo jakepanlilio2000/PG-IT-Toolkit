@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="PuregoldITToolkit.Tools.PimsManagerTool.Views.PimsManagerView"
+<UserControl x:Class="PuregoldITToolkit.Tools.PimsManagerTool.Views.PimsManagerView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:conv="clr-namespace:PuregoldITToolkit.Core.Converters">
@@ -116,8 +116,8 @@
                 </Border>
 
                 <Grid Grid.Row="1">
-                    <DataGrid ItemsSource="{Binding VendorsList}" SelectedItem="{Binding SelectedVendor}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" 
-                              HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}" 
+                    <DataGrid ItemsSource="{Binding VendorsList}" SelectedItem="{Binding SelectedVendor}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                              HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}"
                               BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="VendorCd" Binding="{Binding VendorCd}" FontWeight="Bold" Width="100"/>

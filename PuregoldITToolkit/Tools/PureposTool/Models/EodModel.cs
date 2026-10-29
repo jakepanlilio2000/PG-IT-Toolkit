@@ -1,4 +1,4 @@
-﻿using PuregoldITToolkit.Core.Base;
+using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.SettingsTool.ViewModels;
 using System;
 using System.IO;
@@ -10,9 +10,9 @@ namespace PuregoldITToolkit.Tools.PureposTool.Models
     {
         private string _liveServerIp;
         private string _storeCode;
-        private string _storeName = "Biringan";
-        private string _storeManager = "Mr. Jose P. Rizal";
-        private string _storeOfficer = "Mr. Juan Dela Cruz & Mr. Julian Felippe";
+        private string _storeName = string.Empty;
+        private string _storeManager = string.Empty;
+        private string _storeOfficer = string.Empty;
         private bool _useYesterday = false;
         private bool _testModeEmail = false;
         private bool _enableLivePreview = false;
@@ -31,6 +31,7 @@ namespace PuregoldITToolkit.Tools.PureposTool.Models
             var settings = SettingsViewModel.GetCurrentSettings();
             LiveServerIp = settings.DefaultLiveServerIp;
             StoreCode = settings.DefaultStoreCode;
+            StoreName = settings.StoreName;
 
             // Load saved entries when the tool opens
             LoadCache();

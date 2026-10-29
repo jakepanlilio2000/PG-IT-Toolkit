@@ -1,5 +1,4 @@
-﻿using PuregoldITToolkit.Core.Base;
-using System.Windows.Input;
+using PuregoldITToolkit.Core.Base;
 
 namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
 {
@@ -12,12 +11,14 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
         private readonly ObViewModel _obViewModel;
         private readonly SsrfViewModel _ssrfViewModel;
         private readonly TsrfViewModel _tsrfViewModel;
+        private readonly FormCustomizerViewModel _customizerViewModel;
 
         // UI State Toggles for RadioButtons
         private bool _isInfSelected;
         private bool _isObSelected;
         private bool _isSsrfSelected;
         private bool _isTsrfSelected;
+        private bool _isCustomizerSelected;
 
         public ViewModelBase CurrentViewModel { get => _currentViewModel; set => SetProperty(ref _currentViewModel, value); }
 
@@ -41,17 +42,24 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
             get => _isTsrfSelected;
             set { if (SetProperty(ref _isTsrfSelected, value) && value) CurrentViewModel = _tsrfViewModel; }
         }
+        public bool IsCustomizerSelected
+        {
+            get => _isCustomizerSelected;
+            set { if (SetProperty(ref _isCustomizerSelected, value) && value) CurrentViewModel = _customizerViewModel; }
+        }
 
         public FormsMainViewModel(
             InfViewModel infViewModel,
             ObViewModel obViewModel,
             SsrfViewModel ssrfViewModel,
-            TsrfViewModel tsrfViewModel)
+            TsrfViewModel tsrfViewModel,
+            FormCustomizerViewModel customizerViewModel = null)
         {
             _infViewModel = infViewModel;
             _obViewModel = obViewModel;
             _ssrfViewModel = ssrfViewModel;
             _tsrfViewModel = tsrfViewModel;
+            _customizerViewModel = customizerViewModel ?? new FormCustomizerViewModel(new Services.FormTemplateService());
 
             // Set default view
             IsInfSelected = true;

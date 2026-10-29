@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Drawing;
@@ -17,7 +17,7 @@ namespace PuregoldITToolkit.Core.Helpers
                 if (stream == null)
                     throw new Exception($"Embedded Resource '{resourceName}' not found.");
 
-                return Image.FromStream(stream);
+                using (var original = Image.FromStream(stream)) return new Bitmap(original);
             }
         }
     }

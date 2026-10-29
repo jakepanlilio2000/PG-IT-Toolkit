@@ -361,3 +361,31 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Packaged releases, installers, portable copies, and release manifests.
+# Keep the installer script and its source assets available to new checkouts.
+/PuregoldITToolkit/Production/*
+!/PuregoldITToolkit/Production/Puregold IT Toolkit/
+/PuregoldITToolkit/Production/Puregold IT Toolkit/*
+!/PuregoldITToolkit/Production/Puregold IT Toolkit/icon.ico
+!/PuregoldITToolkit/Production/Puregold IT Toolkit/data/
+/PuregoldITToolkit/Production/Puregold IT Toolkit/data/*
+!/PuregoldITToolkit/Production/Puregold IT Toolkit/data/stores.csv
+!/PuregoldITToolkit/Production/Puregold IT Toolkit/installer/
+/PuregoldITToolkit/Production/Puregold IT Toolkit/installer/*
+!/PuregoldITToolkit/Production/Puregold IT Toolkit/installer/compiler.iss
+
+# Local app settings, saved inputs, downloaded receipts, and report caches.
+settings.json
+GlobalConfig.json
+EjUploadCache.json
+EodInputCache.json
+FtpStoresCache.json
+ScPwdReportCache.json
+form_template.json
+EJ_Cache/
+**/data/cache/
+
+# Windows Explorer metadata.
+Thumbs.db
+Desktop.ini

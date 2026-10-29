@@ -1,0 +1,335 @@
+<UserControl x:Class="PuregoldITToolkit.Tools.FormsTool.Views.FormCustomizerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:PuregoldITToolkit.Core.Converters">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:InverseBoolToVisConverter x:Key="InverseBoolVisConverter"/>
+
+        <Style x:Key="PropLabel" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="NudgeButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BgApp}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <!-- Row 0: Top Action Bar -->
+            <RowDefinition Height="Auto"/>
+            <!-- Row 1: Main Stage (Canvas + Properties) -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Action Bar -->
+        <Border Grid.Row="0" Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Padding="15,10" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Template:" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox ItemsSource="{Binding AvailableTemplates}" SelectedItem="{Binding SelectedTemplate}" Width="170" Height="32" VerticalContentAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource BrandPrimary}" FontStyle="Italic" FontSize="12" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Command="{Binding ResetDefaultsCommand}" Content="🔄 Reset" Background="Transparent" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" Foreground="{StaticResource TextSecondary}" Padding="10,6" Margin="0,0,6,0" Cursor="Hand"/>
+                    <Button Command="{Binding LoadTemplateCommand}" Content="📂 Load Preset" Background="Transparent" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" Foreground="{StaticResource TextPrimary}" FontWeight="SemiBold" Padding="10,6" Margin="0,0,6,0" Cursor="Hand"/>
+                    <Button Command="{Binding SaveTemplateCommand}" Content="💾 Save Preset" Background="{StaticResource BrandAccent}" Foreground="{StaticResource BrandPrimaryDark}" FontWeight="Bold" BorderThickness="0" Padding="12,6" Margin="0,0,8,0" Cursor="Hand"/>
+                    <Button Command="{Binding ExportImageCommand}" Content="🖨️ Export Stamped Form" Background="{StaticResource BrandPrimary}" Foreground="#FFFFFF" FontWeight="Bold" BorderThickness="0" Padding="14,6" Cursor="Hand"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Stage -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <!-- Column 0: Interactive Canvas Stage -->
+                <ColumnDefinition Width="*"/>
+                <!-- Column 1: Properties Sidebar -->
+                <ColumnDefinition Width="340"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Interactive Canvas Stage -->
+            <Border Grid.Column="0" Background="#1E293B" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Margin="0,0,10,0">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                    <Viewbox Stretch="Uniform" Margin="20">
+                        <Canvas x:Name="DesignerCanvas" 
+                                Width="800" 
+                                Height="600" 
+                                Background="White" 
+                                ClipToBounds="True">
+                            
+                            <!-- Template Background -->
+                            <Image Source="{Binding TemplateBackgroundImage}" 
+                                   Width="800" 
+                                   Height="600" 
+                                   Stretch="Fill" 
+                                   IsHitTestVisible="False"/>
+
+                            <!-- Draggable Text Elements Container -->
+                            <ItemsControl ItemsSource="{Binding Elements}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <Canvas/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="ContentPresenter">
+                                        <Setter Property="Canvas.Left" Value="{Binding X}"/>
+                                        <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="ElementBorder" 
+                                                BorderThickness="1" 
+                                                Padding="4,2" 
+                                                Cursor="SizeAll"
+                                                MouseLeftButtonDown="OnElementMouseLeftButtonDown"
+                                                MouseMove="OnElementMouseMove"
+                                                MouseLeftButtonUp="OnElementMouseLeftButtonUp">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#152563EB"/>
+                                                    <Setter Property="BorderBrush" Value="#402563EB"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                            <Setter Property="Background" Value="#35FFB800"/>
+                                                            <Setter Property="BorderBrush" Value="#E67E22"/>
+                                                            <Setter Property="BorderThickness" Value="2"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding Text}" 
+                                                           FontFamily="{Binding FontFamily}" 
+                                                           FontSize="{Binding FontSize}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#0F172A"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsBold}" Value="True">
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding IsItalic}" Value="True">
+                                                                    <Setter Property="FontStyle" Value="Italic"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- Dedicated Signature Canvas Object -->
+                            <Border x:Name="SignatureBorder"
+                                    Canvas.Left="{Binding Signature.X}"
+                                    Canvas.Top="{Binding Signature.Y}"
+                                    Width="{Binding Signature.Width}"
+                                    Height="{Binding Signature.Height}"
+                                    BorderThickness="2"
+                                    BorderBrush="#2563EB"
+                                    Background="#1A2563EB"
+                                    Cursor="SizeAll"
+                                    MouseLeftButtonDown="OnSignatureMouseLeftButtonDown"
+                                    MouseMove="OnSignatureMouseMove"
+                                    MouseLeftButtonUp="OnSignatureMouseLeftButtonUp">
+                                <Border.LayoutTransform>
+                                    <ScaleTransform ScaleX="{Binding Signature.Scale}" ScaleY="{Binding Signature.Scale}"/>
+                                </Border.LayoutTransform>
+                                <Grid>
+                                    <!-- Signature Image Display -->
+                                    <Image Source="{Binding ProcessedSignatureSource}" 
+                                           Stretch="Uniform" 
+                                           RenderOptions.BitmapScalingMode="HighQuality"/>
+
+                                    <!-- Placeholder Text when no signature loaded -->
+                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" 
+                                                Visibility="{Binding ProcessedSignatureSource, Converter={StaticResource InverseBoolVisConverter}}">
+                                        <TextBlock Text="✍️ SIGNATURE OVERLAY" FontWeight="Bold" FontSize="11" Foreground="#2563EB" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="Drag to signing line" FontSize="9" Foreground="#64748B" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                        </Canvas>
+                    </Viewbox>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Properties Sidebar -->
+            <Border Grid.Column="1" Background="{StaticResource BgCard}" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Padding="15">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Selector / Mode Header -->
+                        <TextBlock Text="DESIGNER PROPERTIES" FontWeight="Bold" FontSize="14" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,0,0,12"/>
+
+                        <!-- Element Picker Tabs -->
+                        <StackPanel Margin="0,0,0,15">
+                            <TextBlock Text="Select Canvas Element:" Style="{StaticResource PropLabel}"/>
+                            <ComboBox ItemsSource="{Binding Elements}" 
+                                      SelectedItem="{Binding SelectedElement}" 
+                                      DisplayMemberPath="Name" 
+                                      Height="32" 
+                                      VerticalContentAlignment="Center" 
+                                      Margin="0,0,0,8"/>
+
+                            <Button Command="{Binding SelectSignatureCommand}" 
+                                    Content="🖋️ Select Signature Element" 
+                                    Background="{StaticResource BgApp}" 
+                                    Foreground="{StaticResource BrandPrimary}" 
+                                    BorderBrush="{StaticResource BorderLight}" 
+                                    BorderThickness="1" 
+                                    FontWeight="SemiBold" 
+                                    Padding="8,5" 
+                                    Cursor="Hand"/>
+                        </StackPanel>
+
+                        <!-- TEXT ELEMENT PROPERTY CONTROLS -->
+                        <Border BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,15"
+                                Visibility="{Binding HasSelectedElement, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding SelectedElement.Name, StringFormat='Text: {0}'}" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,10"/>
+
+                                <!-- Text Value -->
+                                <TextBlock Text="Field Content / Value:" Style="{StaticResource PropLabel}"/>
+                                <TextBox Text="{Binding SelectedElement.Text, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" Height="30" VerticalContentAlignment="Center"/>
+
+                                <!-- Position X / Y Precision -->
+                                <TextBlock Text="Position Coordinates (px):" Style="{StaticResource PropLabel}"/>
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- X Coordinate -->
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="X (Left)" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                        <TextBox Text="{Binding SelectedElement.X, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold" Height="28" VerticalContentAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <!-- Y Coordinate -->
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="Y (Top)" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                        <TextBox Text="{Binding SelectedElement.Y, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold" Height="28" VerticalContentAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Font Family -->
+                                <TextBlock Text="Font Family:" Style="{StaticResource PropLabel}"/>
+                                <ComboBox ItemsSource="{Binding AvailableFonts}" 
+                                          SelectedItem="{Binding SelectedElement.FontFamily}" 
+                                          Height="30" 
+                                          VerticalContentAlignment="Center" 
+                                          Margin="0,0,0,12"/>
+
+                                <!-- Font Style: Regular, Bold, Italic -->
+                                <TextBlock Text="Font Style:" Style="{StaticResource PropLabel}"/>
+                                <WrapPanel Margin="0,0,0,12">
+                                    <RadioButton Content="Regular" IsChecked="{Binding IsSelectedFontRegular}" Margin="0,0,12,0"/>
+                                    <RadioButton Content="Bold" IsChecked="{Binding IsSelectedFontBold}" FontWeight="Bold" Margin="0,0,12,0"/>
+                                    <RadioButton Content="Italic" IsChecked="{Binding IsSelectedFontItalic}" FontStyle="Italic"/>
+                                </WrapPanel>
+
+                                <!-- Font Size -->
+                                <TextBlock Text="{Binding SelectedElement.FontSize, StringFormat='Font Size: {0:F0} pt'}" Style="{StaticResource PropLabel}"/>
+                                <Slider Minimum="8" Maximum="48" Value="{Binding SelectedElement.FontSize}" TickFrequency="2" IsSnapToTickEnabled="True" Margin="0,0,0,5"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- SIGNATURE PROPERTY CONTROLS -->
+                        <Border BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="4" Padding="12"
+                                Visibility="{Binding IsSignatureSelected, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="Signature image" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}" Margin="0,0,0,10"/>
+
+                                <Button Command="{Binding UploadSignatureCommand}" 
+                                        Content="📁 Upload Signature (PNG / Scanned)" 
+                                        Background="{StaticResource BrandAccent}" 
+                                        Foreground="{StaticResource BrandPrimaryDark}" 
+                                        FontWeight="Bold" 
+                                        Padding="10,8" 
+                                        BorderThickness="0" 
+                                        Cursor="Hand" 
+                                        Margin="0,0,0,10"/>
+
+                                <!-- Signature Coordinates -->
+                                <TextBlock Text="Signature Position (X, Y):" Style="{StaticResource PropLabel}"/>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Text="{Binding Signature.X, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold" Height="28" VerticalContentAlignment="Center"/>
+                                    <TextBox Grid.Column="2" Text="{Binding Signature.Y, UpdateSourceTrigger=PropertyChanged}" FontWeight="Bold" Height="28" VerticalContentAlignment="Center"/>
+                                </Grid>
+
+                                <!-- Scaling Factor -->
+                                <TextBlock Text="{Binding Signature.Scale, StringFormat='Scale Factor: {0:F2}x'}" Style="{StaticResource PropLabel}"/>
+                                <Slider Minimum="0.3" Maximum="2.5" Value="{Binding Signature.Scale}" TickFrequency="0.05" IsSnapToTickEnabled="True" Margin="0,0,0,12"/>
+
+                                <!-- Sampling Mode -->
+                                <TextBlock Text="Image quality:" Style="{StaticResource PropLabel}"/>
+                                <ComboBox ItemsSource="{Binding AvailableSamplingModes}" 
+                                          SelectedItem="{Binding Signature.SamplingMode}" 
+                                          Height="30" 
+                                          VerticalContentAlignment="Center" 
+                                          Margin="0,0,0,12"/>
+
+                                <!-- Background Removal / Threshold -->
+                                <CheckBox IsChecked="{Binding Signature.EnableThreshold}" Content="Remove faint background" FontWeight="SemiBold" Margin="0,0,0,8"/>
+
+                                <StackPanel Visibility="{Binding Signature.EnableThreshold, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding Signature.ThresholdValue, StringFormat='Background removal: {0}'}" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                    <Slider Minimum="150" Maximum="250" Value="{Binding Signature.ThresholdValue}" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,0,0,8"/>
+
+                                    <TextBlock Text="{Binding Signature.ContrastBoost, StringFormat='Darken signature: {0}%'}" FontSize="11" Foreground="{StaticResource TextSecondary}"/>
+                                    <Slider Minimum="0" Maximum="80" Value="{Binding Signature.ContrastBoost}" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,0,0,10"/>
+
+                                    <Button Command="{Binding ProcessSignatureCommand}" 
+                                            Content="Apply image changes" 
+                                            Background="{StaticResource BgHighlight}" 
+                                            Foreground="{StaticResource BrandPrimaryDark}" 
+                                            BorderBrush="{StaticResource BorderFocus}" 
+                                            BorderThickness="1" 
+                                            FontWeight="SemiBold" 
+                                            Padding="8,5" 
+                                            Cursor="Hand"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
+

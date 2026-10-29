@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="PuregoldITToolkit.Tools.FormsTool.Views.TsrfView"
+<UserControl x:Class="PuregoldITToolkit.Tools.FormsTool.Views.TsrfView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 

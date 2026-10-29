@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="PuregoldITToolkit.Tools.SodChecker.Views.SodCheckerView"
+<UserControl x:Class="PuregoldITToolkit.Tools.SodChecker.Views.SodCheckerView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="clr-namespace:PuregoldITToolkit.Core.Converters"
@@ -7,7 +7,7 @@
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
-        
+
         <Style x:Key="SegmentedTab" TargetType="RadioButton">
             <Setter Property="Background" Value="{StaticResource BgApp}"/>
             <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
@@ -17,9 +17,9 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="RadioButton">
-                        <Border Background="{TemplateBinding Background}" 
-                                Padding="{TemplateBinding Padding}" 
-                                CornerRadius="4" 
+                        <Border Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                CornerRadius="4"
                                 Margin="0,0,8,0"
                                 BorderBrush="{StaticResource BorderLight}"
                                 BorderThickness="1">
@@ -183,7 +183,7 @@
             </Grid>
 
             <Border Grid.Row="3" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource BgCard}">
-                <DataGrid ItemsSource="{Binding StoreResults}" AutoGenerateColumns="False" CanUserAddRows="False" 
+                <DataGrid ItemsSource="{Binding StoreResults}" AutoGenerateColumns="False" CanUserAddRows="False"
                           HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}"
                           BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
                     <DataGrid.Columns>
@@ -352,7 +352,7 @@
                     </Border>
 
                     <Border Grid.Row="2" BorderBrush="{StaticResource BorderLight}" BorderThickness="1" CornerRadius="6" Background="{StaticResource BgCard}">
-                        <DataGrid ItemsSource="{Binding AvailableStores}" AutoGenerateColumns="False" CanUserAddRows="False" 
+                        <DataGrid ItemsSource="{Binding AvailableStores}" AutoGenerateColumns="False" CanUserAddRows="False"
                                   HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}"
                                   BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
                             <DataGrid.Columns>

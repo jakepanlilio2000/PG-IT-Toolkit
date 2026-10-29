@@ -1,4 +1,4 @@
-﻿using PuregoldITToolkit.Tools.ScPwdReportTool.Interfaces;
+using PuregoldITToolkit.Tools.ScPwdReportTool.Interfaces;
 using PuregoldITToolkit.Tools.ScPwdReportTool.Models;
 using System;
 using System.Collections.Generic;
@@ -60,7 +60,7 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
                         DateTime maxDate = chunk.Max();
 
                         string apiDateRangeStr = $"{minDate:yyyy-MM-dd} to {maxDate:yyyy-MM-dd}";
-                        string fileDateRangeStr = $"{minDate:MMdd}-{maxDate:MMdd}";
+                        string fileDateRangeStr = $"{minDate:yyyyMMdd}-{maxDate:yyyyMMdd}";
 
                         if (options.GenerateScReport)
                         {
@@ -151,8 +151,9 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.Services
 
         private List<List<T>> ChunkBy<T>(List<T> source, int chunkSize)
         {
-            if (chunkSize <= 0) chunkSize = 1;
             if (!source.Any()) return new List<List<T>>();
+            if (chunkSize <= 0) chunkSize = source.Count;
+
             return source.Select((x, i) => new { Index = i, Value = x })
                          .GroupBy(x => x.Index / chunkSize)
                          .Select(x => x.Select(v => v.Value).ToList()).ToList();

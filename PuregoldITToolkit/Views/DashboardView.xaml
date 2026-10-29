@@ -1,0 +1,153 @@
+<UserControl x:Class="PuregoldITToolkit.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <UserControl.Resources>
+        <Style x:Key="MetricCard" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource BgCard}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="18"/>
+            <Setter Property="Margin" Value="0,0,15,15"/>
+        </Style>
+
+        <Style x:Key="ActionCardButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource BgCard}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderLight}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="20,18"/>
+            <Setter Property="Margin" Value="0,0,15,15"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource BrandPrimary}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource BgHighlight}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+        <StackPanel MaxWidth="1200" HorizontalAlignment="Left">
+
+            <!-- Store Banner -->
+            <Border Background="{StaticResource BrandPrimaryDark}" CornerRadius="8" Padding="25,20" Margin="0,0,0,20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                            <TextBlock Text="PUREGOLD IT TOOLKIT" FontSize="12" FontWeight="Bold" Foreground="{StaticResource BrandAccent}" VerticalAlignment="Center"/>
+                            <TextBlock Text="• STORE OPERATIONS SUITE" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFF" Opacity="0.8" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock FontSize="24" FontWeight="Bold" Foreground="#FFFFFF">
+                            <Run Text="Store ("/><Run Text="{Binding StoreCode}" Foreground="{StaticResource BrandAccent}"/><Run Text=" - "/><Run Text="{Binding StoreName}"/><Run Text=")"/>
+                        </TextBlock>
+                        <TextBlock Text="{Binding CurrentTime}" Foreground="#CBD5E1" FontSize="13" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <Button Command="{Binding RefreshStatusCommand}" Content="🔄 REFRESH STATUS" Background="Transparent" Foreground="#FFFFFF" BorderBrush="#CBD5E1" BorderThickness="1" Padding="12,8" FontSize="12"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Metrics / Health Row -->
+            <TextBlock Text="Connection status" FontWeight="Bold" FontSize="13" Foreground="{StaticResource TextSecondary}" Margin="0,0,0,10"/>
+            <WrapPanel Margin="0,0,-15,10">
+
+                <!-- Metric 1: Environment -->
+
+                <!-- Metric 2: FTP Status -->
+                <Border Style="{StaticResource MetricCard}" Width="260">
+                    <StackPanel>
+                        <TextBlock Text="CENTRAL FTP SERVER" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextSecondary}"/>
+                        <TextBlock Text="{Binding FtpStatusText}" FontSize="15" FontWeight="Bold" Foreground="{Binding FtpStatusColor}" Margin="0,6,0,2" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding FtpHost}" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Metric 3: Local Paths -->
+                <Border Style="{StaticResource MetricCard}" Width="260">
+                    <StackPanel>
+                        <TextBlock Text="LOCAL STORE STORAGE" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextSecondary}"/>
+                        <TextBlock Text="{Binding LocalPathsStatusText}" FontSize="15" FontWeight="Bold" Foreground="{Binding LocalPathsStatusColor}" Margin="0,6,0,2" TextWrapping="Wrap"/>
+                        <TextBlock Text="Store folders" FontSize="12" Foreground="{StaticResource TextSecondary}"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Metric 4: Output -->
+                <Border Style="{StaticResource MetricCard}" Width="260">
+                    <StackPanel>
+                        <TextBlock Text="Saved files" FontSize="11" FontWeight="Bold" Foreground="{StaticResource TextSecondary}"/>
+                        <TextBlock Text="Desktop\SOD_Output" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}" Margin="0,6,0,2"/>
+                        <TextBlock Text="Open saved receipt files" FontSize="12" Foreground="{StaticResource BtnSuccess}" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <!-- Quick Workflow Actions -->
+            <TextBlock Text="Tools" FontWeight="Bold" FontSize="13" Foreground="{StaticResource TextSecondary}" Margin="0,10,0,10"/>
+            <WrapPanel Margin="0,0,-15,20">
+
+                <!-- Action 1: Local EJ -->
+                <Button Style="{StaticResource ActionCardButton}" Width="260" Command="{Binding NavigateCommand}" CommandParameter="EJConsolidator">
+                    <StackPanel>
+                        <TextBlock Text="💻 EJ Consolidator (Local)" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrandPrimary}"/>
+                        <TextBlock Text="Read receipts from the live/CONSO server." FontSize="12" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap" Margin="0,6,0,0" LineHeight="16"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Action 2: Remote FTP EJ -->
+                <Button Style="{StaticResource ActionCardButton}" Width="260" Command="{Binding NavigateCommand}" CommandParameter="EJConsolidator">
+                    <StackPanel>
+                        <TextBlock Text="🌐 EJ Consolidator (FTP)" FontSize="16" FontWeight="Bold" Foreground="{StaticResource BrandPrimaryDark}"/>
+                        <TextBlock Text="Read uploaded receipts from FTP." FontSize="12" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap" Margin="0,6,0,0" LineHeight="16"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Action 3: INF Generator -->
+
+                <!-- Action 4: Universal Settings -->
+                <Button Style="{StaticResource ActionCardButton}" Width="260" Command="{Binding NavigateCommand}" CommandParameter="Settings">
+                    <StackPanel>
+                        <TextBlock Text="Settings" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
+                        <TextBlock Text="Set your store, server addresses, folders, and email recipients." FontSize="12" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap" Margin="0,6,0,0" LineHeight="16"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Action 5: System Logs -->
+                <Button Style="{StaticResource ActionCardButton}" Width="260" Command="{Binding NavigateCommand}" CommandParameter="SystemLogs">
+                    <StackPanel>
+                        <TextBlock Text="Activity" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
+                        <TextBlock Text="Review recent messages and save them when reporting a problem." FontSize="12" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap" Margin="0,6,0,0" LineHeight="16"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Action 6: Output Directory -->
+                <Button Style="{StaticResource ActionCardButton}" Width="260" Command="{Binding OpenOutputDirCommand}">
+                    <StackPanel>
+                        <TextBlock Text="📂 Open SOD_Output" FontSize="16" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
+                        <TextBlock Text="Directly open Desktop\SOD_Output to view consolidated journals, merged files, and isolated receipts." FontSize="12" Foreground="{StaticResource TextSecondary}" TextWrapping="Wrap" Margin="0,6,0,0" LineHeight="16"/>
+                    </StackPanel>
+                </Button>
+            </WrapPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
+

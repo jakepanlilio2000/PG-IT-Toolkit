@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -20,6 +20,11 @@ namespace PuregoldITToolkit.Tools.PureposTool.Views
     /// </summary>
     public partial class PureposView : UserControl
     {
+        private void Console_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is TextBox console) console.ScrollToEnd();
+        }
+
         public PureposView()
         {
             InitializeComponent();

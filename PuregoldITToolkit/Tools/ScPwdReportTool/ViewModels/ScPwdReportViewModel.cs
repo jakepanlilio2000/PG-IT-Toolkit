@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.ScPwdReportTool.Interfaces;
 using PuregoldITToolkit.Tools.ScPwdReportTool.Models;
@@ -21,8 +21,8 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels
         private string _storeName;
         private string _liveServerIp;
         private string _posLanes;
-        private DateTime _startDate = DateTime.Today;
-        private DateTime _endDate = DateTime.Today;
+        private DateTime _startDate = new DateTime(DateTime.Today.AddMonths(-1).Year, DateTime.Today.AddMonths(-1).Month, 1);
+        private DateTime _endDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddDays(-1);
 
         private bool _generateScReport = true;
         private bool _generatePwdReport = true;
@@ -68,6 +68,8 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels
         {
             if (!GenerateScReport && !GeneratePwdReport) { StatusMessage = "Please select at least one report type."; StatusColor = "#C0392B"; return; }
 
+            if (StartDate.Date > EndDate.Date) { StatusMessage = "Start date must not exceed end date."; return; }
+            if ((EndDate.Date - StartDate.Date).TotalDays > 366) { StatusMessage = "Select at most 367 days per report run."; return; }
             IsBusy = true;
             ProgressValue = 0;
             StatusColor = "#3498DB";
@@ -95,8 +97,8 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels
                 PosLanes = lanes,
                 GenerateScReport = GenerateScReport,
                 GeneratePwdReport = GeneratePwdReport,
-                MergeAllPos = MergeAllPos, 
-                ReportChunkDays = ReportChunkDays <= 0 ? 3 : ReportChunkDays,
+                MergeAllPos = MergeAllPos,
+                ReportChunkDays = ReportChunkDays < 0 ? 0 : ReportChunkDays,
                 ReportUserId = ReportUserId?.Trim()
             };
             try
@@ -164,7 +166,7 @@ namespace PuregoldITToolkit.Tools.ScPwdReportTool.ViewModels
                     ["ChunkDays"] = ReportChunkDays.ToString(),
                     ["GenSc"] = GenerateScReport.ToString(),
                     ["GenPwd"] = GeneratePwdReport.ToString(),
-                    ["MergePos"] = MergeAllPos.ToString() 
+                    ["MergePos"] = MergeAllPos.ToString()
                 };
                 File.WriteAllText(_cacheFile, JsonSerializer.Serialize(data));
             }

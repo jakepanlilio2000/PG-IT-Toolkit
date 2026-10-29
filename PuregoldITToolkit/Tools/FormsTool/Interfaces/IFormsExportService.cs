@@ -1,4 +1,4 @@
-﻿using PuregoldITToolkit.Tools.FormsTool.Models;
+using PuregoldITToolkit.Tools.FormsTool.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows.Media;

@@ -14,11 +14,13 @@
     <WarningLevel>4</WarningLevel>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
+    <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>true</Prefer32Bit>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -26,6 +28,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -35,12 +38,35 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>wallhaven-vq1de5 %281%29.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Security" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -55,6 +81,7 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
@@ -72,6 +99,7 @@
     <Compile Include="Core\Helpers\PasswordHelper.cs" />
     <Compile Include="Core\Helpers\ResourceHelper.cs" />
     <Compile Include="Services\LicenseManager.cs" />
+    <Compile Include="Services\AutomaticFtpLogin.cs" />
     <Compile Include="Services\ToolRegistryService.cs" />
     <Compile Include="Tools\EJConsolidatorTool.cs" />
     <Compile Include="Tools\EJConsolidator\Interfaces\IEJConsolidatorService.cs" />
@@ -107,6 +135,12 @@
     <Compile Include="Tools\FormsTool\Views\SsrfView.xaml.cs">
       <DependentUpon>SsrfView.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Tools\FormsTool\Models\FormCustomizerModels.cs" />
+    <Compile Include="Tools\FormsTool\Services\FormTemplateService.cs" />
+    <Compile Include="Tools\FormsTool\ViewModels\FormCustomizerViewModel.cs" />
+    <Compile Include="Tools\FormsTool\Views\FormCustomizerView.xaml.cs">
+      <DependentUpon>FormCustomizerView.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Tools\FormsTool\Views\TsrfView.xaml.cs">
       <DependentUpon>TsrfView.xaml</DependentUpon>
     </Compile>
@@ -134,7 +168,9 @@
     <Compile Include="Tools\PureposTool\Models\EjSaveModel.cs" />
     <Compile Include="Tools\PureposTool\Models\EodModel.cs" />
     <Compile Include="Tools\PureposTool\Models\PureposModels.cs" />
+    <Compile Include="Tools\PureposTool\Models\ToolkitDiagnosticsModels.cs" />
     <Compile Include="Tools\PureposTool\Services\PureposService.cs" />
+    <Compile Include="Tools\PureposTool\Services\ToolkitDiagnosticsService.cs" />
     <Compile Include="Tools\PureposTool\ViewModels\PureposViewModel.cs" />
     <Compile Include="Tools\PureposTool\Views\PureposView.xaml.cs">
       <DependentUpon>PureposView.xaml</DependentUpon>
@@ -181,6 +217,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Tools\FormsTool\Views\FormsMainView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Tools\FormsTool\Views\FormCustomizerView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -243,6 +283,33 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Models\LogEntryModel.cs" />
+    <Compile Include="Services\ILoggingService.cs" />
+    <Compile Include="Services\LoggingService.cs" />
+    <Compile Include="ViewModels\DashboardViewModel.cs" />
+    <Compile Include="ViewModels\SystemLogsViewModel.cs" />
+    <Compile Include="ViewModels\InfoHelpViewModel.cs" />
+    <Compile Include="Views\DashboardView.xaml.cs">
+      <DependentUpon>DashboardView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\SystemLogsView.xaml.cs">
+      <DependentUpon>SystemLogsView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\InfoHelpView.xaml.cs">
+      <DependentUpon>InfoHelpView.xaml</DependentUpon>
+    </Compile>
+    <Page Include="Views\DashboardView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\SystemLogsView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\InfoHelpView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -267,6 +334,9 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <Content Include="StoreProfilesDatabase.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="license.dat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

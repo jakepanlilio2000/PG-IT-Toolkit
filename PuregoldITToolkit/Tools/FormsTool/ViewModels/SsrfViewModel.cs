@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Input;
 using PuregoldITToolkit.Core.Base;
 using PuregoldITToolkit.Tools.FormsTool.Interfaces;
 using PuregoldITToolkit.Tools.FormsTool.Models;
@@ -22,7 +22,7 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
         // --- NEW PREVIEW PROPERTIES ---
         private ImageSource _livePreviewImage;
         public ImageSource LivePreviewImage { get => _livePreviewImage; set => SetProperty(ref _livePreviewImage, value); }
-        private bool _isUpdatingPreview;
+        private int _previewRevision;
 
         public ICommand PrintCommand { get; }
 
@@ -36,18 +36,15 @@ namespace PuregoldITToolkit.Tools.FormsTool.ViewModels
 
         private async void OnFormDataChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (_isUpdatingPreview) return;
-            _isUpdatingPreview = true;
-
-            await Task.Delay(250);
-            await UpdatePreviewAsync();
-
-            _isUpdatingPreview = false;
+            int revision = ++_previewRevision;
+            await Task.Delay(180);
+            if (revision == _previewRevision) await UpdatePreviewAsync();
         }
 
         private async Task UpdatePreviewAsync()
         {
-            LivePreviewImage = await _exportService.GenerateSsrfPreviewAsync(FormData, "SSRF_Template.jpg");
+            try { LivePreviewImage = await _exportService.GenerateSsrfPreviewAsync(FormData, "SSRF_Template.jpg"); }
+            catch (Exception ex) { StatusMessage = "Preview unavailable: " + ex.Message; }
         }
 
         private async Task PrintBatchAsync()

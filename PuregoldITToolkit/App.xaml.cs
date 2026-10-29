@@ -1,4 +1,4 @@
-﻿using PuregoldITToolkit.Services;
+using PuregoldITToolkit.Services;
 using PuregoldITToolkit.Tools.EJConsolidator;
 using PuregoldITToolkit.Tools.EJConsolidator.Services;
 using PuregoldITToolkit.Tools.EJConsolidator.ViewModels;
@@ -26,6 +26,7 @@ using PuregoldITToolkit.Tools.SodChecker.ViewModels;
 using PuregoldITToolkit.ViewModels;
 using PuregoldITToolkit.Views;
 using System;
+using System.Net;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
@@ -41,23 +42,31 @@ namespace PuregoldITToolkit
         {
             base.OnStartup(e);
 
+            // Explicitly enable TLS 1.2, TLS 1.1, and TLS for legacy OS (Windows 7 SP1) network/FTP compatibility
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+
             // 1. Initialize the License Manager FIRST
             LicenseManager.Initialize();
 
-            // 2. Initialize Core Services
+            // 2. Initialize Centralized Settings & Logging
+            var settingsService = new SettingsService();
+            var settings = SettingsService.LoadSettingsInternal();
+            LoggingService.Instance.ApplyRetentionPolicy(settings.LogRetentionDays);
+            LoggingService.Instance.LogInfo($"Puregold IT Toolkit started. Environment: .NET Framework {Environment.Version}, OS: {Environment.OSVersion}, Platform: x86");
+
+            // 3. Initialize Core Services
             var registryService = new ToolRegistryService();
 
             // ==========================================
-            // 3. SELECTIVE TOOL LOADING
+            // 3. SELECTIVE TOOL LOADING & VIEWMODEL CREATION
             // ==========================================
 
             // --- 1. EJ Consolidator ---
+            var receiptFilterService = new ReceiptFilterService();
+            var ejConsolidatorService = new EJConsolidatorService(receiptFilterService);
+            var ejViewModel = new EJConsolidatorViewModel(ejConsolidatorService);
             if (LicenseManager.IsEnabled("EJConsolidator"))
             {
-                var receiptFilterService = new ReceiptFilterService();
-                var ejConsolidatorService = new EJConsolidatorService(receiptFilterService);
-                var ejViewModel = new EJConsolidatorViewModel(ejConsolidatorService);
-
                 registryService.RegisterTool(new EJConsolidatorTool(ejViewModel));
             }
 
@@ -77,15 +86,17 @@ namespace PuregoldITToolkit
                 registryService.RegisterTool(new SodCheckerTool(sodViewModel));
             }
 
-            // --- 3. Puregold Forms ---
+            // --- 3. Puregold Forms & INF Generator ---
+            var formsExportService = new FormsExportService();
+            var formTemplateService = new FormTemplateService();
+            var infVm = new InfViewModel(formsExportService);
+            var obVm = new ObViewModel(formsExportService);
+            var ssrfVm = new SsrfViewModel(formsExportService);
+            var tsrfVm = new TsrfViewModel(formsExportService);
+            var formCustomizerVm = new FormCustomizerViewModel(formTemplateService);
+            var formsMainVm = new FormsMainViewModel(infVm, obVm, ssrfVm, tsrfVm, formCustomizerVm);
             if (LicenseManager.IsEnabled("PuregoldForms"))
             {
-                var formsExportService = new FormsExportService();
-                var infVm = new InfViewModel(formsExportService);
-                var obVm = new ObViewModel(formsExportService);
-                var ssrfVm = new SsrfViewModel(formsExportService);
-                var tsrfVm = new TsrfViewModel(formsExportService);
-                var formsMainVm = new FormsMainViewModel(infVm, obVm, ssrfVm, tsrfVm);
                 registryService.RegisterTool(new FormsTool(formsMainVm));
             }
 
@@ -105,11 +116,12 @@ namespace PuregoldITToolkit
                 registryService.RegisterTool(new ServiceDeskTool(sdVm));
             }
 
-            // --- Optional: Purepos & Settings (Add if you still need them) ---
+            // --- Optional: Purepos & FTP Browser ---
             if (LicenseManager.IsEnabled("PureposTool"))
             {
                 var pureposService = new PureposService();
-                var pureposVm = new PureposViewModel(pureposService);
+                var diagService = new ToolkitDiagnosticsService();
+                var pureposVm = new PureposViewModel(pureposService, diagService);
                 registryService.RegisterTool(new PureposTool(pureposVm));
             }
 
@@ -121,14 +133,14 @@ namespace PuregoldITToolkit
                 registryService.RegisterTool(ftpBrowserTool);
             }
 
-            var settingsService = new SettingsService();
-                var settingsVm = new SettingsViewModel(settingsService);
-                registryService.RegisterTool(new SettingsTool(settingsVm));
+            // --- Universal Settings ---
+            var settingsVm = new SettingsViewModel(settingsService);
+            registryService.RegisterTool(new SettingsTool(settingsVm));
 
             // ==========================================
             // 4. STARTUP MAIN WINDOW
             // ==========================================
-            var mainViewModel = new MainViewModel(registryService);
+            var mainViewModel = new MainViewModel(registryService, ejViewModel, infVm, settingsVm);
             var mainWindow = new MainWindow
             {
                 DataContext = mainViewModel

@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="PuregoldITToolkit.Tools.FtpBrowserTool.Views.FtpBrowserView"
+<UserControl x:Class="PuregoldITToolkit.Tools.FtpBrowserTool.Views.FtpBrowserView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
@@ -109,9 +109,9 @@
                     </Grid>
                 </Border>
 
-                <DataGrid Grid.Row="1" x:Name="FilesGrid" ItemsSource="{Binding FilteredFilesList}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True" 
+                <DataGrid Grid.Row="1" x:Name="FilesGrid" ItemsSource="{Binding FilteredFilesList}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
                           SelectionMode="Extended" AllowDrop="True" Drop="FilesGrid_Drop" MouseMove="FilesGrid_MouseMove" SelectionChanged="FilesGrid_SelectionChanged"
-                          HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}" 
+                          HeadersVisibility="Column" Background="{StaticResource BgCard}" RowBackground="{StaticResource BgCard}" AlternatingRowBackground="{StaticResource BgApp}"
                           BorderThickness="0" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderLight}">
 
                     <DataGrid.InputBindings>
